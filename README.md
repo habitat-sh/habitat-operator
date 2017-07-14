@@ -13,6 +13,6 @@ To run the `habitat-operator` outside of a Kubernetes cluster, run:
 This project uses [go dep](https://github.com/golang/dep/) for dependency
 management.
 
-After checking out the project, run:
+If you add, remove or change an import, run:
 
     dep ensure
