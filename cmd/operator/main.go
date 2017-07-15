@@ -15,14 +15,19 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 
 	"github.com/go-kit/kit/log"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	habitatclient "github.com/kinvolk/habitat-operator/pkg/habitat/client"
+	habitatcontroller "github.com/kinvolk/habitat-operator/pkg/habitat/controller"
 )
 
 type Config struct {
@@ -32,16 +37,54 @@ type Config struct {
 func run() int {
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 
+	// Parse config flags.
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 	flag.Parse()
 
+	// Build operator config.
 	config, err := buildConfig(*kubeconfig)
 	if err != nil {
 		logger.Log("error", err)
 		return 1
 	}
 
-	if _, err := apiextensionsclient.NewForConfig(config); err != nil {
+	apiextensionsclientset, err := apiextensionsclient.NewForConfig(config)
+	if err != nil {
+		logger.Log("error", err)
+		return 1
+	}
+
+	// Create ServiceGroup CRD.
+	crd, err := habitatclient.CreateCRD(apiextensionsclientset)
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		logger.Log("error", err)
+		return 1
+	}
+
+	logger.Log("info", "created ServiceGroup CRD")
+
+	defer func() {
+		apiextensionsclientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(crd.Name, nil)
+		logger.Log("info", "deleted ServiceGroup CRD")
+	}()
+
+	client, scheme, err := habitatclient.NewClient(config)
+	if err != nil {
+		logger.Log("error", err)
+		return 1
+	}
+
+	controller := habitatcontroller.HabitatController{
+		HabitatClient: client,
+		HabitatScheme: scheme,
+	}
+
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
+	go controller.Run(ctx)
+
+	habitatclient.WaitForServiceGroupInstanceProcessed(client, "sg1")
+	if err != nil {
 		logger.Log("error", err)
 		return 1
 	}
