@@ -1,0 +1,12 @@
+language: go
+
+# skip installation of dependencies since they are already in vendor/
+install: true
+
+go:
+  - 1.8.x
+
+git:
+  depth: 1
+
+script:  go test -v $(go list ./... | grep -v /vendor/)
