@@ -69,14 +69,14 @@ func run() int {
 		return 1
 	}
 
-	controller := habitatcontroller.HabitatController{
+	hc := habitatcontroller.HabitatController{
 		HabitatClient: client,
 		HabitatScheme: scheme,
 	}
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
-	go controller.Run(ctx)
+	go hc.Run(ctx)
 
 	habitatclient.WaitForServiceGroupInstanceProcessed(client, "sg1")
 	if err != nil {
