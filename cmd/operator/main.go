@@ -55,13 +55,17 @@ func run() int {
 	}
 
 	// Create ServiceGroup CRD.
-	crd, err := habitatclient.CreateCRD(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		logger.Log("error", err)
-		return 1
-	}
+	_, crdErr := habitatclient.CreateCRD(apiextensionsclientset)
+	if crdErr != nil {
+		if !apierrors.IsAlreadyExists(crdErr) {
+			logger.Log("error", crdErr)
+			return 1
+		}
 
-	logger.Log("info", "created ServiceGroup CRD")
+		logger.Log("info", "ServiceGroup CRD already exists, continuing")
+	} else {
+		logger.Log("info", "created ServiceGroup CRD")
+	}
 
 	client, scheme, err := habitatclient.NewClient(config)
 	if err != nil {
