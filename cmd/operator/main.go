@@ -18,6 +18,8 @@ import (
 	"context"
 	"flag"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/go-kit/kit/log"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -55,18 +57,17 @@ func run() int {
 	}
 
 	// Create ServiceGroup CRD.
-	crd, err := habitatclient.CreateCRD(apiextensionsclientset)
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		logger.Log("error", err)
-		return 1
+	_, crdErr := habitatclient.CreateCRD(apiextensionsclientset)
+	if crdErr != nil {
+		if !apierrors.IsAlreadyExists(crdErr) {
+			logger.Log("error", crdErr)
+			return 1
+		}
+
+		logger.Log("info", "ServiceGroup CRD already exists, continuing")
+	} else {
+		logger.Log("info", "created ServiceGroup CRD")
 	}
-
-	logger.Log("info", "created ServiceGroup CRD")
-
-	defer func() {
-		apiextensionsclientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(crd.Name, nil)
-		logger.Log("info", "deleted ServiceGroup CRD")
-	}()
 
 	client, scheme, err := habitatclient.NewClient(config)
 	if err != nil {
@@ -74,22 +75,26 @@ func run() int {
 		return 1
 	}
 
-	controller := habitatcontroller.HabitatController{
+	hc := habitatcontroller.HabitatController{
 		HabitatClient: client,
 		HabitatScheme: scheme,
 	}
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
-	go controller.Run(ctx)
+	go hc.Run(ctx)
 
-	habitatclient.WaitForServiceGroupInstanceProcessed(client, "sg1")
-	if err != nil {
-		logger.Log("error", err)
-		return 1
+	term := make(chan os.Signal)
+	// Relay these signals to the `term` channel.
+	signal.Notify(term, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case <-term:
+		logger.Log("info", "received SIGTERM, exiting gracefully...")
+	case <-ctx.Done():
+		logger.Log("debug", "context channel closed, exiting")
 	}
 
-	logger.Log("info", "exiting habitat-operator")
 	return 0
 }
 
