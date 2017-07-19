@@ -84,12 +84,6 @@ func run() int {
 	defer cancelFunc()
 	go hc.Run(ctx)
 
-	habitatclient.WaitForServiceGroupInstanceProcessed(client, "sg1")
-	if err != nil {
-		logger.Log("error", err)
-		return 1
-	}
-
 	term := make(chan os.Signal)
 	// Relay these signals to the `term` channel.
 	signal.Notify(term, syscall.SIGINT, syscall.SIGTERM)
