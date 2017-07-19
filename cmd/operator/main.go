@@ -63,11 +63,6 @@ func run() int {
 
 	logger.Log("info", "created ServiceGroup CRD")
 
-	defer func() {
-		apiextensionsclientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(crd.Name, nil)
-		logger.Log("info", "deleted ServiceGroup CRD")
-	}()
-
 	client, scheme, err := habitatclient.NewClient(config)
 	if err != nil {
 		logger.Log("error", err)
