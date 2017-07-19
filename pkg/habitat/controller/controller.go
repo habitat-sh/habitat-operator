@@ -43,7 +43,10 @@ func (hc *HabitatController) Run(ctx context.Context) error {
 		return err
 	}
 
+	// This channel is closed when the context is canceled or times out.
 	<-ctx.Done()
+
+	// Err() contains the error, if any.
 	return ctx.Err()
 }
 

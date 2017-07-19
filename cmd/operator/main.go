@@ -18,6 +18,8 @@ import (
 	"context"
 	"flag"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/go-kit/kit/log"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -88,7 +90,17 @@ func run() int {
 		return 1
 	}
 
-	logger.Log("info", "exiting habitat-operator")
+	term := make(chan os.Signal)
+	// Relay these signals to the `term` channel.
+	signal.Notify(term, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case <-term:
+		logger.Log("info", "received SIGTERM, exiting gracefully...")
+	case <-ctx.Done():
+		logger.Log("debug", "context channel closed, exiting")
+	}
+
 	return 0
 }
 
