@@ -29,7 +29,11 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-const serviceGroupCRDName = crv1.ServiceGroupResourcePlural + "." + crv1.GroupName
+const (
+	serviceGroupCRDName = crv1.ServiceGroupResourcePlural + "." + crv1.GroupName
+	pollInterval        = 500 * time.Millisecond
+	timeOut             = 10 * time.Second
+)
 
 // CreateCRD creates the ServiceGroup Custom Resource Definition.
 // It checks if creation has completed successfully, and deletes the CRD in case of error.
@@ -55,7 +59,7 @@ func CreateCRD(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.C
 	}
 
 	// wait for CRD being established.
-	err = wait.Poll(500*time.Millisecond, 60*time.Second, func() (bool, error) {
+	err = wait.Poll(pollInterval, timeOut, func() (bool, error) {
 		crd, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(serviceGroupCRDName, metav1.GetOptions{})
 
 		if err != nil {

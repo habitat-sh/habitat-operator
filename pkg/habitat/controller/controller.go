@@ -37,7 +37,7 @@ type HabitatController struct {
 func (hc *HabitatController) Run(ctx context.Context) error {
 	fmt.Printf("Watching Service Group objects\n")
 
-	_, err := hc.watchServiceGroups(ctx)
+	_, err := hc.watchCustomResources(ctx)
 	if err != nil {
 		fmt.Printf("error: Failed to register watch for ServiceGroup resource: %v\n", err)
 		return err
@@ -50,14 +50,14 @@ func (hc *HabitatController) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
-func (hc *HabitatController) watchServiceGroups(ctx context.Context) (cache.Controller, error) {
+func (hc *HabitatController) watchCustomResources(ctx context.Context) (cache.Controller, error) {
 	source := cache.NewListWatchFromClient(
 		hc.HabitatClient,
 		crv1.ServiceGroupResourcePlural,
 		apiv1.NamespaceAll,
 		fields.Everything())
 
-	_, controller := cache.NewInformer(
+	_, k8sController := cache.NewInformer(
 		source,
 
 		// The object type.
@@ -75,9 +75,10 @@ func (hc *HabitatController) watchServiceGroups(ctx context.Context) (cache.Cont
 			DeleteFunc: hc.onDelete,
 		})
 
-	go controller.Run(ctx.Done())
+	// The k8sController will start processing events from the API.
+	go k8sController.Run(ctx.Done())
 
-	return controller, nil
+	return k8sController, nil
 }
 
 func (hc *HabitatController) onAdd(obj interface{}) {
