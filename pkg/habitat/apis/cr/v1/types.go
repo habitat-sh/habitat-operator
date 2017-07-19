@@ -18,7 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const ServiceGroupResourcePlural = "service-groups"
+const ServiceGroupResourcePlural = "servicegroups"
 
 type ServiceGroup struct {
 	metav1.TypeMeta   `json:,inline"`
@@ -28,7 +28,12 @@ type ServiceGroup struct {
 }
 
 type ServiceGroupSpec struct {
+	// Name is the Service Group name.
+	Name string
+	// Count is the amount of Services to start in this Service Group.
 	Count int
+	// Image is the Docker image of the Habitat Service.
+	Image string
 }
 
 type ServiceGroupStatus struct {
