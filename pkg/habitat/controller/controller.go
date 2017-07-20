@@ -101,6 +101,19 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 	sg := obj.(*crv1.ServiceGroup)
 	level.Debug(hc.logger).Log("function", "onAdd", "msg", sg.ObjectMeta.SelfLink)
 
+	// Validate object.
+	if err := validateCustomObject(*sg); err != nil {
+		if vErr, ok := err.(validationError); ok {
+			level.Error(hc.logger).Log("type", "validation error", "msg", err, "key", vErr.Key)
+			return
+		}
+
+		level.Error(hc.logger).Log("msg", err)
+		return
+	}
+
+	level.Debug(hc.logger).Log("msg", "validated object")
+
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use exampleScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
