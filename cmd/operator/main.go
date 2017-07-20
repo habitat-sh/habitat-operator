@@ -75,10 +75,12 @@ func run() int {
 		return 1
 	}
 
-	hc := habitatcontroller.HabitatController{
-		HabitatClient: client,
-		HabitatScheme: scheme,
+	controllerConfig := habitatcontroller.Config{
+		Client: client,
+		Scheme: scheme,
 	}
+
+	hc := habitatcontroller.New(controllerConfig, log.With(logger, "component", "controller"))
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()

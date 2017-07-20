@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-kit/kit/log"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,8 +30,22 @@ import (
 )
 
 type HabitatController struct {
-	HabitatClient *rest.RESTClient
-	HabitatScheme *runtime.Scheme
+	config Config
+	logger log.Logger
+}
+
+type Config struct {
+	Client *rest.RESTClient
+	Scheme *runtime.Scheme
+}
+
+func New(config Config, logger log.Logger) HabitatController {
+	hc := HabitatController{
+		config: config,
+		logger: logger,
+	}
+
+	return hc
 }
 
 // Run starts a Habitat resource controller
@@ -52,7 +67,7 @@ func (hc *HabitatController) Run(ctx context.Context) error {
 
 func (hc *HabitatController) watchCustomResources(ctx context.Context) (cache.Controller, error) {
 	source := cache.NewListWatchFromClient(
-		hc.HabitatClient,
+		hc.config.Client,
 		crv1.ServiceGroupResourcePlural,
 		apiv1.NamespaceAll,
 		fields.Everything())
@@ -88,7 +103,7 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use exampleScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
-	copyObj, err := hc.HabitatScheme.Copy(sg)
+	copyObj, err := hc.config.Scheme.Copy(sg)
 	if err != nil {
 		fmt.Printf("ERROR creating a deep copy of ServiceGroup object: %v\n", err)
 		return
@@ -100,7 +115,7 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 		Message: "Successfully processed by controller",
 	}
 
-	err = hc.HabitatClient.Put().
+	err = hc.config.Client.Put().
 		Name(sg.ObjectMeta.Name).
 		Namespace(sg.ObjectMeta.Namespace).
 		Resource(crv1.ServiceGroupResourcePlural).
