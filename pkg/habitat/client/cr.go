@@ -15,7 +15,6 @@
 package client
 
 import (
-	"fmt"
 	"reflect"
 	"time"
 
@@ -77,7 +76,8 @@ func CreateCRD(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.C
 				}
 			case apiextensionsv1beta1.NamesAccepted:
 				if cond.Status == apiextensionsv1beta1.ConditionFalse {
-					fmt.Printf("Error: Name conflict: %v\n", cond.Reason)
+					// TODO re-introduce logging?
+					// fmt.Printf("Error: Name conflict: %v\n", cond.Reason)
 				}
 			}
 		}
