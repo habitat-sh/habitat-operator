@@ -22,6 +22,7 @@ import (
 	"syscall"
 
 	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
@@ -38,6 +39,7 @@ type Config struct {
 
 func run() int {
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+	logger = level.NewFilter(logger, level.AllowInfo())
 
 	// Parse config flags.
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
@@ -46,13 +48,13 @@ func run() int {
 	// Build operator config.
 	config, err := buildConfig(*kubeconfig)
 	if err != nil {
-		logger.Log("error", err)
+		level.Error(logger).Log("msg", err)
 		return 1
 	}
 
 	apiextensionsclientset, err := apiextensionsclient.NewForConfig(config)
 	if err != nil {
-		logger.Log("error", err)
+		level.Error(logger).Log("msg", err)
 		return 1
 	}
 
@@ -60,25 +62,27 @@ func run() int {
 	_, crdErr := habitatclient.CreateCRD(apiextensionsclientset)
 	if crdErr != nil {
 		if !apierrors.IsAlreadyExists(crdErr) {
-			logger.Log("error", crdErr)
+			level.Error(logger).Log("msg", crdErr)
 			return 1
 		}
 
-		logger.Log("info", "ServiceGroup CRD already exists, continuing")
+		level.Info(logger).Log("msg", "ServiceGroup CRD already exists, continuing")
 	} else {
-		logger.Log("info", "created ServiceGroup CRD")
+		level.Info(logger).Log("msg", "created ServiceGroup CRD")
 	}
 
 	client, scheme, err := habitatclient.NewClient(config)
 	if err != nil {
-		logger.Log("error", err)
+		level.Error(logger).Log("msg", err)
 		return 1
 	}
 
-	hc := habitatcontroller.HabitatController{
-		HabitatClient: client,
-		HabitatScheme: scheme,
+	controllerConfig := habitatcontroller.Config{
+		Client: client,
+		Scheme: scheme,
 	}
+
+	hc := habitatcontroller.New(controllerConfig, log.With(logger, "component", "controller"))
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
@@ -90,9 +94,9 @@ func run() int {
 
 	select {
 	case <-term:
-		logger.Log("info", "received SIGTERM, exiting gracefully...")
+		level.Info(logger).Log("msg", "received SIGTERM, exiting gracefully...")
 	case <-ctx.Done():
-		logger.Log("debug", "context channel closed, exiting")
+		level.Info(logger).Log("msg", "context channel closed, exiting")
 	}
 
 	return 0

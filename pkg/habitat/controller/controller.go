@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,17 +31,31 @@ import (
 )
 
 type HabitatController struct {
-	HabitatClient *rest.RESTClient
-	HabitatScheme *runtime.Scheme
+	config Config
+	logger log.Logger
+}
+
+type Config struct {
+	Client *rest.RESTClient
+	Scheme *runtime.Scheme
+}
+
+func New(config Config, logger log.Logger) HabitatController {
+	hc := HabitatController{
+		config: config,
+		logger: logger,
+	}
+
+	return hc
 }
 
 // Run starts a Habitat resource controller
 func (hc *HabitatController) Run(ctx context.Context) error {
-	fmt.Printf("Watching Service Group objects\n")
+	level.Info(hc.logger).Log("msg", "Watching Service Group objects")
 
 	_, err := hc.watchCustomResources(ctx)
 	if err != nil {
-		fmt.Printf("error: Failed to register watch for ServiceGroup resource: %v\n", err)
+		level.Error(hc.logger).Log("msg", "Failed to register watch for ServiceGroup resource", "err", err)
 		return err
 	}
 
@@ -52,7 +68,7 @@ func (hc *HabitatController) Run(ctx context.Context) error {
 
 func (hc *HabitatController) watchCustomResources(ctx context.Context) (cache.Controller, error) {
 	source := cache.NewListWatchFromClient(
-		hc.HabitatClient,
+		hc.config.Client,
 		crv1.ServiceGroupResourcePlural,
 		apiv1.NamespaceAll,
 		fields.Everything())
@@ -83,14 +99,14 @@ func (hc *HabitatController) watchCustomResources(ctx context.Context) (cache.Co
 
 func (hc *HabitatController) onAdd(obj interface{}) {
 	sg := obj.(*crv1.ServiceGroup)
-	fmt.Printf("[CONTROLLER] OnAdd: %s", sg.ObjectMeta.SelfLink)
+	level.Debug(hc.logger).Log("function", "onAdd", "msg", sg.ObjectMeta.SelfLink)
 
 	// NEVER modify objects from the store. It's a read-only, local cache.
 	// You can use exampleScheme.Copy() to make a deep copy of original object and modify this copy
 	// Or create a copy manually for better performance
-	copyObj, err := hc.HabitatScheme.Copy(sg)
+	copyObj, err := hc.config.Scheme.Copy(sg)
 	if err != nil {
-		fmt.Printf("ERROR creating a deep copy of ServiceGroup object: %v\n", err)
+		level.Error(hc.logger).Log("msg", "creating a deep copy of ServiceGroup object", "err", err)
 		return
 	}
 
@@ -100,7 +116,7 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 		Message: "Successfully processed by controller",
 	}
 
-	err = hc.HabitatClient.Put().
+	err = hc.config.Client.Put().
 		Name(sg.ObjectMeta.Name).
 		Namespace(sg.ObjectMeta.Namespace).
 		Resource(crv1.ServiceGroupResourcePlural).
@@ -109,20 +125,19 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 		Error()
 
 	if err != nil {
-		fmt.Printf("ERROR updating status: %v\n", err)
+		level.Error(hc.logger).Log("msg", "updating status", "err", err)
 	} else {
-		fmt.Printf("UPDATED status: %#v\n", sgCopy)
+		level.Info(hc.logger).Log("function", "onAdd", "msg", "UPDATED status", "object", sgCopy)
 	}
 }
 
 func (hc *HabitatController) onUpdate(oldObj, newObj interface{}) {
 	oldServiceGroup := oldObj.(*crv1.ServiceGroup)
 	newServiceGroup := newObj.(*crv1.ServiceGroup)
-	fmt.Printf("[CONTROLLER] OnUpdate oldObj: %s\n", oldServiceGroup.ObjectMeta.SelfLink)
-	fmt.Printf("[CONTROLLER] OnUpdate newObj: %s\n", newServiceGroup.ObjectMeta.SelfLink)
+	level.Info(hc.logger).Log("function", "onUpdate", "msg", fmt.Sprintf("oldObj: %s, newObj: %s", oldServiceGroup.ObjectMeta.SelfLink, newServiceGroup.ObjectMeta.SelfLink))
 }
 
 func (hc *HabitatController) onDelete(obj interface{}) {
 	sg := obj.(*crv1.ServiceGroup)
-	fmt.Printf("[CONTROLLER] OnDelete %s\n", sg.ObjectMeta.SelfLink)
+	level.Info(hc.logger).Log("function", "onDelete", "msg", sg.ObjectMeta.SelfLink)
 }
