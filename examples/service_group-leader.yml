@@ -1,0 +1,9 @@
+apiVersion: habitat.sh/v1
+kind: ServiceGroup
+metadata:
+  name: example-leader-follower-service-group
+spec:
+  topology: leader-follower
+  image: tianon/true
+  # count must be at least 3 for a standalone topology
+  count: 3
