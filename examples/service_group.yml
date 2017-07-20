@@ -1,0 +1,8 @@
+apiVersion: habitat.sh/v1
+kind: ServiceGroup
+metadata:
+  # name must match the spec fields below, and be in the form: <plural>.<group>
+  name: example-service-group
+spec:
+  count: 1
+  image: tianon/true

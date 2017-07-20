@@ -30,9 +30,11 @@ import (
 )
 
 const (
-	serviceGroupCRDName = crv1.ServiceGroupResourcePlural + "." + crv1.GroupName
-	pollInterval        = 500 * time.Millisecond
-	timeOut             = 10 * time.Second
+	serviceGroupCRDName           = crv1.ServiceGroupResourcePlural + "." + crv1.GroupName
+	serviceGroupResourceShortName = "sg"
+
+	pollInterval = 500 * time.Millisecond
+	timeOut      = 10 * time.Second
 )
 
 // CreateCRD creates the ServiceGroup Custom Resource Definition.
@@ -47,8 +49,9 @@ func CreateCRD(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.C
 			Version: crv1.SchemeGroupVersion.Version,
 			Scope:   apiextensionsv1beta1.NamespaceScoped,
 			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
-				Plural: crv1.ServiceGroupResourcePlural,
-				Kind:   reflect.TypeOf(crv1.ServiceGroup{}).Name(),
+				Plural:     crv1.ServiceGroupResourcePlural,
+				Kind:       reflect.TypeOf(crv1.ServiceGroup{}).Name(),
+				ShortNames: []string{serviceGroupResourceShortName},
 			},
 		},
 	}
