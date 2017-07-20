@@ -31,7 +31,8 @@ type ServiceGroupSpec struct {
 	// Count is the amount of Services to start in this Service Group.
 	Count int `json:"count"`
 	// Image is the Docker image of the Habitat Service.
-	Image string `json:"image"`
+	Image    string `json:"image"`
+	Topology `json:"topology"`
 }
 
 type ServiceGroupStatus struct {
@@ -41,9 +42,14 @@ type ServiceGroupStatus struct {
 
 type ServiceGroupState string
 
+type Topology string
+
 const (
 	ServiceGroupStateCreated   ServiceGroupState = "Created"
 	ServiceGroupStateProcessed ServiceGroupState = "Processed"
+
+	TopologyStandalone     Topology = "standalone"
+	TopologyLeaderFollower Topology = "leader-follower"
 )
 
 type ServiceGroupList struct {

@@ -4,5 +4,6 @@ metadata:
   # name must match the spec fields below, and be in the form: <plural>.<group>
   name: example-service-group
 spec:
-  count: 1
+  topology: standalone
   image: tianon/true
+  count: 1
