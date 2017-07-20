@@ -52,6 +52,7 @@ func run() int {
 		return 1
 	}
 
+	// This is the clientset for interacting with the apiextensions group.
 	apiextensionsclientset, err := apiextensionsclient.NewForConfig(config)
 	if err != nil {
 		level.Error(logger).Log("msg", err)
@@ -71,17 +72,24 @@ func run() int {
 		level.Info(logger).Log("msg", "created ServiceGroup CRD")
 	}
 
-	client, scheme, err := habitatclient.NewClient(config)
+	habitatClient, scheme, err := habitatclient.NewClient(config)
+	if err != nil {
+		level.Error(logger).Log("msg", err)
+		return 1
+	}
+
+	// This is the clientset for interacting with the stable API group.
+	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		level.Error(logger).Log("msg", err)
 		return 1
 	}
 
 	controllerConfig := habitatcontroller.Config{
-		Client: client,
-		Scheme: scheme,
+		HabitatClient:    habitatClient,
+		KubernetesClient: clientset.AppsV1beta1Client,
+		Scheme:           scheme,
 	}
-
 	hc := habitatcontroller.New(controllerConfig, log.With(logger, "component", "controller"))
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
