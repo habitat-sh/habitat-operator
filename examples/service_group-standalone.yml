@@ -1,0 +1,8 @@
+apiVersion: habitat.sh/v1
+kind: ServiceGroup
+metadata:
+  name: example-standalone-service-group
+spec:
+  topology: standalone
+  image: tianon/true
+  count: 1

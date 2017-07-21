@@ -21,9 +21,12 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	appsv1beta1 "k8s.io/api/apps/v1beta1"
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/typed/apps/v1beta1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
@@ -36,8 +39,9 @@ type HabitatController struct {
 }
 
 type Config struct {
-	Client *rest.RESTClient
-	Scheme *runtime.Scheme
+	HabitatClient    *rest.RESTClient
+	KubernetesClient *v1beta1.AppsV1beta1Client
+	Scheme           *runtime.Scheme
 }
 
 func New(config Config, logger log.Logger) HabitatController {
@@ -68,7 +72,7 @@ func (hc *HabitatController) Run(ctx context.Context) error {
 
 func (hc *HabitatController) watchCustomResources(ctx context.Context) (cache.Controller, error) {
 	source := cache.NewListWatchFromClient(
-		hc.config.Client,
+		hc.config.HabitatClient,
 		crv1.ServiceGroupResourcePlural,
 		apiv1.NamespaceAll,
 		fields.Everything())
@@ -101,34 +105,55 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 	sg := obj.(*crv1.ServiceGroup)
 	level.Debug(hc.logger).Log("function", "onAdd", "msg", sg.ObjectMeta.SelfLink)
 
-	// NEVER modify objects from the store. It's a read-only, local cache.
-	// You can use exampleScheme.Copy() to make a deep copy of original object and modify this copy
-	// Or create a copy manually for better performance
-	copyObj, err := hc.config.Scheme.Copy(sg)
-	if err != nil {
-		level.Error(hc.logger).Log("msg", "creating a deep copy of ServiceGroup object", "err", err)
+	// Validate object.
+	if err := validateCustomObject(*sg); err != nil {
+		if vErr, ok := err.(validationError); ok {
+			level.Error(hc.logger).Log("type", "validation error", "msg", err, "key", vErr.Key)
+			return
+		}
+
+		level.Error(hc.logger).Log("msg", err)
 		return
 	}
 
-	sgCopy := copyObj.(*crv1.ServiceGroup)
-	sgCopy.Status = crv1.ServiceGroupStatus{
-		State:   crv1.ServiceGroupStateProcessed,
-		Message: "Successfully processed by controller",
+	level.Debug(hc.logger).Log("msg", "validated object")
+
+	// This value needs to be passed as a *int32, so we convert it, assign it to a
+	// variable and afterwards pass a pointer to it.
+	count := int32(sg.Spec.Count)
+
+	// Create a deployment.
+	deployment := &appsv1beta1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("%s-deployment", sg.Name),
+		},
+		Spec: appsv1beta1.DeploymentSpec{
+			Replicas: &count,
+			Template: apiv1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"habitat": "true",
+					},
+				},
+				Spec: apiv1.PodSpec{
+					Containers: []apiv1.Container{
+						{
+							Name:  "habitat-service",
+							Image: sg.Spec.Image,
+						},
+					},
+				},
+			},
+		},
 	}
 
-	err = hc.config.Client.Put().
-		Name(sg.ObjectMeta.Name).
-		Namespace(sg.ObjectMeta.Namespace).
-		Resource(crv1.ServiceGroupResourcePlural).
-		Body(sgCopy).
-		Do().
-		Error()
-
+	result, err := hc.config.KubernetesClient.Deployments(apiv1.NamespaceDefault).Create(deployment)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", "updating status", "err", err)
-	} else {
-		level.Info(hc.logger).Log("function", "onAdd", "msg", "UPDATED status", "object", sgCopy)
+		level.Error(hc.logger).Log("msg", err)
+		return
 	}
+
+	level.Info(hc.logger).Log("msg", "created deployment", "name", result.GetObjectMeta().GetName())
 }
 
 func (hc *HabitatController) onUpdate(oldObj, newObj interface{}) {
