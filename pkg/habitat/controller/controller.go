@@ -102,7 +102,12 @@ func (hc *HabitatController) watchCustomResources(ctx context.Context) (cache.Co
 }
 
 func (hc *HabitatController) onAdd(obj interface{}) {
-	sg := obj.(*crv1.ServiceGroup)
+	sg, ok := obj.(*crv1.ServiceGroup)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "unknown event type")
+		return
+	}
+
 	level.Debug(hc.logger).Log("function", "onAdd", "msg", sg.ObjectMeta.SelfLink)
 
 	// Validate object.
@@ -163,6 +168,26 @@ func (hc *HabitatController) onUpdate(oldObj, newObj interface{}) {
 }
 
 func (hc *HabitatController) onDelete(obj interface{}) {
-	sg := obj.(*crv1.ServiceGroup)
-	level.Info(hc.logger).Log("function", "onDelete", "msg", sg.ObjectMeta.SelfLink)
+	sg, ok := obj.(*crv1.ServiceGroup)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "unknown event type")
+		return
+	}
+
+	level.Debug(hc.logger).Log("function", "onDelete", "msg", sg.ObjectMeta.SelfLink)
+
+	deploymentsClient := hc.config.KubernetesClient.Deployments(apiv1.NamespaceDefault)
+	deploymentName := fmt.Sprintf("%s-deployment", sg.Name)
+	deletePolicy := metav1.DeletePropagationForeground
+	deleteOptions := &metav1.DeleteOptions{
+		PropagationPolicy: &deletePolicy,
+	}
+
+	err := deploymentsClient.Delete(deploymentName, deleteOptions)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", err)
+		return
+	}
+
+	level.Info(hc.logger).Log("msg", "deleted deployment", "name", deploymentName)
 }
