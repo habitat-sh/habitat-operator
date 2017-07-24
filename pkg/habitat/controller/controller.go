@@ -130,7 +130,7 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 	// Create a deployment.
 	deployment := &appsv1beta1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%s-deployment", sg.Name),
+			Name: sg.Name,
 		},
 		Spec: appsv1beta1.DeploymentSpec{
 			Replicas: &count,
