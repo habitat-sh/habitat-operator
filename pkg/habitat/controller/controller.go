@@ -27,11 +27,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
 	crv1 "github.com/kinvolk/habitat-operator/pkg/habitat/apis/cr/v1"
+)
+
+const (
+	resyncPeriod = 1 * time.Minute
+	peerFile     = "peer-watch-file"
 )
 
 type HabitatController struct {
@@ -67,15 +73,13 @@ func New(config Config, logger log.Logger) (*HabitatController, error) {
 	return hc, nil
 }
 
-// Run starts a Habitat resource controller
+// Run starts a Habitat resource controller.
 func (hc *HabitatController) Run(ctx context.Context) error {
 	level.Info(hc.logger).Log("msg", "Watching Service Group objects")
 
-	_, err := hc.watchCustomResources(ctx)
-	if err != nil {
-		level.Error(hc.logger).Log("msg", "Failed to register watch for ServiceGroup resource", "err", err)
-		return err
-	}
+	hc.watchCustomResources(ctx)
+
+	hc.watchPods(ctx)
 
 	// This channel is closed when the context is canceled or times out.
 	<-ctx.Done()
@@ -84,7 +88,7 @@ func (hc *HabitatController) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
-func (hc *HabitatController) watchCustomResources(ctx context.Context) (cache.Controller, error) {
+func (hc *HabitatController) watchCustomResources(ctx context.Context) {
 	source := cache.NewListWatchFromClient(
 		hc.config.HabitatClient,
 		crv1.ServiceGroupResourcePlural,
@@ -100,7 +104,7 @@ func (hc *HabitatController) watchCustomResources(ctx context.Context) (cache.Co
 		// resyncPeriod
 		// Every resyncPeriod, all resources in the cache will retrigger events.
 		// Set to 0 to disable the resync.
-		1*time.Minute,
+		resyncPeriod,
 
 		// Your custom resource event handlers.
 		cache.ResourceEventHandlerFuncs{
@@ -111,8 +115,6 @@ func (hc *HabitatController) watchCustomResources(ctx context.Context) (cache.Co
 
 	// The k8sController will start processing events from the API.
 	go k8sController.Run(ctx.Done())
-
-	return k8sController, nil
 }
 
 func (hc *HabitatController) onAdd(obj interface{}) {
@@ -152,7 +154,8 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"habitat": "true",
+						"habitat":       "true",
+						"service-group": sg.Name,
 					},
 				},
 				Spec: apiv1.PodSpec{
@@ -176,11 +179,11 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 							VolumeSource: apiv1.VolumeSource{
 								ConfigMap: &apiv1.ConfigMapVolumeSource{
 									LocalObjectReference: apiv1.LocalObjectReference{
-										Name: configMapName(sg),
+										Name: configMapName(sg.Name),
 									},
 									Items: []apiv1.KeyToPath{
 										{
-											Key:  "peer-watch-file",
+											Key:  peerFile,
 											Path: "peer-ip",
 										},
 									},
@@ -202,27 +205,7 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 	level.Info(hc.logger).Log("msg", "created deployment", "name", d.GetObjectMeta().GetName())
 
 	// Create the ConfigMap for the peer watch file.
-	configMap := &apiv1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: configMapName(sg),
-			// Declare this ConfigMap to be owned by the Deployment, so that deleting
-			// the Deployment deletes the ConfigMap.
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: "extensions/v1beta1",
-					Kind:       "Deployment",
-					Name:       sg.Name,
-					UID:        d.UID,
-				},
-			},
-		},
-		// Initially, the file will be empty. It will be populated by the
-		// controller once the first pod has gotten an IP assigned to it.
-		Data: map[string]string{
-			"peer-watch-file": "",
-		},
-	}
-
+	configMap := newConfigMap(sg.Name, d.UID, "")
 	_, err = hc.config.KubernetesClientset.CoreV1Client.ConfigMaps(apiv1.NamespaceDefault).Create(configMap)
 	if err != nil {
 		level.Error(hc.logger).Log("msg", err)
@@ -266,6 +249,95 @@ func (hc *HabitatController) onDelete(obj interface{}) {
 	level.Info(hc.logger).Log("msg", "deleted deployment", "name", deploymentName)
 }
 
-func configMapName(sg *crv1.ServiceGroup) string {
-	return fmt.Sprintf("%s-peer-file", sg.Name)
+func (hc *HabitatController) watchPods(ctx context.Context) {
+	clw := cache.NewListWatchFromClient(
+		hc.config.KubernetesClientset.CoreV1().RESTClient(),
+		"pods",
+		apiv1.NamespaceAll,
+		fields.Everything())
+
+	_, c := cache.NewInformer(
+		clw,
+		&apiv1.Pod{},
+		resyncPeriod,
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    hc.onPodAdd,
+			UpdateFunc: hc.onPodUpdate,
+			DeleteFunc: hc.onPodDelete,
+		})
+
+	go c.Run(ctx.Done())
+}
+
+func (hc *HabitatController) onPodAdd(obj interface{}) {
+}
+
+func (hc *HabitatController) onPodUpdate(oldObj, newObj interface{}) {
+	// TODO: Do not retrieve or write IP if we are deploying a standalone topology.
+	pod, ok := newObj.(*apiv1.Pod)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to cast pod.")
+		return
+	}
+	_, exists := pod.ObjectMeta.Labels["habitat"]
+	if !exists {
+		return
+	}
+	if pod == nil {
+		return
+	}
+	if pod.Status.Phase != apiv1.PodRunning {
+		return
+	}
+
+	err := hc.writeIP(pod)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", err)
+	}
+}
+
+func (hc *HabitatController) onPodDelete(obj interface{}) {
+	// TODO: Make sure the pod that was deleted was not the same pod
+	// whose IP was in the ConfigMap.
+}
+
+func (hc *HabitatController) writeIP(pod *apiv1.Pod) error {
+	sgName := pod.ObjectMeta.Labels["service-group"]
+	ip := pod.Status.PodIP
+	cmName := configMapName(sgName)
+
+	cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(cmName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	updatedCM := newConfigMap(sgName, cm.UID, ip)
+	_, err = hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Update(updatedCM)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func newConfigMap(sgName string, uid types.UID, ip string) *apiv1.ConfigMap {
+	return &apiv1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: configMapName(sgName),
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "extensions/v1beta1",
+					Kind:       "Deployment",
+					Name:       sgName,
+					UID:        uid,
+				},
+			},
+		},
+		Data: map[string]string{
+			peerFile: ip,
+		},
+	}
+}
+
+func configMapName(sgName string) string {
+	return fmt.Sprintf("%s-peer-file", sgName)
 }
