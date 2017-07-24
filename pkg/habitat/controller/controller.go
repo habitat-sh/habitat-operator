@@ -177,7 +177,7 @@ func (hc *HabitatController) onDelete(obj interface{}) {
 	level.Debug(hc.logger).Log("function", "onDelete", "msg", sg.ObjectMeta.SelfLink)
 
 	deploymentsClient := hc.config.KubernetesClient.Deployments(sg.ObjectMeta.Namespace)
-	deploymentName := fmt.Sprintf("%s-deployment", sg.Name)
+	deploymentName := sg.Name
 	deletePolicy := metav1.DeletePropagationForeground
 	deleteOptions := &metav1.DeleteOptions{
 		PropagationPolicy: &deletePolicy,
