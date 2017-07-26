@@ -223,12 +223,10 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 		},
 	}
 
-	{
-		_, err := hc.config.KubernetesClientset.CoreV1Client.ConfigMaps(apiv1.NamespaceDefault).Create(configMap)
-		if err != nil {
-			level.Error(hc.logger).Log("msg", err)
-			return
-		}
+	_, err = hc.config.KubernetesClientset.CoreV1Client.ConfigMaps(apiv1.NamespaceDefault).Create(configMap)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", err)
+		return
 	}
 
 	level.Debug(hc.logger).Log("msg", "created ConfigMap with peer IP", "object", configMap.Data["peer-ip"])
