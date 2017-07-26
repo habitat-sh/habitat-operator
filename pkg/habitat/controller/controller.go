@@ -168,7 +168,7 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 							VolumeMounts: []apiv1.VolumeMount{
 								{
 									Name:      "config",
-									MountPath: "/kubernetes-configmap",
+									MountPath: "/habitat-operator",
 									ReadOnly:  true,
 								},
 							},
@@ -186,7 +186,7 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 									Items: []apiv1.KeyToPath{
 										{
 											Key:  "peer-watch-file",
-											Path: "peer-watch-file",
+											Path: "peer-ip",
 										},
 									},
 								},
