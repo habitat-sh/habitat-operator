@@ -86,10 +86,9 @@ func run() int {
 	}
 
 	controllerConfig := habitatcontroller.Config{
-		AppsV1beta1Client: clientset.AppsV1beta1Client,
-		CoreV1Client:      clientset.CoreV1Client,
-		HabitatClient:     habitatClient,
-		Scheme:            scheme,
+		HabitatClient:       habitatClient,
+		KubernetesClientset: clientset,
+		Scheme:              scheme,
 	}
 	hc, err := habitatcontroller.New(controllerConfig, log.With(logger, "component", "controller"))
 	if err != nil {

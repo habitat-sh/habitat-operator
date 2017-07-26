@@ -27,8 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/typed/apps/v1beta1"
-	"k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
@@ -41,21 +40,17 @@ type HabitatController struct {
 }
 
 type Config struct {
-	AppsV1beta1Client *v1beta1.AppsV1beta1Client
-	CoreV1Client      *v1.CoreV1Client
-	HabitatClient     *rest.RESTClient
-	Scheme            *runtime.Scheme
+	HabitatClient       *rest.RESTClient
+	KubernetesClientset *kubernetes.Clientset
+	Scheme              *runtime.Scheme
 }
 
 func New(config Config, logger log.Logger) (*HabitatController, error) {
-	if config.AppsV1beta1Client == nil {
-		return nil, errors.New("invalid controller config: no AppsV1beta1Client")
-	}
-	if config.CoreV1Client == nil {
-		return nil, errors.New("invalid controller config: no CoreV1Client")
-	}
 	if config.HabitatClient == nil {
 		return nil, errors.New("invalid controller config: no HabitatClient")
+	}
+	if config.KubernetesClientset == nil {
+		return nil, errors.New("invalid controller config: no KubernetesClientset")
 	}
 	if config.Scheme == nil {
 		return nil, errors.New("invalid controller config: no Schema")
@@ -198,7 +193,7 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 		},
 	}
 
-	d, err := hc.config.AppsV1beta1Client.Deployments(apiv1.NamespaceDefault).Create(deployment)
+	d, err := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(apiv1.NamespaceDefault).Create(deployment)
 	if err != nil {
 		level.Error(hc.logger).Log("msg", err)
 		return
@@ -229,7 +224,7 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 	}
 
 	{
-		_, err := hc.config.CoreV1Client.ConfigMaps(apiv1.NamespaceDefault).Create(configMap)
+		_, err := hc.config.KubernetesClientset.CoreV1Client.ConfigMaps(apiv1.NamespaceDefault).Create(configMap)
 		if err != nil {
 			level.Error(hc.logger).Log("msg", err)
 			return
@@ -254,7 +249,7 @@ func (hc *HabitatController) onDelete(obj interface{}) {
 
 	level.Debug(hc.logger).Log("function", "onDelete", "msg", sg.ObjectMeta.SelfLink)
 
-	deploymentsClient := hc.config.AppsV1beta1Client.Deployments(sg.ObjectMeta.Namespace)
+	deploymentsClient := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(sg.ObjectMeta.Namespace)
 	deploymentName := sg.Name
 
 	// With this policy, dependent resources will be deleted, but we don't wait
