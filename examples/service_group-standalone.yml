@@ -4,5 +4,6 @@ metadata:
   name: example-standalone-service-group
 spec:
   topology: standalone
-  image: tianon/true
+  # the core/nginx habitat service packaged as a Docker image
+  image: kinvolk/nginx-hab
   count: 1
