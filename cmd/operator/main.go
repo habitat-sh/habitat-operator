@@ -86,11 +86,16 @@ func run() int {
 	}
 
 	controllerConfig := habitatcontroller.Config{
-		HabitatClient:    habitatClient,
-		KubernetesClient: clientset.AppsV1beta1Client,
-		Scheme:           scheme,
+		AppsV1beta1Client: clientset.AppsV1beta1Client,
+		CoreV1Client:      clientset.CoreV1Client,
+		HabitatClient:     habitatClient,
+		Scheme:            scheme,
 	}
-	hc := habitatcontroller.New(controllerConfig, log.With(logger, "component", "controller"))
+	hc, err := habitatcontroller.New(controllerConfig, log.With(logger, "component", "controller"))
+	if err != nil {
+		level.Error(logger).Log("msg", err)
+		return 1
+	}
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()

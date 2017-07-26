@@ -40,6 +40,7 @@ func validateCustomObject(sg crv1.ServiceGroup) error {
 			return validationError{msg: "too few instances", Key: "count"}
 		}
 	default:
+		return validationError{msg: "unknown topology", Key: "topology"}
 	}
 
 	return nil
