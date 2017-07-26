@@ -16,6 +16,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -26,7 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/typed/apps/v1beta1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
@@ -39,18 +40,31 @@ type HabitatController struct {
 }
 
 type Config struct {
-	HabitatClient    *rest.RESTClient
-	KubernetesClient *v1beta1.AppsV1beta1Client
-	Scheme           *runtime.Scheme
+	HabitatClient       *rest.RESTClient
+	KubernetesClientset *kubernetes.Clientset
+	Scheme              *runtime.Scheme
 }
 
-func New(config Config, logger log.Logger) HabitatController {
-	hc := HabitatController{
+func New(config Config, logger log.Logger) (*HabitatController, error) {
+	if config.HabitatClient == nil {
+		return nil, errors.New("invalid controller config: no HabitatClient")
+	}
+	if config.KubernetesClientset == nil {
+		return nil, errors.New("invalid controller config: no KubernetesClientset")
+	}
+	if config.Scheme == nil {
+		return nil, errors.New("invalid controller config: no Schema")
+	}
+	if logger == nil {
+		return nil, errors.New("invalid controller config: no logger")
+	}
+
+	hc := &HabitatController{
 		config: config,
 		logger: logger,
 	}
 
-	return hc
+	return hc, nil
 }
 
 // Run starts a Habitat resource controller
@@ -123,11 +137,12 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 
 	level.Debug(hc.logger).Log("msg", "validated object")
 
+	// Create a deployment.
+
 	// This value needs to be passed as a *int32, so we convert it, assign it to a
 	// variable and afterwards pass a pointer to it.
 	count := int32(sg.Spec.Count)
 
-	// Create a deployment.
 	deployment := &appsv1beta1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: sg.Name,
@@ -145,6 +160,32 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 						{
 							Name:  "habitat-service",
 							Image: sg.Spec.Image,
+							VolumeMounts: []apiv1.VolumeMount{
+								{
+									Name:      "config",
+									MountPath: "/habitat-operator",
+									ReadOnly:  true,
+								},
+							},
+						},
+					},
+					// Define the volume for the ConfigMap.
+					Volumes: []apiv1.Volume{
+						{
+							Name: "config",
+							VolumeSource: apiv1.VolumeSource{
+								ConfigMap: &apiv1.ConfigMapVolumeSource{
+									LocalObjectReference: apiv1.LocalObjectReference{
+										Name: configMapName(sg),
+									},
+									Items: []apiv1.KeyToPath{
+										{
+											Key:  "peer-watch-file",
+											Path: "peer-ip",
+										},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -152,13 +193,43 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 		},
 	}
 
-	result, err := hc.config.KubernetesClient.Deployments(apiv1.NamespaceDefault).Create(deployment)
+	d, err := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(apiv1.NamespaceDefault).Create(deployment)
 	if err != nil {
 		level.Error(hc.logger).Log("msg", err)
 		return
 	}
 
-	level.Info(hc.logger).Log("msg", "created deployment", "name", result.GetObjectMeta().GetName())
+	level.Info(hc.logger).Log("msg", "created deployment", "name", d.GetObjectMeta().GetName())
+
+	// Create the ConfigMap for the peer watch file.
+	configMap := &apiv1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: configMapName(sg),
+			// Declare this ConfigMap to be owned by the Deployment, so that deleting
+			// the Deployment deletes the ConfigMap.
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: "extensions/v1beta1",
+					Kind:       "Deployment",
+					Name:       sg.Name,
+					UID:        d.UID,
+				},
+			},
+		},
+		// Initially, the file will be empty. It will be populated by the
+		// controller once the first pod has gotten an IP assigned to it.
+		Data: map[string]string{
+			"peer-watch-file": "",
+		},
+	}
+
+	_, err = hc.config.KubernetesClientset.CoreV1Client.ConfigMaps(apiv1.NamespaceDefault).Create(configMap)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", err)
+		return
+	}
+
+	level.Debug(hc.logger).Log("msg", "created ConfigMap with peer IP", "object", configMap.Data["peer-ip"])
 }
 
 func (hc *HabitatController) onUpdate(oldObj, newObj interface{}) {
@@ -176,9 +247,12 @@ func (hc *HabitatController) onDelete(obj interface{}) {
 
 	level.Debug(hc.logger).Log("function", "onDelete", "msg", sg.ObjectMeta.SelfLink)
 
-	deploymentsClient := hc.config.KubernetesClient.Deployments(sg.ObjectMeta.Namespace)
+	deploymentsClient := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(sg.ObjectMeta.Namespace)
 	deploymentName := sg.Name
-	deletePolicy := metav1.DeletePropagationForeground
+
+	// With this policy, dependent resources will be deleted, but we don't wait
+	// for that to happen.
+	deletePolicy := metav1.DeletePropagationBackground
 	deleteOptions := &metav1.DeleteOptions{
 		PropagationPolicy: &deletePolicy,
 	}
@@ -190,4 +264,8 @@ func (hc *HabitatController) onDelete(obj interface{}) {
 	}
 
 	level.Info(hc.logger).Log("msg", "deleted deployment", "name", deploymentName)
+}
+
+func configMapName(sg *crv1.ServiceGroup) string {
+	return fmt.Sprintf("%s-peer-file", sg.Name)
 }
