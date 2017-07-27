@@ -33,7 +33,7 @@ func (err validationError) Error() string {
 func validateCustomObject(sg crv1.ServiceGroup) error {
 	spec := sg.Spec
 
-	switch spec.Topology {
+	switch spec.Habitat.Topology {
 	case crv1.TopologyStandalone:
 	case crv1.TopologyLeaderFollower:
 		if spec.Count < leaderFollowerTopologyMinCount {

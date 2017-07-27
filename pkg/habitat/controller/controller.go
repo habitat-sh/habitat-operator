@@ -138,8 +138,8 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 	level.Debug(hc.logger).Log("msg", "validated object")
 
 	group := "default"
-	if sg.Spec.Group != "" {
-		group = sg.Spec.Group
+	if sg.Spec.Habitat.Group != "" {
+		group = sg.Spec.Habitat.Group
 	}
 
 	// This value needs to be passed as a *int32, so we convert it, assign it to a

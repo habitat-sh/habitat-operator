@@ -29,11 +29,10 @@ type ServiceGroup struct {
 
 type ServiceGroupSpec struct {
 	// Count is the amount of Services to start in this Service Group.
-	Count int    `json:"count"`
-	Group string `json:"group"`
+	Count int `json:"count"`
 	// Image is the Docker image of the Habitat Service.
-	Image    string `json:"image"`
-	Topology `json:"topology"`
+	Image   string  `json:"image"`
+	Habitat Habitat `json:"habitat"`
 }
 
 type ServiceGroupStatus struct {
@@ -42,6 +41,14 @@ type ServiceGroupStatus struct {
 }
 
 type ServiceGroupState string
+
+type Habitat struct {
+	// Group is the value of the --group flag for the hab client.
+	// Optional. Defaults to `default`.
+	Group string `json:"group"`
+	// Topology is the value of the --topology flag for the hab client.
+	Topology `json:"topology"`
+}
 
 type Topology string
 
