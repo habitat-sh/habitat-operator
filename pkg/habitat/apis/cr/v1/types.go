@@ -18,16 +18,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const ServiceGroupResourcePlural = "servicegroups"
+const HabitatServiceResourcePlural = "habitatservices"
 
-type ServiceGroup struct {
+type HabitatService struct {
 	metav1.TypeMeta   `json:,inline"`
 	metav1.ObjectMeta `json:"metadata"`
-	Spec              ServiceGroupSpec   `json:"spec"`
-	Status            ServiceGroupStatus `json:"status,omitempty"`
+	Spec              HabitatServiceSpec   `json:"spec"`
+	Status            HabitatServiceStatus `json:"status,omitempty"`
 }
 
-type ServiceGroupSpec struct {
+type HabitatServiceSpec struct {
 	// Count is the amount of Services to start in this Service Group.
 	Count int `json:"count"`
 	// Image is the Docker image of the Habitat Service.
@@ -35,25 +35,25 @@ type ServiceGroupSpec struct {
 	Topology `json:"topology"`
 }
 
-type ServiceGroupStatus struct {
-	State   ServiceGroupState `json:"state,omitempty"`
-	Message string            `json:"message,omitempty"`
+type HabitatServiceStatus struct {
+	State   HabitatServiceState `json:"state,omitempty"`
+	Message string              `json:"message,omitempty"`
 }
 
-type ServiceGroupState string
+type HabitatServiceState string
 
 type Topology string
 
 const (
-	ServiceGroupStateCreated   ServiceGroupState = "Created"
-	ServiceGroupStateProcessed ServiceGroupState = "Processed"
+	HabitatServiceStateCreated   HabitatServiceState = "Created"
+	HabitatServiceStateProcessed HabitatServiceState = "Processed"
 
 	TopologyStandalone     Topology = "standalone"
 	TopologyLeaderFollower Topology = "leader-follower"
 )
 
-type ServiceGroupList struct {
+type HabitatServiceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
-	Items           []ServiceGroup `json:"items"`
+	Items           []HabitatService `json:"items"`
 }

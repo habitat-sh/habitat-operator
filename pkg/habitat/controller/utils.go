@@ -30,8 +30,8 @@ func (err validationError) Error() string {
 	return err.msg
 }
 
-func validateCustomObject(sg crv1.ServiceGroup) error {
-	spec := sg.Spec
+func validateCustomObject(hs crv1.HabitatService) error {
+	spec := hs.Spec
 
 	switch spec.Topology {
 	case crv1.TopologyStandalone:

@@ -73,7 +73,7 @@ func (hc *HabitatController) Run(ctx context.Context) error {
 
 	_, err := hc.watchCustomResources(ctx)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", "Failed to register watch for ServiceGroup resource", "err", err)
+		level.Error(hc.logger).Log("msg", "Failed to register watch for HabitatService resource", "err", err)
 		return err
 	}
 
@@ -87,7 +87,7 @@ func (hc *HabitatController) Run(ctx context.Context) error {
 func (hc *HabitatController) watchCustomResources(ctx context.Context) (cache.Controller, error) {
 	source := cache.NewListWatchFromClient(
 		hc.config.HabitatClient,
-		crv1.ServiceGroupResourcePlural,
+		crv1.HabitatServiceResourcePlural,
 		apiv1.NamespaceAll,
 		fields.Everything())
 
@@ -95,7 +95,7 @@ func (hc *HabitatController) watchCustomResources(ctx context.Context) (cache.Co
 		source,
 
 		// The object type.
-		&crv1.ServiceGroup{},
+		&crv1.HabitatService{},
 
 		// resyncPeriod
 		// Every resyncPeriod, all resources in the cache will retrigger events.
@@ -116,16 +116,16 @@ func (hc *HabitatController) watchCustomResources(ctx context.Context) (cache.Co
 }
 
 func (hc *HabitatController) onAdd(obj interface{}) {
-	sg, ok := obj.(*crv1.ServiceGroup)
+	hs, ok := obj.(*crv1.HabitatService)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "unknown event type")
 		return
 	}
 
-	level.Debug(hc.logger).Log("function", "onAdd", "msg", sg.ObjectMeta.SelfLink)
+	level.Debug(hc.logger).Log("function", "onAdd", "msg", hs.ObjectMeta.SelfLink)
 
 	// Validate object.
-	if err := validateCustomObject(*sg); err != nil {
+	if err := validateCustomObject(*hs); err != nil {
 		if vErr, ok := err.(validationError); ok {
 			level.Error(hc.logger).Log("type", "validation error", "msg", err, "key", vErr.Key)
 			return
@@ -141,11 +141,11 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 
 	// This value needs to be passed as a *int32, so we convert it, assign it to a
 	// variable and afterwards pass a pointer to it.
-	count := int32(sg.Spec.Count)
+	count := int32(hs.Spec.Count)
 
 	deployment := &appsv1beta1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: sg.Name,
+			Name: hs.Name,
 		},
 		Spec: appsv1beta1.DeploymentSpec{
 			Replicas: &count,
@@ -159,7 +159,7 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 					Containers: []apiv1.Container{
 						{
 							Name:  "habitat-service",
-							Image: sg.Spec.Image,
+							Image: hs.Spec.Image,
 							VolumeMounts: []apiv1.VolumeMount{
 								{
 									Name:      "config",
@@ -176,7 +176,7 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 							VolumeSource: apiv1.VolumeSource{
 								ConfigMap: &apiv1.ConfigMapVolumeSource{
 									LocalObjectReference: apiv1.LocalObjectReference{
-										Name: configMapName(sg),
+										Name: configMapName(hs),
 									},
 									Items: []apiv1.KeyToPath{
 										{
@@ -204,14 +204,14 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 	// Create the ConfigMap for the peer watch file.
 	configMap := &apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: configMapName(sg),
+			Name: configMapName(hs),
 			// Declare this ConfigMap to be owned by the Deployment, so that deleting
 			// the Deployment deletes the ConfigMap.
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: "extensions/v1beta1",
 					Kind:       "Deployment",
-					Name:       sg.Name,
+					Name:       hs.Name,
 					UID:        d.UID,
 				},
 			},
@@ -233,22 +233,22 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 }
 
 func (hc *HabitatController) onUpdate(oldObj, newObj interface{}) {
-	oldServiceGroup := oldObj.(*crv1.ServiceGroup)
-	newServiceGroup := newObj.(*crv1.ServiceGroup)
-	level.Info(hc.logger).Log("function", "onUpdate", "msg", fmt.Sprintf("oldObj: %s, newObj: %s", oldServiceGroup.ObjectMeta.SelfLink, newServiceGroup.ObjectMeta.SelfLink))
+	oldHabitatService := oldObj.(*crv1.HabitatService)
+	newHabitatService := newObj.(*crv1.HabitatService)
+	level.Info(hc.logger).Log("function", "onUpdate", "msg", fmt.Sprintf("oldObj: %s, newObj: %s", oldHabitatService.ObjectMeta.SelfLink, newHabitatService.ObjectMeta.SelfLink))
 }
 
 func (hc *HabitatController) onDelete(obj interface{}) {
-	sg, ok := obj.(*crv1.ServiceGroup)
+	hs, ok := obj.(*crv1.HabitatService)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "unknown event type")
 		return
 	}
 
-	level.Debug(hc.logger).Log("function", "onDelete", "msg", sg.ObjectMeta.SelfLink)
+	level.Debug(hc.logger).Log("function", "onDelete", "msg", hs.ObjectMeta.SelfLink)
 
-	deploymentsClient := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(sg.ObjectMeta.Namespace)
-	deploymentName := sg.Name
+	deploymentsClient := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(hs.ObjectMeta.Namespace)
+	deploymentName := hs.Name
 
 	// With this policy, dependent resources will be deleted, but we don't wait
 	// for that to happen.
@@ -266,6 +266,6 @@ func (hc *HabitatController) onDelete(obj interface{}) {
 	level.Info(hc.logger).Log("msg", "deleted deployment", "name", deploymentName)
 }
 
-func configMapName(sg *crv1.ServiceGroup) string {
-	return fmt.Sprintf("%s-peer-file", sg.Name)
+func configMapName(hs *crv1.HabitatService) string {
+	return fmt.Sprintf("%s-peer-file", hs.Name)
 }
