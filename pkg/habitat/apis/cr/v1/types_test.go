@@ -26,17 +26,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
-var _ runtime.Object = &ServiceGroup{}
-var _ metav1.ObjectMetaAccessor = &ServiceGroup{}
+var _ runtime.Object = &HabitatService{}
+var _ metav1.ObjectMetaAccessor = &HabitatService{}
 
-var _ runtime.Object = &ServiceGroupList{}
-var _ metav1.ListMetaAccessor = &ServiceGroupList{}
+var _ runtime.Object = &HabitatServiceList{}
+var _ metav1.ListMetaAccessor = &HabitatServiceList{}
 
-func serviceGroupFuzzerFuncs(t apitesting.TestingCommon) []interface{} {
+func HabitatServiceFuzzerFuncs(t apitesting.TestingCommon) []interface{} {
 	return []interface{}{
-		func(obj *ServiceGroupList, c fuzz.Continue) {
+		func(obj *HabitatServiceList, c fuzz.Continue) {
 			c.FuzzNoCustom(obj)
-			obj.Items = make([]ServiceGroup, c.Intn(10))
+			obj.Items = make([]HabitatService, c.Intn(10))
 			for i := range obj.Items {
 				c.Fuzz(&obj.Items[i])
 			}
@@ -53,9 +53,9 @@ func TestRoundTrip(t *testing.T) {
 	AddToScheme(scheme)
 
 	seed := rand.Int63()
-	fuzzerFuncs := apitesting.MergeFuzzerFuncs(t, apitesting.GenericFuzzerFuncs(t, codecs), serviceGroupFuzzerFuncs(t))
+	fuzzerFuncs := apitesting.MergeFuzzerFuncs(t, apitesting.GenericFuzzerFuncs(t, codecs), HabitatServiceFuzzerFuncs(t))
 	fuzzer := apitesting.FuzzerFor(fuzzerFuncs, rand.NewSource(seed))
 
-	apitesting.RoundTripSpecificKindWithoutProtobuf(t, SchemeGroupVersion.WithKind("ServiceGroup"), scheme, codecs, fuzzer, nil)
-	apitesting.RoundTripSpecificKindWithoutProtobuf(t, SchemeGroupVersion.WithKind("ServiceGroupList"), scheme, codecs, fuzzer, nil)
+	apitesting.RoundTripSpecificKindWithoutProtobuf(t, SchemeGroupVersion.WithKind("HabitatService"), scheme, codecs, fuzzer, nil)
+	apitesting.RoundTripSpecificKindWithoutProtobuf(t, SchemeGroupVersion.WithKind("HabitatServiceList"), scheme, codecs, fuzzer, nil)
 }

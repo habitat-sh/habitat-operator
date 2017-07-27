@@ -29,28 +29,28 @@ import (
 )
 
 const (
-	serviceGroupCRDName           = crv1.ServiceGroupResourcePlural + "." + crv1.GroupName
-	serviceGroupResourceShortName = "sg"
+	HabitatServiceCRDName           = crv1.HabitatServiceResourcePlural + "." + crv1.GroupName
+	HabitatServiceResourceShortName = "hs"
 
 	pollInterval = 500 * time.Millisecond
 	timeOut      = 10 * time.Second
 )
 
-// CreateCRD creates the ServiceGroup Custom Resource Definition.
+// CreateCRD creates the HabitatService Custom Resource Definition.
 // It checks if creation has completed successfully, and deletes the CRD in case of error.
 func CreateCRD(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.CustomResourceDefinition, error) {
 	crd := &apiextensionsv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: serviceGroupCRDName,
+			Name: HabitatServiceCRDName,
 		},
 		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
 			Group:   crv1.GroupName,
 			Version: crv1.SchemeGroupVersion.Version,
 			Scope:   apiextensionsv1beta1.NamespaceScoped,
 			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
-				Plural:     crv1.ServiceGroupResourcePlural,
-				Kind:       reflect.TypeOf(crv1.ServiceGroup{}).Name(),
-				ShortNames: []string{serviceGroupResourceShortName},
+				Plural:     crv1.HabitatServiceResourcePlural,
+				Kind:       reflect.TypeOf(crv1.HabitatService{}).Name(),
+				ShortNames: []string{HabitatServiceResourceShortName},
 			},
 		},
 	}
@@ -62,7 +62,7 @@ func CreateCRD(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.C
 
 	// wait for CRD being established.
 	err = wait.Poll(pollInterval, timeOut, func() (bool, error) {
-		crd, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(serviceGroupCRDName, metav1.GetOptions{})
+		crd, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(HabitatServiceCRDName, metav1.GetOptions{})
 
 		if err != nil {
 			return false, err
@@ -87,7 +87,7 @@ func CreateCRD(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.C
 
 	// delete CRD if there was an error.
 	if err != nil {
-		deleteErr := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(serviceGroupCRDName, nil)
+		deleteErr := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(HabitatServiceCRDName, nil)
 		if deleteErr != nil {
 			return nil, errors.NewAggregate([]error{err, deleteErr})
 		}
@@ -98,17 +98,17 @@ func CreateCRD(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.C
 	return crd, nil
 }
 
-// WaitForServiceGroupInstanceProcessed polls the API for a specific ServiceGroup with a state of "Processed".
-func WaitForServiceGroupInstanceProcessed(client *rest.RESTClient, name string) error {
+// WaitForHabitatServiceInstanceProcessed polls the API for a specific HabitatService with a state of "Processed".
+func WaitForHabitatServiceInstanceProcessed(client *rest.RESTClient, name string) error {
 	return wait.Poll(100*time.Millisecond, 10*time.Second, func() (bool, error) {
-		var sg crv1.ServiceGroup
+		var hs crv1.HabitatService
 		err := client.Get().
-			Resource(crv1.ServiceGroupResourcePlural).
+			Resource(crv1.HabitatServiceResourcePlural).
 			Namespace(apiv1.NamespaceDefault).
 			Name(name).
-			Do().Into(&sg)
+			Do().Into(&hs)
 
-		if err == nil && sg.Status.State == crv1.ServiceGroupStateProcessed {
+		if err == nil && hs.Status.State == crv1.HabitatServiceStateProcessed {
 			return true, nil
 		}
 

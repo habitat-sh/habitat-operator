@@ -1,7 +1,7 @@
 apiVersion: habitat.sh/v1
-kind: ServiceGroup
+kind: HabitatService
 metadata:
-  name: example-leader-follower-service-group
+  name: example-leader-follower-habitat-service
 spec:
   topology: leader-follower
   # the core/consul habitat service packaged as a Docker image
