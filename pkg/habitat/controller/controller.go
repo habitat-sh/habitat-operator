@@ -137,12 +137,16 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 
 	level.Debug(hc.logger).Log("msg", "validated object")
 
-	// Create a deployment.
+	group := "default"
+	if sg.Spec.Habitat.Group != "" {
+		group = sg.Spec.Habitat.Group
+	}
 
 	// This value needs to be passed as a *int32, so we convert it, assign it to a
 	// variable and afterwards pass a pointer to it.
 	count := int32(sg.Spec.Count)
 
+	// Create a deployment.
 	deployment := &appsv1beta1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: sg.Name,
@@ -160,6 +164,9 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 						{
 							Name:  "habitat-service",
 							Image: sg.Spec.Image,
+							Args: []string{
+								"--group", group,
+							},
 							VolumeMounts: []apiv1.VolumeMount{
 								{
 									Name:      "config",

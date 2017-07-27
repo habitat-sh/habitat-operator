@@ -3,7 +3,10 @@ kind: ServiceGroup
 metadata:
   name: example-standalone-service-group
 spec:
-  topology: standalone
   # the core/nginx habitat service packaged as a Docker image
   image: kinvolk/nginx-hab
   count: 1
+  habitat:
+    topology: standalone
+    # if not present, defaults to "default"
+    group: foobar
