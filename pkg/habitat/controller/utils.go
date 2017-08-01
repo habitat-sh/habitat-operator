@@ -16,6 +16,11 @@ package controller
 
 import (
 	crv1 "github.com/kinvolk/habitat-operator/pkg/habitat/apis/cr/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/tools/cache"
 )
 
 const leaderFollowerTopologyMinCount = 3
@@ -44,4 +49,28 @@ func validateCustomObject(sg crv1.ServiceGroup) error {
 	}
 
 	return nil
+}
+
+// newListWatchFromClientWithLabels is a modified newListWatchFromClient function from listWatch.
+// Instead of using fields to filter, we modify the function to use labels.
+func newListWatchFromClientWithLabels(c cache.Getter, resource string, namespace string, labelSelector labels.Selector) *cache.ListWatch {
+	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
+		return c.Get().
+			Namespace(namespace).
+			Resource(resource).
+			VersionedParams(&options, metav1.ParameterCodec).
+			LabelsSelectorParam(labelSelector).
+			Do().
+			Get()
+	}
+	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
+		options.Watch = true
+		return c.Get().
+			Namespace(namespace).
+			Resource(resource).
+			VersionedParams(&options, metav1.ParameterCodec).
+			LabelsSelectorParam(labelSelector).
+			Watch()
+	}
+	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 }

@@ -26,6 +26,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -257,11 +258,12 @@ func (hc *HabitatController) onDelete(obj interface{}) {
 }
 
 func (hc *HabitatController) watchPods(ctx context.Context) {
-	clw := cache.NewListWatchFromClient(
+	ls := labels.SelectorFromSet(labels.Set(map[string]string{"habitat": "true"}))
+	clw := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
 		"pods",
 		apiv1.NamespaceAll,
-		fields.Everything())
+		ls)
 
 	_, c := cache.NewInformer(
 		clw,
@@ -284,10 +286,6 @@ func (hc *HabitatController) onPodUpdate(oldObj, newObj interface{}) {
 	pod, ok := newObj.(*apiv1.Pod)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to cast pod.")
-		return
-	}
-	_, exists := pod.ObjectMeta.Labels["habitat"]
-	if !exists {
 		return
 	}
 	if pod == nil {
