@@ -302,8 +302,46 @@ func (hc *HabitatController) onPodUpdate(oldObj, newObj interface{}) {
 }
 
 func (hc *HabitatController) onPodDelete(obj interface{}) {
-	// TODO: Make sure the pod that was deleted was not the same pod
-	// whose IP was in the ConfigMap.
+	pod, ok := obj.(*apiv1.Pod)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to cast pod.")
+		return
+	}
+	if pod == nil {
+		return
+	}
+	sgName := pod.ObjectMeta.Labels["service-group"]
+	cmName := configMapName(sgName)
+	cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(cmName, metav1.GetOptions{})
+	if err != nil {
+		level.Error(hc.logger).Log("msg", err)
+		return
+	}
+	currIP := cm.Data[peerFile]
+	deletedPodIP := pod.Status.PodIP
+	if currIP != deletedPodIP {
+		return
+	}
+	// Get only those pods that are running.
+	fs := fields.SelectorFromSet(fields.Set{
+		"status.phase": "Running",
+	})
+	podList, err := hc.config.KubernetesClientset.CoreV1().Pods(apiv1.NamespaceDefault).List(metav1.ListOptions{FieldSelector: fs.String()})
+	if err != nil {
+		level.Error(hc.logger).Log("msg", err)
+		return
+	}
+	for i := range podList.Items {
+		newPod := &podList.Items[i]
+		if newPod.Status.Phase == apiv1.PodRunning {
+			// Replace our IP in the CM file with a new IP of a running pod.
+			err := hc.writeIP(newPod)
+			if err != nil {
+				level.Error(hc.logger).Log("msg", err)
+			}
+			return
+		}
+	}
 }
 
 func (hc *HabitatController) writeIP(pod *apiv1.Pod) error {
