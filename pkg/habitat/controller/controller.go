@@ -294,10 +294,10 @@ func (hc *HabitatController) onPodUpdate(oldObj, newObj interface{}) {
 	if pod.Status.Phase != apiv1.PodRunning {
 		return
 	}
-
 	err := hc.writeIP(pod)
 	if err != nil {
 		level.Error(hc.logger).Log("msg", err)
+		return
 	}
 }
 
@@ -308,14 +308,31 @@ func (hc *HabitatController) onPodDelete(obj interface{}) {
 
 func (hc *HabitatController) writeIP(pod *apiv1.Pod) error {
 	sgName := pod.ObjectMeta.Labels["service-group"]
-	ip := pod.Status.PodIP
 	cmName := configMapName(sgName)
+	ip := pod.Status.PodIP
 
 	cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(cmName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-
+	oldIP := cm.Data[peerFile]
+	if oldIP != "" {
+		// Do not overwrite IP with itself.
+		if ip == oldIP {
+			return nil
+		}
+		podList, err := hc.config.KubernetesClientset.CoreV1().Pods(apiv1.NamespaceDefault).List(metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+		for i := range podList.Items {
+			oldPod := &podList.Items[i]
+			// Do not write a new IP if pod with the IP in the CM is still running.
+			if oldPod.Status.PodIP == oldIP && oldPod.Status.Phase == apiv1.PodRunning {
+				return nil
+			}
+		}
+	}
 	updatedCM := newConfigMap(sgName, cm.UID, ip)
 	_, err = hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Update(updatedCM)
 	if err != nil {
