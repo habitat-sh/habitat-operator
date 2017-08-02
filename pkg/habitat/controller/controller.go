@@ -310,7 +310,11 @@ func (hc *HabitatController) onPodDelete(obj interface{}) {
 	if pod == nil {
 		return
 	}
-	sgName := pod.ObjectMeta.Labels["service-group"]
+	sgName, exists := pod.ObjectMeta.Labels["service-group"]
+	if !exists {
+		level.Error(hc.logger).Log("msg", "Could not retrieve service group name because label did not exist.")
+		return
+	}
 	cmName := configMapName(sgName)
 	cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(cmName, metav1.GetOptions{})
 	if err != nil {
@@ -331,11 +335,10 @@ func (hc *HabitatController) onPodDelete(obj interface{}) {
 		level.Error(hc.logger).Log("msg", err)
 		return
 	}
-	for i := range podList.Items {
-		newPod := &podList.Items[i]
+	for _, newPod := range podList.Items {
 		if newPod.Status.Phase == apiv1.PodRunning {
 			// Replace our IP in the CM file with a new IP of a running pod.
-			err := hc.writeIP(newPod)
+			err := hc.writeIP(&newPod)
 			if err != nil {
 				level.Error(hc.logger).Log("msg", err)
 			}
@@ -363,8 +366,7 @@ func (hc *HabitatController) writeIP(pod *apiv1.Pod) error {
 		if err != nil {
 			return err
 		}
-		for i := range podList.Items {
-			oldPod := &podList.Items[i]
+		for _, oldPod := range podList.Items {
 			// Do not write a new IP if pod with the IP in the CM is still running.
 			if oldPod.Status.PodIP == oldIP && oldPod.Status.Phase == apiv1.PodRunning {
 				return nil
