@@ -26,6 +26,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -257,11 +258,12 @@ func (hc *HabitatController) onDelete(obj interface{}) {
 }
 
 func (hc *HabitatController) watchPods(ctx context.Context) {
-	clw := cache.NewListWatchFromClient(
+	ls := labels.SelectorFromSet(labels.Set(map[string]string{"habitat": "true"}))
+	clw := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
 		"pods",
 		apiv1.NamespaceAll,
-		fields.Everything())
+		ls)
 
 	_, c := cache.NewInformer(
 		clw,
@@ -286,38 +288,91 @@ func (hc *HabitatController) onPodUpdate(oldObj, newObj interface{}) {
 		level.Error(hc.logger).Log("msg", "Failed to cast pod.")
 		return
 	}
-	_, exists := pod.ObjectMeta.Labels["habitat"]
-	if !exists {
-		return
-	}
 	if pod == nil {
 		return
 	}
 	if pod.Status.Phase != apiv1.PodRunning {
 		return
 	}
-
 	err := hc.writeIP(pod)
 	if err != nil {
 		level.Error(hc.logger).Log("msg", err)
+		return
 	}
 }
 
 func (hc *HabitatController) onPodDelete(obj interface{}) {
-	// TODO: Make sure the pod that was deleted was not the same pod
-	// whose IP was in the ConfigMap.
+	pod, ok := obj.(*apiv1.Pod)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to cast pod.")
+		return
+	}
+	if pod == nil {
+		return
+	}
+	sgName, exists := pod.ObjectMeta.Labels["service-group"]
+	if !exists {
+		level.Error(hc.logger).Log("msg", "Could not retrieve service group name because label did not exist.")
+		return
+	}
+	cmName := configMapName(sgName)
+	cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(cmName, metav1.GetOptions{})
+	if err != nil {
+		level.Error(hc.logger).Log("msg", err)
+		return
+	}
+	currIP := cm.Data[peerFile]
+	deletedPodIP := pod.Status.PodIP
+	if currIP != deletedPodIP {
+		return
+	}
+	// Get only those pods that are running.
+	fs := fields.SelectorFromSet(fields.Set{
+		"status.phase": "Running",
+	})
+	podList, err := hc.config.KubernetesClientset.CoreV1().Pods(apiv1.NamespaceDefault).List(metav1.ListOptions{FieldSelector: fs.String()})
+	if err != nil {
+		level.Error(hc.logger).Log("msg", err)
+		return
+	}
+	for _, newPod := range podList.Items {
+		if newPod.Status.Phase == apiv1.PodRunning {
+			// Replace our IP in the CM file with a new IP of a running pod.
+			err := hc.writeIP(&newPod)
+			if err != nil {
+				level.Error(hc.logger).Log("msg", err)
+			}
+			return
+		}
+	}
 }
 
 func (hc *HabitatController) writeIP(pod *apiv1.Pod) error {
 	sgName := pod.ObjectMeta.Labels["service-group"]
-	ip := pod.Status.PodIP
 	cmName := configMapName(sgName)
+	ip := pod.Status.PodIP
 
 	cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(cmName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-
+	oldIP := cm.Data[peerFile]
+	if oldIP != "" {
+		// Do not overwrite IP with itself.
+		if ip == oldIP {
+			return nil
+		}
+		podList, err := hc.config.KubernetesClientset.CoreV1().Pods(apiv1.NamespaceDefault).List(metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+		for _, oldPod := range podList.Items {
+			// Do not write a new IP if pod with the IP in the CM is still running.
+			if oldPod.Status.PodIP == oldIP && oldPod.Status.Phase == apiv1.PodRunning {
+				return nil
+			}
+		}
+	}
 	updatedCM := newConfigMap(sgName, cm.UID, ip)
 	_, err = hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Update(updatedCM)
 	if err != nil {
