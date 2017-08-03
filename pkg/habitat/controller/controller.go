@@ -42,6 +42,8 @@ const (
 	resyncPeriod = 1 * time.Minute
 	peerFile     = "peer-ip"
 	userTomlFile = "user.toml"
+	configMapDir = "/habitat-operator"
+	peerFilename = "peer-watch-file"
 
 	// The key under which the ring key is stored in the Kubernetes Secret.
 	ringSecretKey = "ring-key"
@@ -449,7 +451,7 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 							VolumeMounts: []apiv1.VolumeMount{
 								{
 									Name:      "config",
-									MountPath: "/habitat-operator",
+									MountPath: configMapDir,
 									ReadOnly:  true,
 								},
 							},
@@ -467,7 +469,7 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 									Items: []apiv1.KeyToPath{
 										{
 											Key:  peerFile,
-											Path: peerFile,
+											Path: peerFilename,
 										},
 									},
 								},
