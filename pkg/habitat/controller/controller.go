@@ -207,6 +207,7 @@ func (hc *HabitatController) getRunningPods(namespace, label string) ([]apiv1.Po
 	})
 	ls := fields.SelectorFromSet(fields.Set(map[string]string{
 		crv1.ServiceGroupLabel: label,
+		"topology":             "leader",
 	}))
 
 	running := metav1.ListOptions{
@@ -440,6 +441,7 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 					Labels: map[string]string{
 						"habitat":              "true",
 						crv1.ServiceGroupLabel: sg.Name,
+						"topology":             topology,
 					},
 				},
 				Spec: apiv1.PodSpec{
