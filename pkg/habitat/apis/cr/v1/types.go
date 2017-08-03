@@ -66,8 +66,8 @@ const (
 	ServiceGroupStateCreated   ServiceGroupState = "Created"
 	ServiceGroupStateProcessed ServiceGroupState = "Processed"
 
-	TopologyStandalone     Topology = "standalone"
-	TopologyLeaderFollower Topology = "leader-follower"
+	TopologyStandalone Topology = "standalone"
+	TopologyLeader     Topology = "leader"
 )
 
 type ServiceGroupList struct {

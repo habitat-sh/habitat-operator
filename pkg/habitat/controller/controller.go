@@ -430,6 +430,23 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 			"--group", sg.Spec.Habitat.Group)
 	}
 
+	// As we want to label our pods with the
+	// topology type we set standalone as the default one.
+	// We do no need to pass this to habitat, as if no topology
+	// is set, habitat by default sets standalone topology.
+	topology := crv1.TopologyStandalone
+
+	if sg.Spec.Habitat.Topology == crv1.TopologyLeader {
+		topology = crv1.TopologyLeader
+
+		path := fmt.Sprintf("%s/%s", configMapDir, peerFilename)
+
+		habArgs = append(habArgs,
+			"--topology", string(topology),
+			"--peer-watch-file", string(path),
+		)
+	}
+
 	base := &appsv1beta1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: sg.Name,
@@ -441,7 +458,7 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 					Labels: map[string]string{
 						"habitat":              "true",
 						crv1.ServiceGroupLabel: sg.Name,
-						"topology":             topology,
+						"topology":             string(topology),
 					},
 				},
 				Spec: apiv1.PodSpec{
