@@ -1,0 +1,10 @@
+apiVersion: habitat.sh/v1
+kind: ServiceGroup
+metadata:
+  name: example-nodejs-service-group
+spec:
+  image: kinvolk/nodejs-hab
+  count: 1
+  habitat:
+    topology: standalone
+    group: nodejs
