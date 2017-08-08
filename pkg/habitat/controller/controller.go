@@ -40,10 +40,12 @@ import (
 
 const (
 	resyncPeriod = 1 * time.Minute
-	peerFile     = "peer-ip"
+
 	userTomlFile = "user.toml"
 	configMapDir = "/habitat-operator"
-	peerFilename = "peer-watch-file"
+
+	peerFilename = "peer-ip"
+	peerFile     = "peer-watch-file"
 
 	// The key under which the ring key is stored in the Kubernetes Secret.
 	ringSecretKey = "ring-key"
