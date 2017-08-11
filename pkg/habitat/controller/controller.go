@@ -373,7 +373,14 @@ func (hc *HabitatController) writeIP(pod *apiv1.Pod) error {
 			}
 		}
 	}
-	updatedCM := newConfigMap(sgName, cm.UID, ip)
+
+	// We need to retrieve our deployment to get the UID for the OwnerReference.
+	d, err := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(apiv1.NamespaceDefault).Get(sgName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	updatedCM := newConfigMap(sgName, d.UID, ip)
 	_, err = hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Update(updatedCM)
 	if err != nil {
 		return err
@@ -381,7 +388,7 @@ func (hc *HabitatController) writeIP(pod *apiv1.Pod) error {
 	return nil
 }
 
-func newConfigMap(sgName string, uid types.UID, ip string) *apiv1.ConfigMap {
+func newConfigMap(sgName string, parentUID types.UID, ip string) *apiv1.ConfigMap {
 	return &apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: configMapName(sgName),
@@ -390,7 +397,7 @@ func newConfigMap(sgName string, uid types.UID, ip string) *apiv1.ConfigMap {
 					APIVersion: "extensions/v1beta1",
 					Kind:       "Deployment",
 					Name:       sgName,
-					UID:        uid,
+					UID:        parentUID,
 				},
 			},
 		},
