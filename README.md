@@ -1,4 +1,5 @@
-![travis] ![report]
+[![Build Status](https://travis-ci.org/kinvolk/habitat-operator.svg?branch=master)](https://travis-ci.org/kinvolk/habitat-operator) 
+[![Go Report Card](https://goreportcard.com/badge/github.com/kinvolk/habitat-operator)](https://goreportcard.com/report/github.com/kinvolk/habitat-operator)
 
 # habitat-operator
 
@@ -33,6 +34,4 @@ If you add, remove or change an import, run:
 
     dep ensure
 
-[travis]: https://travis-ci.org/kinvolk/habitat-operator.svg?branch=master
-[report]: https://goreportcard.com/badge/github.com/kinvolk/habitat-operator
 [crd]: https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/
