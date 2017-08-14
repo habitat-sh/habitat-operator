@@ -21,7 +21,7 @@ import (
 const ServiceGroupResourcePlural = "servicegroups"
 
 type ServiceGroup struct {
-	metav1.TypeMeta   `json:,inline"`
+	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 	Spec              ServiceGroupSpec   `json:"spec"`
 	Status            ServiceGroupStatus `json:"status,omitempty"`
