@@ -371,21 +371,28 @@ func (hc *HabitatController) writeLeaderIP(pod *apiv1.Pod) error {
 	if err != nil {
 		return err
 	}
-	oldIP := cm.Data[peerFile]
-	if oldIP != "" {
-		// Do not overwrite IP with itself.
-		if ip == oldIP {
+
+	existingIP := cm.Data[peerFile]
+	if existingIP != "" {
+		// This Pod is already the leader.
+		if ip == existingIP {
 			return nil
 		}
-		podList, err := hc.config.KubernetesClientset.CoreV1().Pods(apiv1.NamespaceDefault).List(metav1.ListOptions{})
+
+		// Is the leader still running?
+		// If so, we don't need to do anything.
+		fs := fields.SelectorFromSet(fields.Set{
+			"status.podIP": existingIP,
+			"status.phase": string(apiv1.PodRunning),
+		})
+
+		podList, err := hc.config.KubernetesClientset.CoreV1().Pods(apiv1.NamespaceDefault).List(metav1.ListOptions{FieldSelector: fs.String()})
 		if err != nil {
 			return err
 		}
-		for _, oldPod := range podList.Items {
-			// Do not write a new IP if pod with the IP in the CM is still running.
-			if oldPod.Status.PodIP == oldIP && oldPod.Status.Phase == apiv1.PodRunning {
-				return nil
-			}
+
+		if len(podList.Items) > 0 {
+			return nil
 		}
 	}
 
