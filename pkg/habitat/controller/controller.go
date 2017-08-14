@@ -304,6 +304,8 @@ func (hc *HabitatController) onPodUpdate(oldObj, newObj interface{}) {
 	}
 }
 
+// onPodDelete needs to check whether the Pod that has been deleted was the leader.
+// If it was, another running Pod's IP needs to be written to the ConfigMap.
 func (hc *HabitatController) onPodDelete(obj interface{}) {
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
@@ -330,10 +332,11 @@ func (hc *HabitatController) onPodDelete(obj interface{}) {
 		return
 	}
 
-	currIP := cm.Data[peerFile]
-
+	currentLeaderIP := cm.Data[peerFile]
 	deletedPodIP := pod.Status.PodIP
-	if currIP != deletedPodIP {
+
+	// The deleted Pod was not the leader, so there's nothing to do.
+	if deletedPodIP != currentLeaderIP {
 		return
 	}
 
@@ -348,17 +351,14 @@ func (hc *HabitatController) onPodDelete(obj interface{}) {
 		return
 	}
 
-	for _, newPod := range podList.Items {
-		// Replace our IP in the CM file with a new IP of a running pod.
-		if err := hc.writeLeaderIP(&newPod); err != nil {
-			level.Error(hc.logger).Log("msg", err)
-		}
+	newLeader := podList.Items[0]
 
-		return
+	if err := hc.writeLeaderIP(&newLeader); err != nil {
+		level.Error(hc.logger).Log("msg", err)
 	}
 }
 
-// writeLeaderIP writes the IP of the first Pod that gets in a Running state to the ConfigMap.
+// writeLeaderIP writes the IP of the Pod passed as argument to the ConfigMap, provided there isn't already a running leader.
 // This way, all subsequently running Pods will know how to join the ring.
 func (hc *HabitatController) writeLeaderIP(pod *apiv1.Pod) error {
 	sgName := pod.ObjectMeta.Labels["service-group"]
@@ -370,17 +370,16 @@ func (hc *HabitatController) writeLeaderIP(pod *apiv1.Pod) error {
 		return err
 	}
 
-	existingIP := cm.Data[peerFile]
-	if existingIP != "" {
-		// This Pod is already the leader.
-		if ip == existingIP {
+	currentLeaderIP := cm.Data[peerFile]
+	if currentLeaderIP != "" {
+		if ip == currentLeaderIP {
 			return nil
 		}
 
 		// Is the leader still running?
 		// If so, we don't need to do anything.
 		fs := fields.SelectorFromSet(fields.Set{
-			"status.podIP": existingIP,
+			"status.podIP": currentLeaderIP,
 			"status.phase": string(apiv1.PodRunning),
 		})
 
