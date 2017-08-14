@@ -285,12 +285,15 @@ func (hc *HabitatController) onPodUpdate(oldObj, newObj interface{}) {
 	// TODO: Do not retrieve or write IP if we are deploying a standalone topology.
 	pod, ok := newObj.(*apiv1.Pod)
 	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to cast pod.")
+		level.Error(hc.logger).Log("msg", "Unknown event received in Pod Update handler")
 		return
 	}
+
 	if pod == nil {
+		level.Warn(hc.logger).Log("msg", "Empty event received in Pod Update handler")
 		return
 	}
+
 	if pod.Status.Phase != apiv1.PodRunning {
 		return
 	}
@@ -304,37 +307,47 @@ func (hc *HabitatController) onPodUpdate(oldObj, newObj interface{}) {
 func (hc *HabitatController) onPodDelete(obj interface{}) {
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to cast pod.")
+		level.Error(hc.logger).Log("msg", "Unknown event received in Pod Delete handler")
 		return
 	}
+
 	if pod == nil {
+		level.Warn(hc.logger).Log("msg", "Empty event received in Pod Delete handler")
 		return
 	}
+
 	sgName, exists := pod.ObjectMeta.Labels["service-group"]
 	if !exists {
-		level.Error(hc.logger).Log("msg", "Could not retrieve service group name because label did not exist.")
+		level.Error(hc.logger).Log("msg", "Could not retrieve service group name because label does not exist.")
 		return
 	}
+
 	cmName := configMapName(sgName)
+
 	cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(cmName, metav1.GetOptions{})
 	if err != nil {
 		level.Error(hc.logger).Log("msg", err)
 		return
 	}
+
 	currIP := cm.Data[peerFile]
+
 	deletedPodIP := pod.Status.PodIP
 	if currIP != deletedPodIP {
 		return
 	}
-	// Get only those pods that are running.
+
+	// Get only running pods.
 	fs := fields.SelectorFromSet(fields.Set{
 		"status.phase": "Running",
 	})
+
 	podList, err := hc.config.KubernetesClientset.CoreV1().Pods(apiv1.NamespaceDefault).List(metav1.ListOptions{FieldSelector: fs.String()})
 	if err != nil {
 		level.Error(hc.logger).Log("msg", err)
 		return
 	}
+
 	for _, newPod := range podList.Items {
 		if newPod.Status.Phase == apiv1.PodRunning {
 			// Replace our IP in the CM file with a new IP of a running pod.
