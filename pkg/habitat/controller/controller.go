@@ -297,8 +297,8 @@ func (hc *HabitatController) onPodUpdate(oldObj, newObj interface{}) {
 	if pod.Status.Phase != apiv1.PodRunning {
 		return
 	}
-	err := hc.writeIP(pod)
-	if err != nil {
+
+	if err := hc.writeLeaderIP(pod); err != nil {
 		level.Error(hc.logger).Log("msg", err)
 		return
 	}
@@ -351,7 +351,7 @@ func (hc *HabitatController) onPodDelete(obj interface{}) {
 	for _, newPod := range podList.Items {
 		if newPod.Status.Phase == apiv1.PodRunning {
 			// Replace our IP in the CM file with a new IP of a running pod.
-			err := hc.writeIP(&newPod)
+			err := hc.writeLeaderIP(&newPod)
 			if err != nil {
 				level.Error(hc.logger).Log("msg", err)
 			}
@@ -360,7 +360,9 @@ func (hc *HabitatController) onPodDelete(obj interface{}) {
 	}
 }
 
-func (hc *HabitatController) writeIP(pod *apiv1.Pod) error {
+// writeLeaderIP writes the IP of the first Pod that gets in a Running state to the ConfigMap.
+// This way, all subsequently running Pods will know how to join the ring.
+func (hc *HabitatController) writeLeaderIP(pod *apiv1.Pod) error {
 	sgName := pod.ObjectMeta.Labels["service-group"]
 	cmName := configMapName(sgName)
 	ip := pod.Status.PodIP
