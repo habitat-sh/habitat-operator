@@ -349,14 +349,12 @@ func (hc *HabitatController) onPodDelete(obj interface{}) {
 	}
 
 	for _, newPod := range podList.Items {
-		if newPod.Status.Phase == apiv1.PodRunning {
-			// Replace our IP in the CM file with a new IP of a running pod.
-			err := hc.writeLeaderIP(&newPod)
-			if err != nil {
-				level.Error(hc.logger).Log("msg", err)
-			}
-			return
+		// Replace our IP in the CM file with a new IP of a running pod.
+		if err := hc.writeLeaderIP(&newPod); err != nil {
+			level.Error(hc.logger).Log("msg", err)
 		}
+
+		return
 	}
 }
 
