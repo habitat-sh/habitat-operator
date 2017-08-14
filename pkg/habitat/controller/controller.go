@@ -408,5 +408,5 @@ func newConfigMap(sgName string, parentUID types.UID, ip string) *apiv1.ConfigMa
 }
 
 func configMapName(sgName string) string {
-	return fmt.Sprintf("%s-peer-file", sgName)
+	return sgName
 }
