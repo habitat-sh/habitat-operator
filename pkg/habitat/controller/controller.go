@@ -213,7 +213,7 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 	level.Info(hc.logger).Log("msg", "created deployment", "name", d.GetObjectMeta().GetName())
 
 	// Create the ConfigMap for the peer watch file.
-	configMap := newConfigMap(sg.Name, d.UID, "")
+	configMap := newConfigMap(sg.Name, d.UID)
 	_, err = hc.config.KubernetesClientset.CoreV1Client.ConfigMaps(apiv1.NamespaceDefault).Create(configMap)
 	if err != nil {
 		level.Error(hc.logger).Log("msg", err)
@@ -374,21 +374,24 @@ func (hc *HabitatController) writeIP(pod *apiv1.Pod) error {
 		}
 	}
 
-	// We need to retrieve our deployment to get the UID for the OwnerReference.
-	d, err := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(apiv1.NamespaceDefault).Get(sgName, metav1.GetOptions{})
+	// Update the IP in a deep copy of the existing ConfigMap.
+	copyObj, err := hc.config.Scheme.Copy(cm)
 	if err != nil {
 		return err
 	}
 
-	updatedCM := newConfigMap(sgName, d.UID, ip)
-	_, err = hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Update(updatedCM)
+	cmCopy := copyObj.(*apiv1.ConfigMap)
+	cmCopy.Data[peerFile] = ip
+
+	_, err = hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Update(cmCopy)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func newConfigMap(sgName string, parentUID types.UID, ip string) *apiv1.ConfigMap {
+func newConfigMap(sgName string, parentUID types.UID) *apiv1.ConfigMap {
 	return &apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: configMapName(sgName),
@@ -402,7 +405,7 @@ func newConfigMap(sgName string, parentUID types.UID, ip string) *apiv1.ConfigMa
 			},
 		},
 		Data: map[string]string{
-			peerFile: ip,
+			peerFile: "",
 		},
 	}
 }
