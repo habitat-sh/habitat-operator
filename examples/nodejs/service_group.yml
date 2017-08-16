@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: user-toml-secret
+type: Opaque
+data:
+  # Each item needs to be encoded in base64, as Kubernetes
+  # expects that encoding.
+  # Plain text content: "message = 'Hello from our Habitat-Operator!'"
+  user.toml: bWVzc2FnZSA9ICdIZWxsbyBmcm9tIG91ciBIYWJpdGF0LU9wZXJhdG9yISc=
+---
+apiVersion: habitat.sh/v1
+kind: ServiceGroup
+metadata:
+  # Name must be the same as your service name in Habitat.
+  name: mytutorialapp
+spec:
+  image: kinvolk/nodejs-hab
+  count: 1
+  habitat:
+    topology: standalone
+    group: nodejs
+    # Create Secret with the initial configuration you want.
+    config: user-toml-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mytutorialapp
+spec:
+  selector:
+    service-group: mytutorialapp
+  type: NodePort
+  ports:
+  - name: web
+    nodePort: 30001
+    port: 5555
+    protocol: TCP
+  - name: http-gateway
+    nodePort : 32767
+    port: 9631
+    protocol: TCP

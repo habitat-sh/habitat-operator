@@ -5,7 +5,7 @@ metadata:
 spec:
   # the core/consul habitat service packaged as a Docker image
   image: kinvolk/consul-hab
-  # count must be at least 3 for a standalone topology
+  # count must be at least 3 for a leader-follower topology
   count: 3
   habitat:
     topology: leader-follower
