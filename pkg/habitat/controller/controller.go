@@ -38,7 +38,8 @@ import (
 
 const (
 	resyncPeriod = 1 * time.Minute
-	peerFile     = "peer-watch-file"
+	peerFile     = "peer-ip"
+	userTomlFile = "user.toml"
 )
 
 type HabitatController struct {
@@ -140,68 +141,10 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 
 	level.Debug(hc.logger).Log("msg", "validated object")
 
-	group := "default"
-	if sg.Spec.Habitat.Group != "" {
-		group = sg.Spec.Habitat.Group
-	}
-
-	// This value needs to be passed as a *int32, so we convert it, assign it to a
-	// variable and afterwards pass a pointer to it.
-	count := int32(sg.Spec.Count)
-
-	// Create a deployment.
-	deployment := &appsv1beta1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: sg.Name,
-		},
-		Spec: appsv1beta1.DeploymentSpec{
-			Replicas: &count,
-			Template: apiv1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"habitat":       "true",
-						"service-group": sg.Name,
-					},
-				},
-				Spec: apiv1.PodSpec{
-					Containers: []apiv1.Container{
-						{
-							Name:  "habitat-service",
-							Image: sg.Spec.Image,
-							Args: []string{
-								"--group", group,
-							},
-							VolumeMounts: []apiv1.VolumeMount{
-								{
-									Name:      "config",
-									MountPath: "/habitat-operator",
-									ReadOnly:  true,
-								},
-							},
-						},
-					},
-					// Define the volume for the ConfigMap.
-					Volumes: []apiv1.Volume{
-						{
-							Name: "config",
-							VolumeSource: apiv1.VolumeSource{
-								ConfigMap: &apiv1.ConfigMapVolumeSource{
-									LocalObjectReference: apiv1.LocalObjectReference{
-										Name: configMapName(sg.Name),
-									},
-									Items: []apiv1.KeyToPath{
-										{
-											Key:  peerFile,
-											Path: "peer-ip",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
+	deployment, err := hc.newDeployment(sg)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", err)
+		return
 	}
 
 	d, err := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(apiv1.NamespaceDefault).Create(deployment)
@@ -220,7 +163,7 @@ func (hc *HabitatController) onAdd(obj interface{}) {
 		return
 	}
 
-	level.Debug(hc.logger).Log("msg", "created ConfigMap with peer IP", "object", configMap.Data["peer-ip"])
+	level.Debug(hc.logger).Log("msg", "created ConfigMap with peer IP", "object", configMap.Data[peerFile])
 }
 
 func (hc *HabitatController) onUpdate(oldObj, newObj interface{}) {
@@ -386,6 +329,115 @@ func (hc *HabitatController) writeIP(pod *apiv1.Pod) error {
 		return err
 	}
 	return nil
+}
+
+func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.Deployment, error) {
+	// This value needs to be passed as a *int32, so we convert it, assign it to a
+	// variable and afterwards pass a pointer to it.
+	count := int32(sg.Spec.Count)
+
+	// Set the service arguments we send to Habitat.
+	var habArgs []string
+	if sg.Spec.Habitat.Group != "" {
+		// When a service is started without explicitly naming the group,
+		// it's assigned to the default group.
+		habArgs = append(habArgs,
+			"--group", sg.Spec.Habitat.Group)
+	}
+
+	base := &appsv1beta1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: sg.Name,
+		},
+		Spec: appsv1beta1.DeploymentSpec{
+			Replicas: &count,
+			Template: apiv1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"habitat":       "true",
+						"service-group": sg.Name,
+					},
+				},
+				Spec: apiv1.PodSpec{
+					Containers: []apiv1.Container{
+						{
+							Name:  "habitat-service",
+							Image: sg.Spec.Image,
+							Args:  habArgs,
+							VolumeMounts: []apiv1.VolumeMount{
+								{
+									Name:      "config",
+									MountPath: "/habitat-operator",
+									ReadOnly:  true,
+								},
+							},
+						},
+					},
+					// Define the volume for the ConfigMap.
+					Volumes: []apiv1.Volume{
+						{
+							Name: "config",
+							VolumeSource: apiv1.VolumeSource{
+								ConfigMap: &apiv1.ConfigMapVolumeSource{
+									LocalObjectReference: apiv1.LocalObjectReference{
+										Name: configMapName(sg.Name),
+									},
+									Items: []apiv1.KeyToPath{
+										{
+											Key:  peerFile,
+											Path: peerFile,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// If we have a secret name present we should mount that secret.
+	if sg.Spec.Habitat.Config != "" {
+		// Let's make sure our secret is there before mounting it.
+		secret, err := hc.config.KubernetesClientset.CoreV1().Secrets(apiv1.NamespaceDefault).Get(sg.Spec.Habitat.Config, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		if secret == nil {
+			// If we can't find the secret we should just return the base deployment.
+			level.Warn(hc.logger).Log("msg", "Secret could not be mounted as it did not exist.")
+			return nil, err
+		}
+
+		secretVolume := &apiv1.Volume{
+			Name: "initialconfig",
+			VolumeSource: apiv1.VolumeSource{
+				Secret: &apiv1.SecretVolumeSource{
+					SecretName: sg.Spec.Habitat.Config,
+					Items: []apiv1.KeyToPath{
+						{
+							Key:  userTomlFile,
+							Path: userTomlFile,
+						},
+					},
+				},
+			},
+		}
+
+		secretVolumeMount := &apiv1.VolumeMount{
+			Name: "initialconfig",
+			// Our user.toml file must be in a directory with the same name as the service.
+			MountPath: fmt.Sprintf("/hab/svc/%s", sg.Name),
+			ReadOnly:  false,
+		}
+
+		base.Spec.Template.Spec.Containers[0].VolumeMounts = append(base.Spec.Template.Spec.Containers[0].VolumeMounts, *secretVolumeMount)
+		base.Spec.Template.Spec.Volumes = append(base.Spec.Template.Spec.Volumes, *secretVolume)
+	}
+
+	return base, nil
 }
 
 func newConfigMap(sgName string, parentUID types.UID, ip string) *apiv1.ConfigMap {
