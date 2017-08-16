@@ -42,6 +42,9 @@ const (
 	resyncPeriod = 1 * time.Minute
 	peerFile     = "peer-ip"
 	userTomlFile = "user.toml"
+
+	ringName       = "ring-key"
+	ringKeyFileExt = "sym.key"
 )
 
 type HabitatController struct {
@@ -506,6 +509,47 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 
 		base.Spec.Template.Spec.Containers[0].VolumeMounts = append(base.Spec.Template.Spec.Containers[0].VolumeMounts, *secretVolumeMount)
 		base.Spec.Template.Spec.Volumes = append(base.Spec.Template.Spec.Volumes, *secretVolume)
+	}
+
+	if sg.Spec.Habitat.RingKey != "" {
+		s, err := hc.config.KubernetesClientset.CoreV1().Secrets(apiv1.NamespaceDefault).Get(sg.Spec.Habitat.RingKey, metav1.GetOptions{})
+		if err != nil {
+			level.Error(hc.logger).Log("msg", "Could not find Secret containing ring key")
+			return nil, err
+		}
+
+		ts := time.Now().Format("20060102150405")
+		ringKeyFile := fmt.Sprintf("%s-%s.%s", ringName, ts, ringKeyFileExt)
+
+		v := &apiv1.Volume{
+			Name: ringName,
+			VolumeSource: apiv1.VolumeSource{
+				Secret: &apiv1.SecretVolumeSource{
+					SecretName: s.Name,
+					Items: []apiv1.KeyToPath{
+						{
+							Key:  ringName,
+							Path: ringKeyFile,
+						},
+					},
+				},
+			},
+		}
+
+		vm := &apiv1.VolumeMount{
+			Name:      ringName,
+			MountPath: "/hab/cache/keys",
+			// This directory cannot be made read-only, as the supervisor writes to
+			// it during its operation.
+			ReadOnly: false,
+		}
+
+		// Mount ring key file.
+		base.Spec.Template.Spec.Volumes = append(base.Spec.Template.Spec.Volumes, *v)
+		base.Spec.Template.Spec.Containers[0].VolumeMounts = append(base.Spec.Template.Spec.Containers[0].VolumeMounts, *vm)
+
+		// Add --ring argument to supervisor invocation.
+		base.Spec.Template.Spec.Containers[0].Args = append(base.Spec.Template.Spec.Containers[0].Args, "--ring", ringName)
 	}
 
 	return base, nil
