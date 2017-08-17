@@ -13,15 +13,31 @@ The Habitat Operator makes use of [`Custom Resource Definition`][crd]s, and requ
 
 ## Usage
 
-To run the `habitat-operator` as a binary outside of a Kubernetes cluster, run:
+### Running outside of the Kubernetes cluster:
+
+First build the `habitat-operator` binary by running:
+
+    make build
+
+This will produce a binary file, then start your operator by running:
 
     operator --kubeconfig ~/.kube/config
 
 To try out the operator with an example service, run:
 
-    kubectl create -f examples/habitat_service-standalone.yml
+    kubectl create -f examples/standalone
 
 This will create a 1-pod deployment of an `nginx` Habitat service.
+
+### Running inside of the Kubernetes cluster:
+
+First build the image:
+
+    make image
+
+This will produce a `kinvolk/habitat-operator` image, which can then be deployed to your cluster.
+
+The name of the generated docker image can be changed with an `IMAGE` variable, for example `make image IMAGE=mycorp/my-habitat-operator`. If the `habitat-operator` name is fine, then a `REPO` variable can be used like `make image REPO=mycorp` to generate the `mycorp/habitat-operator` image. Use the `TAG` variable to change the tag to something else (the default value is taken from `git describe --tags --always`) and a `HUB` variable to avoid using the default docker hub.
 
 ## Contributing
 
