@@ -24,6 +24,7 @@ import (
 	"github.com/go-kit/kit/log/level"
 	appsv1beta1 "k8s.io/api/apps/v1beta1"
 	apiv1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -32,6 +33,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
 
 	crv1 "github.com/kinvolk/habitat-operator/pkg/habitat/apis/cr/v1"
 )
@@ -45,6 +47,14 @@ const (
 type HabitatController struct {
 	config Config
 	logger log.Logger
+
+	// queue contains the jobs that will be handled by syncServiceGroup.
+	// A workqueue.RateLimitingInterface is a queue where failing jobs are re-enqueued with an exponential
+	// delay, so that jobs in a crashing loop don't fill the queue.
+	queue workqueue.RateLimitingInterface
+
+	// store is the cache of ServiceGroups retrieved by the ListWatcher.
+	store cache.Store
 }
 
 type Config struct {
@@ -70,6 +80,7 @@ func New(config Config, logger log.Logger) (*HabitatController, error) {
 	hc := &HabitatController{
 		config: config,
 		logger: logger,
+		queue:  workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "servicegroup"),
 	}
 
 	return hc, nil
@@ -79,9 +90,12 @@ func New(config Config, logger log.Logger) (*HabitatController, error) {
 func (hc *HabitatController) Run(ctx context.Context) error {
 	level.Info(hc.logger).Log("msg", "Watching Service Group objects")
 
-	hc.watchCustomResources(ctx)
+	hc.watchServiceGroups(ctx)
 
 	hc.watchPods(ctx)
+
+	// Start the synchronous queue consumer.
+	go hc.worker()
 
 	// This channel is closed when the context is canceled or times out.
 	<-ctx.Done()
@@ -90,14 +104,14 @@ func (hc *HabitatController) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
-func (hc *HabitatController) watchCustomResources(ctx context.Context) {
+func (hc *HabitatController) watchServiceGroups(ctx context.Context) {
 	source := cache.NewListWatchFromClient(
 		hc.config.HabitatClient,
 		crv1.ServiceGroupResourcePlural,
 		apiv1.NamespaceAll,
 		fields.Everything())
 
-	_, k8sController := cache.NewInformer(
+	store, k8sController := cache.NewInformer(
 		source,
 
 		// The object type.
@@ -110,79 +124,187 @@ func (hc *HabitatController) watchCustomResources(ctx context.Context) {
 
 		// Your custom resource event handlers.
 		cache.ResourceEventHandlerFuncs{
-			AddFunc:    hc.onAdd,
-			UpdateFunc: hc.onUpdate,
-			DeleteFunc: hc.onDelete,
+			AddFunc: hc.enqueueSG,
+			UpdateFunc: func(oldObj, newObj interface{}) {
+				oldSG, ok := oldObj.(*crv1.ServiceGroup)
+				if !ok {
+					level.Error(hc.logger).Log("msg", "Failed to type assert pod", "obj", oldObj)
+					return
+				}
+
+				newSG, ok := newObj.(*crv1.ServiceGroup)
+				if !ok {
+					level.Error(hc.logger).Log("msg", "Failed to type assert pod", "obj", newObj)
+					return
+				}
+
+				if hc.serviceGroupNeedsUpdate(oldSG, newSG) {
+					hc.enqueueSG(newSG)
+				}
+			},
+			DeleteFunc: hc.enqueueSG,
 		})
+
+	hc.store = store
 
 	// The k8sController will start processing events from the API.
 	go k8sController.Run(ctx.Done())
 }
 
-func (hc *HabitatController) onAdd(obj interface{}) {
-	sg, ok := obj.(*crv1.ServiceGroup)
-	if !ok {
-		level.Error(hc.logger).Log("msg", "unknown event type")
-		return
-	}
-
-	level.Debug(hc.logger).Log("function", "onAdd", "msg", sg.ObjectMeta.SelfLink)
+func (hc *HabitatController) handleServiceGroupCreation(sg *crv1.ServiceGroup) error {
+	level.Debug(hc.logger).Log("function", "handleServiceGroupCreation", "msg", sg.ObjectMeta.SelfLink)
 
 	// Validate object.
 	if err := validateCustomObject(*sg); err != nil {
-		if vErr, ok := err.(validationError); ok {
-			level.Error(hc.logger).Log("type", "validation error", "msg", err, "key", vErr.Key)
-			return
-		}
-
-		level.Error(hc.logger).Log("msg", err)
-		return
+		return err
 	}
 
 	level.Debug(hc.logger).Log("msg", "validated object")
 
 	deployment, err := hc.newDeployment(sg)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", err)
-		return
+		return err
 	}
 
-	d, err := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(apiv1.NamespaceDefault).Create(deployment)
+	// Create Deployment, if it doesn't already exist.
+	var d *appsv1beta1.Deployment
+
+	d, err = hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(apiv1.NamespaceDefault).Create(deployment)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", err)
-		return
+		// Was the error due to the Deployment already existing?
+		if !apierrors.IsAlreadyExists(err) {
+			return err
+		}
+
+		d, err = hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(sg.Namespace).Get(deployment.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		level.Debug(hc.logger).Log("msg", "deployment already existed", "name", d.GetObjectMeta().GetName())
+	} else {
+		level.Info(hc.logger).Log("msg", "created deployment", "name", d.GetObjectMeta().GetName())
 	}
 
-	level.Info(hc.logger).Log("msg", "created deployment", "name", d.GetObjectMeta().GetName())
-
-	// Create the ConfigMap for the peer watch file.
-	configMap := newConfigMap(sg.Name, d.UID, "")
-	_, err = hc.config.KubernetesClientset.CoreV1Client.ConfigMaps(apiv1.NamespaceDefault).Create(configMap)
-	if err != nil {
-		level.Error(hc.logger).Log("msg", err)
-		return
+	// Handle creation/updating of peer IP ConfigMap.
+	if err := hc.handleConfigMap(sg, d.UID); err != nil {
+		return err
 	}
 
-	level.Debug(hc.logger).Log("msg", "created ConfigMap with peer IP", "object", configMap.Data[peerFile])
+	return nil
 }
 
-func (hc *HabitatController) onUpdate(oldObj, newObj interface{}) {
-	oldServiceGroup := oldObj.(*crv1.ServiceGroup)
-	newServiceGroup := newObj.(*crv1.ServiceGroup)
-	level.Info(hc.logger).Log("function", "onUpdate", "msg", fmt.Sprintf("oldObj: %s, newObj: %s", oldServiceGroup.ObjectMeta.SelfLink, newServiceGroup.ObjectMeta.SelfLink))
-}
+func (hc *HabitatController) getRunningPods(namespace, label string) ([]apiv1.Pod, error) {
+	fs := fields.SelectorFromSet(fields.Set{
+		"status.phase": "Running",
+	})
+	ls := fields.SelectorFromSet(fields.Set(map[string]string{
+		crv1.ServiceGroupLabel: label,
+	}))
 
-func (hc *HabitatController) onDelete(obj interface{}) {
-	sg, ok := obj.(*crv1.ServiceGroup)
-	if !ok {
-		level.Error(hc.logger).Log("msg", "unknown event type")
-		return
+	running := metav1.ListOptions{
+		FieldSelector: fs.String(),
+		LabelSelector: ls.String(),
 	}
 
-	level.Debug(hc.logger).Log("function", "onDelete", "msg", sg.ObjectMeta.SelfLink)
+	pods, err := hc.config.KubernetesClientset.CoreV1Client.Pods(namespace).List(running)
+	if err != nil {
+		return nil, err
+	}
 
-	deploymentsClient := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(sg.ObjectMeta.Namespace)
-	deploymentName := sg.Name
+	return pods.Items, nil
+}
+
+func (hc *HabitatController) writeLeaderIP(cm *apiv1.ConfigMap, ip string) error {
+	cm.Data[peerFile] = ip
+
+	if _, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(cm.Namespace).Update(cm); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (hc *HabitatController) handleConfigMap(sg *crv1.ServiceGroup, deploymentUID types.UID) error {
+	runningPods, err := hc.getRunningPods(sg.Namespace, sg.Name)
+	if err != nil {
+		return err
+	}
+
+	if len(runningPods) == 0 {
+		// No running Pods, create an empty ConfigMap.
+		newCM := newConfigMap(sg.Name, deploymentUID, "")
+
+		cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(sg.Namespace).Create(newCM)
+		if err != nil {
+			// Was the error due to the ConfigMap already existing?
+			if !apierrors.IsAlreadyExists(err) {
+				return err
+			}
+
+			// Delete the IP in the existing ConfigMap, as it must necessarily be invalid,
+			// since there are no running Pods.
+			if err := hc.writeLeaderIP(cm, ""); err != nil {
+				return err
+			}
+		}
+
+		level.Info(hc.logger).Log("msg", "created peer IP ConfigMap", "name", newCM.Name)
+
+		return nil
+	}
+
+	// There are running Pods, add the IP of one of them to the ConfigMap.
+	leaderIP := runningPods[0].Status.PodIP
+
+	newCM := newConfigMap(sg.Name, deploymentUID, leaderIP)
+
+	cm, err := hc.config.KubernetesClientset.CoreV1Client.ConfigMaps(apiv1.NamespaceDefault).Create(newCM)
+	if err != nil {
+		// Was the error due to the ConfigMap already existing?
+		if !apierrors.IsAlreadyExists(err) {
+			return err
+		}
+
+		// The ConfigMap already exists. Is the leader still running?
+		// Was the error due to the ConfigMap already existing?
+		cm, err = hc.config.KubernetesClientset.CoreV1Client.ConfigMaps(sg.Namespace).Get(newCM.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		curLeader := cm.Data[peerFile]
+
+		for _, p := range runningPods {
+			if p.Status.PodIP == curLeader {
+				// The leader is still up, nothing to do.
+				level.Debug(hc.logger).Log("msg", "Leader still running", "ip", curLeader)
+
+				return nil
+			}
+		}
+
+		// The leader is not in the list of running Pods, so the ConfigMap must be updated.
+		if err := hc.writeLeaderIP(cm, leaderIP); err != nil {
+			return err
+		}
+
+		level.Info(hc.logger).Log("msg", "updated peer IP in ConfigMap", "name", cm.Name, "ip", leaderIP)
+	} else {
+		level.Info(hc.logger).Log("msg", "created peer IP ConfigMap", "name", cm.Name, "ip", leaderIP)
+	}
+
+	return nil
+}
+
+func (hc *HabitatController) handleServiceGroupDeletion(key string) error {
+	// Delete deployment.
+	deploymentNS, deploymentName, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		return err
+	}
+
+	deploymentsClient := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(deploymentNS)
 
 	// With this policy, dependent resources will be deleted, but we don't wait
 	// for that to happen.
@@ -191,13 +313,14 @@ func (hc *HabitatController) onDelete(obj interface{}) {
 		PropagationPolicy: &deletePolicy,
 	}
 
-	err := deploymentsClient.Delete(deploymentName, deleteOptions)
-	if err != nil {
+	if err := deploymentsClient.Delete(deploymentName, deleteOptions); err != nil {
 		level.Error(hc.logger).Log("msg", err)
-		return
+		return err
 	}
 
 	level.Info(hc.logger).Log("msg", "deleted deployment", "name", deploymentName)
+
+	return nil
 }
 
 func (hc *HabitatController) watchPods(ctx context.Context) {
@@ -225,104 +348,59 @@ func (hc *HabitatController) onPodAdd(obj interface{}) {
 }
 
 func (hc *HabitatController) onPodUpdate(oldObj, newObj interface{}) {
-	// TODO: Do not retrieve or write IP if we are deploying a standalone topology.
-	pod, ok := newObj.(*apiv1.Pod)
-	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to cast pod.")
+	oldPod, ok1 := oldObj.(*apiv1.Pod)
+	if !ok1 {
+		level.Error(hc.logger).Log("msg", "Failed to type assert pod", "obj", oldObj)
 		return
 	}
-	if pod.Status.Phase != apiv1.PodRunning {
+
+	newPod, ok2 := newObj.(*apiv1.Pod)
+	if !ok2 {
+		level.Error(hc.logger).Log("msg", "Failed to type assert pod", "obj", newObj)
 		return
 	}
-	err := hc.writeIP(pod)
+
+	if !hc.podNeedsUpdate(oldPod, newPod) {
+		return
+	}
+
+	sg, err := hc.getServiceGroupFromPod(newPod)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", err)
+		if sgErr, ok := err.(serviceGroupNotFoundError); !ok {
+			level.Error(hc.logger).Log("msg", sgErr)
+			return
+		}
+
+		// This only means the Pod and the ServiceGroup watchers are not in sync.
+		level.Debug(hc.logger).Log("msg", "ServiceGroup not found", "function", "onPodUpdate")
+
 		return
 	}
+
+	hc.enqueueSG(sg)
 }
 
 func (hc *HabitatController) onPodDelete(obj interface{}) {
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to cast pod.")
+		level.Error(hc.logger).Log("msg", "Failed to type assert pod", "obj", obj)
 		return
 	}
-	sgName, exists := pod.ObjectMeta.Labels["service-group"]
-	if !exists {
-		level.Error(hc.logger).Log("msg", "Could not retrieve service group name because label did not exist.")
-		return
-	}
-	cmName := configMapName(sgName)
-	cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(cmName, metav1.GetOptions{})
+
+	sg, err := hc.getServiceGroupFromPod(pod)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", err)
-		return
-	}
-	currIP := cm.Data[peerFile]
-	deletedPodIP := pod.Status.PodIP
-	if currIP != deletedPodIP {
-		return
-	}
-	// Get only those pods that are running.
-	fs := fields.SelectorFromSet(fields.Set{
-		"status.phase": "Running",
-	})
-	podList, err := hc.config.KubernetesClientset.CoreV1().Pods(apiv1.NamespaceDefault).List(metav1.ListOptions{FieldSelector: fs.String()})
-	if err != nil {
-		level.Error(hc.logger).Log("msg", err)
-		return
-	}
-	for _, newPod := range podList.Items {
-		if newPod.Status.Phase == apiv1.PodRunning {
-			// Replace our IP in the CM file with a new IP of a running pod.
-			err := hc.writeIP(&newPod)
-			if err != nil {
-				level.Error(hc.logger).Log("msg", err)
-			}
+		if sgErr, ok := err.(serviceGroupNotFoundError); !ok {
+			level.Error(hc.logger).Log("msg", sgErr)
 			return
 		}
-	}
-}
 
-func (hc *HabitatController) writeIP(pod *apiv1.Pod) error {
-	sgName := pod.ObjectMeta.Labels["service-group"]
-	cmName := configMapName(sgName)
-	ip := pod.Status.PodIP
+		// This only means the Pod and the ServiceGroup watchers are not in sync.
+		level.Debug(hc.logger).Log("msg", "ServiceGroup not found", "function", "onPodDelete")
 
-	cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(cmName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	oldIP := cm.Data[peerFile]
-	if oldIP != "" {
-		// Do not overwrite IP with itself.
-		if ip == oldIP {
-			return nil
-		}
-		podList, err := hc.config.KubernetesClientset.CoreV1().Pods(apiv1.NamespaceDefault).List(metav1.ListOptions{})
-		if err != nil {
-			return err
-		}
-		for _, oldPod := range podList.Items {
-			// Do not write a new IP if pod with the IP in the CM is still running.
-			if oldPod.Status.PodIP == oldIP && oldPod.Status.Phase == apiv1.PodRunning {
-				return nil
-			}
-		}
+		return
 	}
 
-	// We need to retrieve our deployment to get the UID for the OwnerReference.
-	d, err := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(apiv1.NamespaceDefault).Get(sgName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	updatedCM := newConfigMap(sgName, d.UID, ip)
-	_, err = hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Update(updatedCM)
-	if err != nil {
-		return err
-	}
-	return nil
+	hc.enqueueSG(sg)
 }
 
 func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.Deployment, error) {
@@ -348,8 +426,8 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"habitat":       "true",
-						"service-group": sg.Name,
+						"habitat":              "true",
+						crv1.ServiceGroupLabel: sg.Name,
 					},
 				},
 				Spec: apiv1.PodSpec{
@@ -428,6 +506,110 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 	return base, nil
 }
 
+func (hc *HabitatController) enqueueSG(obj interface{}) {
+	k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", "Object key could not be retrieved", "object", obj)
+		return
+	}
+
+	hc.queue.Add(k)
+}
+
+func (hc *HabitatController) worker() {
+	for hc.processNextItem() {
+	}
+}
+
+func (hc *HabitatController) processNextItem() bool {
+	key, quit := hc.queue.Get()
+	if quit {
+		return false
+	}
+	defer hc.queue.Done(key)
+
+	err := hc.syncServiceGroup(key.(string))
+	if err != nil {
+		level.Error(hc.logger).Log("msg", "ServiceGroup could not be synced, requeueing", "msg", err)
+
+		hc.queue.AddRateLimited(key)
+
+		return true
+	}
+
+	hc.queue.Forget(key)
+
+	return true
+}
+
+// syncServiceGroup is where the reconciliation takes place.
+// It is invoked when any of these events happen:
+// * a ServiceGroup was created/updated/deleted
+// * a Pod was created/updated/deleted
+func (hc *HabitatController) syncServiceGroup(key string) error {
+	obj, exists, err := hc.store.GetByKey(key)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		// The SG was deleted.
+		return hc.handleServiceGroupDeletion(key)
+	}
+
+	// The ServiceGroup was either created or updated.
+	sg, ok := obj.(*crv1.ServiceGroup)
+	if !ok {
+		return fmt.Errorf("unknown event type")
+	}
+	// Create deployment if it does not exist already.
+	return hc.handleServiceGroupCreation(sg)
+}
+
+func (hc *HabitatController) serviceGroupNeedsUpdate(oldSG, newSG *crv1.ServiceGroup) bool {
+	if oldSG.Spec != newSG.Spec {
+		level.Debug(hc.logger).Log("msg", "Update ignored as it didn't change ServiceGroup spec", "sg", newSG)
+		return true
+	}
+
+	return false
+}
+
+func (hc *HabitatController) podNeedsUpdate(oldPod, newPod *apiv1.Pod) bool {
+	// Ignore identical objects.
+	// https://github.com/kubernetes/kubernetes/blob/7e630154dfc7b2155f8946a06f92e96e268dcbcd/pkg/controller/replicaset/replica_set.go#L276-L277
+	if oldPod.ResourceVersion == newPod.ResourceVersion {
+		level.Debug(hc.logger).Log("msg", "Update ignored as it didn't change Pod resource version", "pod", newPod)
+		return false
+	}
+
+	// Ignore changes that don't change the Pod's status.
+	if oldPod.Status.Phase == newPod.Status.Phase {
+		level.Debug(hc.logger).Log("msg", "Update ignored as it didn't change Pod status", "pod", newPod)
+		return false
+	}
+
+	return true
+}
+
+func (hc *HabitatController) getServiceGroupFromPod(pod *apiv1.Pod) (*crv1.ServiceGroup, error) {
+	key := serviceGroupKeyFromPod(pod)
+
+	obj, exists, err := hc.store.GetByKey(key)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, serviceGroupNotFoundError{key: key}
+	}
+
+	sg, ok := obj.(*crv1.ServiceGroup)
+	if !ok {
+		return nil, fmt.Errorf("unknown object type in store: %v", obj)
+	}
+
+	return sg, nil
+}
+
 func newConfigMap(sgName string, parentUID types.UID, ip string) *apiv1.ConfigMap {
 	return &apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -445,6 +627,14 @@ func newConfigMap(sgName string, parentUID types.UID, ip string) *apiv1.ConfigMa
 			peerFile: ip,
 		},
 	}
+}
+
+func serviceGroupKeyFromPod(pod *apiv1.Pod) string {
+	sgName := pod.Labels[crv1.ServiceGroupLabel]
+
+	key := fmt.Sprintf("%s/%s", pod.Namespace, sgName)
+
+	return key
 }
 
 func configMapName(sgName string) string {
