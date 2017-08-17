@@ -231,9 +231,6 @@ func (hc *HabitatController) onPodUpdate(oldObj, newObj interface{}) {
 		level.Error(hc.logger).Log("msg", "Failed to cast pod.")
 		return
 	}
-	if pod == nil {
-		return
-	}
 	if pod.Status.Phase != apiv1.PodRunning {
 		return
 	}
@@ -248,9 +245,6 @@ func (hc *HabitatController) onPodDelete(obj interface{}) {
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to cast pod.")
-		return
-	}
-	if pod == nil {
 		return
 	}
 	sgName, exists := pod.ObjectMeta.Labels["service-group"]
@@ -406,17 +400,11 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 			return nil, err
 		}
 
-		if secret == nil {
-			// If we can't find the secret we should just return the base deployment.
-			level.Warn(hc.logger).Log("msg", "Secret could not be mounted as it did not exist.")
-			return nil, err
-		}
-
 		secretVolume := &apiv1.Volume{
 			Name: "initialconfig",
 			VolumeSource: apiv1.VolumeSource{
 				Secret: &apiv1.SecretVolumeSource{
-					SecretName: sg.Spec.Habitat.Config,
+					SecretName: secret.Name,
 					Items: []apiv1.KeyToPath{
 						{
 							Key:  userTomlFile,
