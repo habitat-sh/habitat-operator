@@ -1,0 +1,21 @@
+# Encrypted ServiceGroup example
+
+## Workflow
+
+The user needs to generate a key using `hab ring key generate foobar`, and then base64
+encode it (on Linux) with `hab ring export foobar | base64 -w 0` (please refer to
+[this
+document](https://kubernetes.io/docs/concepts/configuration/secret/#creating-a-secret-manually)
+for platform-specific instructions on base64 encoding).
+
+The encoded key can then be used as the value of the `ring-key` key in a Kubernetes
+secret.
+
+The secret's name must be referenced in the `ServiceGroup` object's `ringKey`
+key.
+
+## Deletion
+
+The operator does not delete the Secret on ServiceGroup deletion. This is
+because the user might want to re-use the secret across multiple
+`ServiceGroup`s and `ServiceGroup` lifecycles.

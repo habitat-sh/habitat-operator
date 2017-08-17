@@ -511,6 +511,7 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 		base.Spec.Template.Spec.Volumes = append(base.Spec.Template.Spec.Volumes, *secretVolume)
 	}
 
+	// Handle ring key, if one is specified.
 	if sg.Spec.Habitat.RingKey != "" {
 		s, err := hc.config.KubernetesClientset.CoreV1().Secrets(apiv1.NamespaceDefault).Get(sg.Spec.Habitat.RingKey, metav1.GetOptions{})
 		if err != nil {
