@@ -228,69 +228,82 @@ func (hc *HabitatController) onPodUpdate(oldObj, newObj interface{}) {
 	// TODO: Do not retrieve or write IP if we are deploying a standalone topology.
 	pod, ok := newObj.(*apiv1.Pod)
 	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to cast pod.")
+		level.Error(hc.logger).Log("msg", "Unknown event received in Pod Update handler")
 		return
 	}
+
 	if pod == nil {
+		level.Warn(hc.logger).Log("msg", "Empty event received in Pod Update handler")
 		return
 	}
+
 	if pod.Status.Phase != apiv1.PodRunning {
 		return
 	}
-	err := hc.writeIP(pod)
-	if err != nil {
+
+	if err := hc.writeLeaderIP(pod); err != nil {
 		level.Error(hc.logger).Log("msg", err)
 		return
 	}
 }
 
+// onPodDelete needs to check whether the Pod that has been deleted was the leader.
+// If it was, another running Pod's IP needs to be written to the ConfigMap.
 func (hc *HabitatController) onPodDelete(obj interface{}) {
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to cast pod.")
+		level.Error(hc.logger).Log("msg", "Unknown event received in Pod Delete handler")
 		return
 	}
+
 	if pod == nil {
+		level.Warn(hc.logger).Log("msg", "Empty event received in Pod Delete handler")
 		return
 	}
+
 	sgName, exists := pod.ObjectMeta.Labels["service-group"]
 	if !exists {
-		level.Error(hc.logger).Log("msg", "Could not retrieve service group name because label did not exist.")
+		level.Error(hc.logger).Log("msg", "Could not retrieve service group name because label does not exist.")
 		return
 	}
+
 	cmName := configMapName(sgName)
+
 	cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(cmName, metav1.GetOptions{})
 	if err != nil {
 		level.Error(hc.logger).Log("msg", err)
 		return
 	}
-	currIP := cm.Data[peerFile]
+
+	currentLeaderIP := cm.Data[peerFile]
 	deletedPodIP := pod.Status.PodIP
-	if currIP != deletedPodIP {
+
+	// The deleted Pod was not the leader, so there's nothing to do.
+	if deletedPodIP != currentLeaderIP {
 		return
 	}
-	// Get only those pods that are running.
+
+	// Get only running pods.
 	fs := fields.SelectorFromSet(fields.Set{
 		"status.phase": "Running",
 	})
+
 	podList, err := hc.config.KubernetesClientset.CoreV1().Pods(apiv1.NamespaceDefault).List(metav1.ListOptions{FieldSelector: fs.String()})
 	if err != nil {
 		level.Error(hc.logger).Log("msg", err)
 		return
 	}
-	for _, newPod := range podList.Items {
-		if newPod.Status.Phase == apiv1.PodRunning {
-			// Replace our IP in the CM file with a new IP of a running pod.
-			err := hc.writeIP(&newPod)
-			if err != nil {
-				level.Error(hc.logger).Log("msg", err)
-			}
-			return
-		}
+
+	newLeader := podList.Items[0]
+
+	if err := hc.writeLeaderIP(&newLeader); err != nil {
+		level.Error(hc.logger).Log("msg", err)
 	}
 }
 
-func (hc *HabitatController) writeIP(pod *apiv1.Pod) error {
+// writeLeaderIP writes the IP of the Pod passed as argument to the ConfigMap, provided there isn't already a running leader.
+// This way, all subsequently running Pods will know how to join the ring.
+func (hc *HabitatController) writeLeaderIP(pod *apiv1.Pod) error {
 	sgName := pod.ObjectMeta.Labels["service-group"]
 	cmName := configMapName(sgName)
 	ip := pod.Status.PodIP
@@ -299,21 +312,27 @@ func (hc *HabitatController) writeIP(pod *apiv1.Pod) error {
 	if err != nil {
 		return err
 	}
-	oldIP := cm.Data[peerFile]
-	if oldIP != "" {
-		// Do not overwrite IP with itself.
-		if ip == oldIP {
+
+	currentLeaderIP := cm.Data[peerFile]
+	if currentLeaderIP != "" {
+		if ip == currentLeaderIP {
 			return nil
 		}
-		podList, err := hc.config.KubernetesClientset.CoreV1().Pods(apiv1.NamespaceDefault).List(metav1.ListOptions{})
+
+		// Is the leader still running?
+		// If so, we don't need to do anything.
+		fs := fields.SelectorFromSet(fields.Set{
+			"status.podIP": currentLeaderIP,
+			"status.phase": string(apiv1.PodRunning),
+		})
+
+		podList, err := hc.config.KubernetesClientset.CoreV1().Pods(apiv1.NamespaceDefault).List(metav1.ListOptions{FieldSelector: fs.String()})
 		if err != nil {
 			return err
 		}
-		for _, oldPod := range podList.Items {
-			// Do not write a new IP if pod with the IP in the CM is still running.
-			if oldPod.Status.PodIP == oldIP && oldPod.Status.Phase == apiv1.PodRunning {
-				return nil
-			}
+
+		if len(podList.Items) > 0 {
+			return nil
 		}
 	}
 
