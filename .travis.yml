@@ -9,4 +9,4 @@ go:
 git:
   depth: 1
 
-script:  go test -v $(go list ./... | grep -v /vendor/)
+script:  make test

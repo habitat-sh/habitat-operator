@@ -50,4 +50,10 @@ If you add, remove or change an import, run:
 
     dep ensure
 
+### Testing
+
+To run unit tests, run:
+
+    make test
+
 [crd]: https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/

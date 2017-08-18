@@ -12,4 +12,7 @@ linux:
 image: linux
 	docker build -t "$(IMAGE):$(TAG)" .
 
-.PHONY: build linux image
+test:
+	go test -v $(shell go list ./... | grep -v /vendor/)
+
+.PHONY: build test linux image
