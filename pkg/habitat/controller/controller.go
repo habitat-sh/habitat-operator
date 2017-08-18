@@ -255,7 +255,7 @@ func (hc *HabitatController) onPodDelete(obj interface{}) {
 	cmName := configMapName(sgName)
 	cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(cmName, metav1.GetOptions{})
 	if err != nil {
-		level.Error(hc.logger).Log("msg", err)
+		level.Debug(hc.logger).Log("msg", "Pod event received, but ConfigMap already deleted")
 		return
 	}
 	currIP := cm.Data[peerFile]
@@ -289,6 +289,13 @@ func (hc *HabitatController) writeIP(pod *apiv1.Pod) error {
 	cmName := configMapName(sgName)
 	ip := pod.Status.PodIP
 
+	// We need to retrieve our deployment to get the UID for the OwnerReference.
+	d, err := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(apiv1.NamespaceDefault).Get(sgName, metav1.GetOptions{})
+	if err != nil {
+		level.Debug(hc.logger).Log("msg", "Pod event received, but Deployment already deleted")
+		return nil
+	}
+
 	cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(cmName, metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -309,12 +316,6 @@ func (hc *HabitatController) writeIP(pod *apiv1.Pod) error {
 				return nil
 			}
 		}
-	}
-
-	// We need to retrieve our deployment to get the UID for the OwnerReference.
-	d, err := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(apiv1.NamespaceDefault).Get(sgName, metav1.GetOptions{})
-	if err != nil {
-		return err
 	}
 
 	updatedCM := newConfigMap(sgName, d.UID, ip)
