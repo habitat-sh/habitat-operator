@@ -396,7 +396,6 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 		// Let's make sure our secret is there before mounting it.
 		secret, err := hc.config.KubernetesClientset.CoreV1().Secrets(apiv1.NamespaceDefault).Get(sg.Spec.Habitat.Config, metav1.GetOptions{})
 		if err != nil {
-			level.Error(hc.logger).Log("msg", "Could not find Secret containing service configuration", "name", sg.Spec.Habitat.Config)
 			return nil, err
 		}
 
