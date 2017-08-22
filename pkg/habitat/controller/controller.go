@@ -445,7 +445,7 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 
 		habArgs = append(habArgs,
 			"--topology", string(topology),
-			"--peer-watch-file", string(path),
+			"--peer-watch-file", path,
 		)
 	}
 
