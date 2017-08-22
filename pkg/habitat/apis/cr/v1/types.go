@@ -18,7 +18,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const ServiceGroupResourcePlural = "servicegroups"
+const (
+	ServiceGroupResourcePlural = "servicegroups"
+	ServiceGroupLabel          = "service-group"
+)
 
 type ServiceGroup struct {
 	metav1.TypeMeta   `json:",inline"`

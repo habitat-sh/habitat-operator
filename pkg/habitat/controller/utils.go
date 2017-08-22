@@ -15,6 +15,8 @@
 package controller
 
 import (
+	"fmt"
+
 	crv1 "github.com/kinvolk/habitat-operator/pkg/habitat/apis/cr/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -25,14 +27,12 @@ import (
 
 const leaderFollowerTopologyMinCount = 3
 
-type validationError struct {
-	msg string
-	// The key in the spec that contains an error.
-	Key string
+type serviceGroupNotFoundError struct {
+	key string
 }
 
-func (err validationError) Error() string {
-	return err.msg
+func (err serviceGroupNotFoundError) Error() string {
+	return fmt.Sprintf("could not find ServiceGroup with key %s", err.key)
 }
 
 func validateCustomObject(sg crv1.ServiceGroup) error {
@@ -42,10 +42,10 @@ func validateCustomObject(sg crv1.ServiceGroup) error {
 	case crv1.TopologyStandalone:
 	case crv1.TopologyLeaderFollower:
 		if spec.Count < leaderFollowerTopologyMinCount {
-			return validationError{msg: "too few instances", Key: "count"}
+			return fmt.Errorf("too few instances: %s", spec.Count)
 		}
 	default:
-		return validationError{msg: "unknown topology", Key: "topology"}
+		return fmt.Errorf("unkown topology: %s", spec.Habitat.Topology)
 	}
 
 	return nil
