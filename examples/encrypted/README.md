@@ -2,7 +2,8 @@
 
 ## Workflow
 
-The user needs to generate a key using `hab ring key generate foobar`, and then base64
+The user needs to generate a [ring
+key](https://www.habitat.sh/docs/run-packages-security/) using `hab ring key generate foobar`, and then base64
 encode it (on Linux) with `hab ring export foobar | base64 -w 0` (please refer to
 [this
 document](https://kubernetes.io/docs/concepts/configuration/secret/#creating-a-secret-manually)
