@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: example-namespace
+---
+apiVersion: habitat.sh/v1
+kind: ServiceGroup
+metadata:
+  name: example-standalone-service-group
+  namespace: example-namespace
+spec:
+  # the core/nginx habitat service packaged as a Docker image
+  image: kinvolk/nginx-hab
+  count: 1
+  habitat:
+    topology: standalone
+    # if not present, defaults to "default"
+    group: foobar
+
