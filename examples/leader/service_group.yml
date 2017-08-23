@@ -8,6 +8,6 @@ spec:
   # count must be at least 3 for a leader-follower topology
   count: 3
   habitat:
-    topology: leader-follower
+    topology: leader
     # if not present, defaults to "default"
     group: foobar
