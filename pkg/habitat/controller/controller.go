@@ -457,9 +457,9 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"habitat":              "true",
+						crv1.HabitatLabel:      "true",
 						crv1.ServiceGroupLabel: sg.Name,
-						"topology":             topology.String(),
+						crv1.TopologyLabel:     topology.String(),
 					},
 				},
 				Spec: apiv1.PodSpec{

@@ -21,6 +21,10 @@ import (
 const (
 	ServiceGroupResourcePlural = "servicegroups"
 	ServiceGroupLabel          = "service-group"
+
+	TopologyLabel = "topology"
+
+	HabitatLabel = "habitat"
 )
 
 type ServiceGroup struct {
