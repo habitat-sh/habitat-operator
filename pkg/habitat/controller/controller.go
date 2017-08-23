@@ -472,7 +472,7 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 	// If we have a secret name present we should mount that secret.
 	if sg.Spec.Habitat.Config != "" {
 		// Let's make sure our secret is there before mounting it.
-		secret, err := hc.config.KubernetesClientset.CoreV1().Secrets(apiv1.NamespaceDefault).Get(sg.Spec.Habitat.Config, metav1.GetOptions{})
+		secret, err := hc.config.KubernetesClientset.CoreV1().Secrets(sg.Namespace).Get(sg.Spec.Habitat.Config, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
