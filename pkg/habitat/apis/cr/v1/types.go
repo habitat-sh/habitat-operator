@@ -62,6 +62,10 @@ type Habitat struct {
 
 type Topology string
 
+func (t Topology) String() string {
+	return string(t)
+}
+
 const (
 	ServiceGroupStateCreated   ServiceGroupState = "Created"
 	ServiceGroupStateProcessed ServiceGroupState = "Processed"

@@ -209,7 +209,7 @@ func (hc *HabitatController) getRunningPods(namespace, label string) ([]apiv1.Po
 	})
 	ls := fields.SelectorFromSet(fields.Set(map[string]string{
 		crv1.ServiceGroupLabel: label,
-		"topology":             "leader",
+		"topology":             crv1.TopologyLeader.String(),
 	}))
 
 	running := metav1.ListOptions{
@@ -436,15 +436,15 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 	// topology type we set standalone as the default one.
 	// We do no need to pass this to habitat, as if no topology
 	// is set, habitat by default sets standalone topology.
-	topology := string(crv1.TopologyStandalone)
+	topology := crv1.TopologyStandalone
 
 	if sg.Spec.Habitat.Topology == crv1.TopologyLeader {
-		topology = string(crv1.TopologyLeader)
+		topology = crv1.TopologyLeader
 
 		path := fmt.Sprintf("%s/%s", configMapDir, peerFilename)
 
 		habArgs = append(habArgs,
-			"--topology", topology,
+			"--topology", topology.String(),
 			"--peer-watch-file", path,
 		)
 	}
@@ -460,7 +460,7 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 					Labels: map[string]string{
 						"habitat":              "true",
 						crv1.ServiceGroupLabel: sg.Name,
-						"topology":             topology,
+						"topology":             topology.String(),
 					},
 				},
 				Spec: apiv1.PodSpec{
