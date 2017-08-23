@@ -16,13 +16,13 @@ package main
 
 import (
 	"context"
-	"flag"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	flag "github.com/spf13/pflag"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
