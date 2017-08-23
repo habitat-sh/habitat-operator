@@ -38,12 +38,19 @@ type Config struct {
 }
 
 func run() int {
-	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-	logger = level.NewFilter(logger, level.AllowInfo())
-
 	// Parse config flags.
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
+	verbose := flag.BoolP("verbose", "v", false, "Enable verbose logging.")
 	flag.Parse()
+
+	// Set up logging.
+	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+
+	if *verbose {
+		logger = level.NewFilter(logger, level.AllowDebug())
+	} else {
+		logger = level.NewFilter(logger, level.AllowInfo())
+	}
 
 	// Build operator config.
 	config, err := buildConfig(*kubeconfig)
