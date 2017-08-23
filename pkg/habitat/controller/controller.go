@@ -209,7 +209,6 @@ func (hc *HabitatController) getRunningPods(namespace, label string) ([]apiv1.Po
 	})
 	ls := fields.SelectorFromSet(fields.Set(map[string]string{
 		crv1.ServiceGroupLabel: label,
-		"topology":             crv1.TopologyLeader.String(),
 	}))
 
 	running := metav1.ListOptions{
