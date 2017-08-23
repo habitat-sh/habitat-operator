@@ -169,7 +169,7 @@ func (hc *HabitatController) handleServiceGroupCreation(sg *crv1.ServiceGroup) e
 	// Create Deployment, if it doesn't already exist.
 	var d *appsv1beta1.Deployment
 
-	d, err = hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(apiv1.NamespaceDefault).Create(deployment)
+	d, err = hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(sg.Namespace).Create(deployment)
 	if err != nil {
 		// Was the error due to the Deployment already existing?
 		if !apierrors.IsAlreadyExists(err) {
@@ -259,7 +259,7 @@ func (hc *HabitatController) handleConfigMap(sg *crv1.ServiceGroup, deploymentUI
 
 	newCM := newConfigMap(sg.Name, deploymentUID, leaderIP)
 
-	cm, err := hc.config.KubernetesClientset.CoreV1Client.ConfigMaps(apiv1.NamespaceDefault).Create(newCM)
+	cm, err := hc.config.KubernetesClientset.CoreV1Client.ConfigMaps(sg.Namespace).Create(newCM)
 	if err != nil {
 		// Was the error due to the ConfigMap already existing?
 		if !apierrors.IsAlreadyExists(err) {
