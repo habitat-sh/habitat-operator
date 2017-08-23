@@ -391,6 +391,12 @@ func (hc *HabitatController) onPodUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
+	// Nothing needs to be done if the topology is not leader-follower, since
+	// there is no ConfigMap to update.
+	if sg.Spec.Habitat.Topology != crv1.TopologyLeader {
+		return
+	}
+
 	hc.enqueueSG(sg)
 }
 
@@ -411,6 +417,12 @@ func (hc *HabitatController) onPodDelete(obj interface{}) {
 		// This only means the Pod and the ServiceGroup watchers are not in sync.
 		level.Debug(hc.logger).Log("msg", "ServiceGroup not found", "function", "onPodDelete")
 
+		return
+	}
+
+	// Nothing needs to be done if the topology is not leader-follower, since
+	// there is no ConfigMap to update.
+	if sg.Spec.Habitat.Topology != crv1.TopologyLeader {
 		return
 	}
 
