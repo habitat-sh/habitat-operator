@@ -244,6 +244,11 @@ func (hc *HabitatController) handleConfigMap(sg *crv1.ServiceGroup, deploymentUI
 
 			// Delete the IP in the existing ConfigMap, as it must necessarily be invalid,
 			// since there are no running Pods.
+			cm, err = hc.config.KubernetesClientset.CoreV1Client.ConfigMaps(sg.Namespace).Get(newCM.Name, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+
 			if err := hc.writeLeaderIP(cm, ""); err != nil {
 				return err
 			}
