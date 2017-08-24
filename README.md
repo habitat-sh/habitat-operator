@@ -7,6 +7,15 @@
 
 The Habitat Operator makes use of [`Custom Resource Definition`][crd]s, and requires a Kubernetes cluster of version `>= 1.7.0`.
 
+At the moment, the Operator requires a forked version of the Habitat supervisor
+that adds support for the `--peer-watch-file` flag.
+See [this issue](https://github.com/habitat-sh/habitat/issues/2735) to track
+progress on upstreaming the feature.
+
+This means that images need to be created using the aforementioned fork of the
+`hab` client, which can be accomplished using [this
+script](https://gist.github.com/krnowak/3c854e94245e2f33a8366e629bfb09c8).
+
 ## Installing
 
     go get -u github.com/kinvolk/habitat-operator/cmd/operator
