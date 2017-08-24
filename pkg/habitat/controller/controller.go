@@ -207,7 +207,9 @@ func (hc *HabitatController) getRunningPods(namespace, label string) ([]apiv1.Po
 	fs := fields.SelectorFromSet(fields.Set{
 		"status.phase": "Running",
 	})
-	ls := fields.SelectorFromSet(fields.Set(map[string]string{
+	ls := labels.SelectorFromSet(labels.Set(map[string]string{
+		crv1.HabitatLabel:      "true",
+		crv1.TopologyLabel:     crv1.TopologyLeader.String(),
 		crv1.ServiceGroupLabel: label,
 	}))
 
