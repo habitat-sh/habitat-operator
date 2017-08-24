@@ -340,7 +340,13 @@ func (hc *HabitatController) handleServiceGroupDeletion(key string) error {
 }
 
 func (hc *HabitatController) watchPods(ctx context.Context) {
-	ls := labels.SelectorFromSet(labels.Set(map[string]string{"habitat": "true"}))
+	ls := labels.SelectorFromSet(labels.Set(map[string]string{
+		crv1.HabitatLabel: "true",
+		// We are only interested in Pods in a leader topology, since they are the
+		// only ones for whom a peer IP ConfigMap needs to be managed.
+		crv1.TopologyLabel: crv1.TopologyLeader.String(),
+	}))
+
 	clw := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
 		"pods",
@@ -393,12 +399,6 @@ func (hc *HabitatController) onPodUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	// Nothing needs to be done if the topology is not leader-follower, since
-	// there is no ConfigMap to update.
-	if sg.Spec.Habitat.Topology != crv1.TopologyLeader {
-		return
-	}
-
 	hc.enqueueSG(sg)
 }
 
@@ -419,12 +419,6 @@ func (hc *HabitatController) onPodDelete(obj interface{}) {
 		// This only means the Pod and the ServiceGroup watchers are not in sync.
 		level.Debug(hc.logger).Log("msg", "ServiceGroup not found", "function", "onPodDelete")
 
-		return
-	}
-
-	// Nothing needs to be done if the topology is not leader-follower, since
-	// there is no ConfigMap to update.
-	if sg.Spec.Habitat.Topology != crv1.TopologyLeader {
 		return
 	}
 
