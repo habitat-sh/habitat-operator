@@ -8,7 +8,7 @@ metadata:
 type: Opaque
 data:
   # base64-encoded ring key
-  ring-key: U1lNLVNFQy0xCnJpbmcta2V5LTIwMTcwODE2MTAyMDQ5CgpyTmtKbkJxZHppVWdmdnYweEVhaWpzMWxHUGZUdHBLdFg0L0xaMmpQcWdJPQ==
+  ring-key: U1lNLVNFQy0xCnJpbmcta2V5LTIwMTcwODE2MTAyMDQ5CgpyTmtKbkJxZHppVWdmdnYweEVhaWpzMWxHUGZUdHBLdFg0L0xaMmpQcWdJPQo=
 ---
 apiVersion: habitat.sh/v1
 kind: ServiceGroup
