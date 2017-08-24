@@ -40,8 +40,12 @@ import (
 
 const (
 	resyncPeriod = 1 * time.Minute
-	peerFile     = "peer-ip"
+
 	userTomlFile = "user.toml"
+	configMapDir = "/habitat-operator"
+
+	peerFilename = "peer-ip"
+	peerFile     = "peer-watch-file"
 
 	// The key under which the ring key is stored in the Kubernetes Secret.
 	ringSecretKey = "ring-key"
@@ -427,6 +431,23 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 			"--group", sg.Spec.Habitat.Group)
 	}
 
+	// As we want to label our pods with the
+	// topology type we set standalone as the default one.
+	// We do not need to pass this to habitat, as if no topology
+	// is set, habitat by default sets standalone topology.
+	topology := crv1.TopologyStandalone
+
+	if sg.Spec.Habitat.Topology == crv1.TopologyLeader {
+		topology = crv1.TopologyLeader
+
+		path := fmt.Sprintf("%s/%s", configMapDir, peerFilename)
+
+		habArgs = append(habArgs,
+			"--topology", topology.String(),
+			"--peer-watch-file", path,
+		)
+	}
+
 	base := &appsv1beta1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: sg.Name,
@@ -436,8 +457,9 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"habitat":              "true",
+						crv1.HabitatLabel:      "true",
 						crv1.ServiceGroupLabel: sg.Name,
+						crv1.TopologyLabel:     topology.String(),
 					},
 				},
 				Spec: apiv1.PodSpec{
@@ -449,7 +471,7 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 							VolumeMounts: []apiv1.VolumeMount{
 								{
 									Name:      "config",
-									MountPath: "/habitat-operator",
+									MountPath: configMapDir,
 									ReadOnly:  true,
 								},
 							},
@@ -467,7 +489,7 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 									Items: []apiv1.KeyToPath{
 										{
 											Key:  peerFile,
-											Path: peerFile,
+											Path: peerFilename,
 										},
 									},
 								},

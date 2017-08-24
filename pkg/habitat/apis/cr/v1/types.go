@@ -21,6 +21,10 @@ import (
 const (
 	ServiceGroupResourcePlural = "servicegroups"
 	ServiceGroupLabel          = "service-group"
+
+	TopologyLabel = "topology"
+
+	HabitatLabel = "habitat"
 )
 
 type ServiceGroup struct {
@@ -62,12 +66,16 @@ type Habitat struct {
 
 type Topology string
 
+func (t Topology) String() string {
+	return string(t)
+}
+
 const (
 	ServiceGroupStateCreated   ServiceGroupState = "Created"
 	ServiceGroupStateProcessed ServiceGroupState = "Processed"
 
-	TopologyStandalone     Topology = "standalone"
-	TopologyLeaderFollower Topology = "leader-follower"
+	TopologyStandalone Topology = "standalone"
+	TopologyLeader     Topology = "leader"
 )
 
 type ServiceGroupList struct {
