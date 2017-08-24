@@ -433,7 +433,7 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 
 	// As we want to label our pods with the
 	// topology type we set standalone as the default one.
-	// We do no need to pass this to habitat, as if no topology
+	// We do not need to pass this to habitat, as if no topology
 	// is set, habitat by default sets standalone topology.
 	topology := crv1.TopologyStandalone
 
