@@ -521,16 +521,8 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 			return nil, err
 		}
 
-		// The current time. We need this because ring keys must have a revision.
-		// This means that the timestamp in the filename and the one in the ring
-		// key itself will be different, because the one in the key reflects the
-		// current time at the moment the key was generated.
-		// This shouldn't be a problem though, since the timestamp in the key is
-		// not used.
-		ts := time.Now().Format("20060102150405")
-
 		// The filename under which the ring key is saved.
-		ringKeyFile := fmt.Sprintf("%s-%s.%s", ringName, ts, ringKeyFileExt)
+		ringKeyFile := fmt.Sprintf("%s.%s", ringName, ringKeyFileExt)
 
 		v := &apiv1.Volume{
 			Name: ringName,
