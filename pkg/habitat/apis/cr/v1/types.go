@@ -55,6 +55,9 @@ type Habitat struct {
 	// The file with this name is mounted inside of the pod. Habitat will
 	// use it for initial configuration of the service.
 	Config string `json:"config"`
+	// The name of the secret that contains the ring key.
+	// Optional.
+	RingKey string `json:"ringKey,omitempty"`
 }
 
 type Topology string
