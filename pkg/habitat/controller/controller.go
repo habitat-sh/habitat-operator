@@ -121,7 +121,7 @@ func (hc *HabitatController) watchServiceGroups(ctx context.Context) {
 		apiv1.NamespaceAll,
 		fields.Everything())
 
-	sgInformer := cache.NewSharedInformer(
+	hc.sgInformer = cache.NewSharedIndexInformer(
 		source,
 		// The object type.
 		&crv1.ServiceGroup{},
@@ -129,8 +129,9 @@ func (hc *HabitatController) watchServiceGroups(ctx context.Context) {
 		// Every resyncPeriod, all resources in the cache will retrigger events.
 		// Set to 0 to disable the resync.
 		resyncPeriod,
+		cache.Indexers{},
 	)
-	sgInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	hc.sgInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: hc.enqueueSG,
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			oldSG, ok := oldObj.(*crv1.ServiceGroup)
@@ -153,7 +154,7 @@ func (hc *HabitatController) watchServiceGroups(ctx context.Context) {
 	})
 
 	// The k8sController will start processing events from the API.
-	go sgInformer.Run(ctx.Done())
+	go hc.sgInformer.Run(ctx.Done())
 }
 
 func (hc *HabitatController) handleServiceGroupCreation(sg *crv1.ServiceGroup) error {
@@ -344,19 +345,19 @@ func (hc *HabitatController) watchPods(ctx context.Context) {
 		apiv1.NamespaceAll,
 		ls)
 
-	podInformer := cache.NewSharedInformer(
+	hc.podInformer = cache.NewSharedIndexInformer(
 		clw,
 		&apiv1.Pod{},
 		resyncPeriod,
 	)
 
-	podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	hc.podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    hc.onPodAdd,
 		UpdateFunc: hc.onPodUpdate,
 		DeleteFunc: hc.onPodDelete,
 	})
 
-	go podInformer.Run(ctx.Done())
+	go hc.podInformer.Run(ctx.Done())
 }
 
 func (hc *HabitatController) onPodAdd(obj interface{}) {
