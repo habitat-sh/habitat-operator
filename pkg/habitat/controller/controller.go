@@ -345,6 +345,7 @@ func (hc *HabitatController) watchPods(ctx context.Context) {
 		clw,
 		&apiv1.Pod{},
 		resyncPeriod,
+		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 
 	hc.podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
