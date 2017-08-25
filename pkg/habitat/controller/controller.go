@@ -201,21 +201,17 @@ func (hc *HabitatController) handleServiceGroupCreation(sg *crv1.ServiceGroup) e
 }
 
 func (hc *HabitatController) getRunningPods(namespace, label string) ([]*apiv1.Pod, error) {
-	fs := fields.SelectorFromSet(fields.Set{
-		"status.phase": "Running",
-	})
 	ls := labels.SelectorFromSet(labels.Set(map[string]string{
 		crv1.ServiceGroupLabel: label,
 	}))
 
-	running := metav1.ListOptions{
-		FieldSelector: fs.String(),
-		LabelSelector: ls.String(),
-	}
-
 	var pods []*apiv1.Pod
 	err := cache.ListAllByNamespace(hc.podInformer.GetIndexer(), namespace, ls, func(obj interface{}) {
-		pods = append(pods, obj.(*apiv1.Pod))
+		pod := obj.(*apiv1.Pod)
+
+		if pod.Status.Phase == "Running" {
+			pods = append(pods, pod)
+		}
 	})
 	if err != nil {
 		return nil, err
