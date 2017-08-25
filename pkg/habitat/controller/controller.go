@@ -60,10 +60,11 @@ type HabitatController struct {
 	// queue contains the jobs that will be handled by syncServiceGroup.
 	// A workqueue.RateLimitingInterface is a queue where failing jobs are re-enqueued with an exponential
 	// delay, so that jobs in a crashing loop don't fill the queue.
+	// Jobs are strings, with the format "namespace/name".
 	queue workqueue.RateLimitingInterface
 
-	// store is the cache of ServiceGroups retrieved by the ListWatcher.
-	store cache.Store
+	sgInformer  cache.SharedIndexInformer
+	podInformer cache.SharedIndexInformer
 }
 
 type Config struct {
@@ -120,44 +121,39 @@ func (hc *HabitatController) watchServiceGroups(ctx context.Context) {
 		apiv1.NamespaceAll,
 		fields.Everything())
 
-	store, k8sController := cache.NewInformer(
+	sgInformer := cache.NewSharedInformer(
 		source,
-
 		// The object type.
 		&crv1.ServiceGroup{},
-
 		// resyncPeriod
 		// Every resyncPeriod, all resources in the cache will retrigger events.
 		// Set to 0 to disable the resync.
 		resyncPeriod,
+	)
+	sgInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: hc.enqueueSG,
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			oldSG, ok := oldObj.(*crv1.ServiceGroup)
+			if !ok {
+				level.Error(hc.logger).Log("msg", "Failed to type assert pod", "obj", oldObj)
+				return
+			}
 
-		// Your custom resource event handlers.
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: hc.enqueueSG,
-			UpdateFunc: func(oldObj, newObj interface{}) {
-				oldSG, ok := oldObj.(*crv1.ServiceGroup)
-				if !ok {
-					level.Error(hc.logger).Log("msg", "Failed to type assert pod", "obj", oldObj)
-					return
-				}
+			newSG, ok := newObj.(*crv1.ServiceGroup)
+			if !ok {
+				level.Error(hc.logger).Log("msg", "Failed to type assert pod", "obj", newObj)
+				return
+			}
 
-				newSG, ok := newObj.(*crv1.ServiceGroup)
-				if !ok {
-					level.Error(hc.logger).Log("msg", "Failed to type assert pod", "obj", newObj)
-					return
-				}
-
-				if hc.serviceGroupNeedsUpdate(oldSG, newSG) {
-					hc.enqueueSG(newSG)
-				}
-			},
-			DeleteFunc: hc.enqueueSG,
-		})
-
-	hc.store = store
+			if hc.serviceGroupNeedsUpdate(oldSG, newSG) {
+				hc.enqueueSG(newSG)
+			}
+		},
+		DeleteFunc: hc.enqueueSG,
+	})
 
 	// The k8sController will start processing events from the API.
-	go k8sController.Run(ctx.Done())
+	go sgInformer.Run(ctx.Done())
 }
 
 func (hc *HabitatController) handleServiceGroupCreation(sg *crv1.ServiceGroup) error {
@@ -203,11 +199,11 @@ func (hc *HabitatController) handleServiceGroupCreation(sg *crv1.ServiceGroup) e
 	return nil
 }
 
-func (hc *HabitatController) getRunningPods(namespace, label string) ([]apiv1.Pod, error) {
+func (hc *HabitatController) getRunningPods(namespace, label string) ([]*apiv1.Pod, error) {
 	fs := fields.SelectorFromSet(fields.Set{
 		"status.phase": "Running",
 	})
-	ls := fields.SelectorFromSet(fields.Set(map[string]string{
+	ls := labels.SelectorFromSet(labels.Set(map[string]string{
 		crv1.ServiceGroupLabel: label,
 	}))
 
@@ -216,12 +212,15 @@ func (hc *HabitatController) getRunningPods(namespace, label string) ([]apiv1.Po
 		LabelSelector: ls.String(),
 	}
 
-	pods, err := hc.config.KubernetesClientset.CoreV1Client.Pods(namespace).List(running)
+	var pods []*apiv1.Pod
+	err := cache.ListAllByNamespace(hc.podInformer.GetIndexer(), namespace, ls, func(obj interface{}) {
+		pods = append(pods, obj.(*apiv1.Pod))
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	return pods.Items, nil
+	return pods, nil
 }
 
 func (hc *HabitatController) writeLeaderIP(cm *apiv1.ConfigMap, ip string) error {
@@ -345,17 +344,19 @@ func (hc *HabitatController) watchPods(ctx context.Context) {
 		apiv1.NamespaceAll,
 		ls)
 
-	_, c := cache.NewInformer(
+	podInformer := cache.NewSharedInformer(
 		clw,
 		&apiv1.Pod{},
 		resyncPeriod,
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    hc.onPodAdd,
-			UpdateFunc: hc.onPodUpdate,
-			DeleteFunc: hc.onPodDelete,
-		})
+	)
 
-	go c.Run(ctx.Done())
+	podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    hc.onPodAdd,
+		UpdateFunc: hc.onPodUpdate,
+		DeleteFunc: hc.onPodDelete,
+	})
+
+	go podInformer.Run(ctx.Done())
 }
 
 func (hc *HabitatController) onPodAdd(obj interface{}) {
@@ -621,7 +622,7 @@ func (hc *HabitatController) processNextItem() bool {
 // * a ServiceGroup was created/updated/deleted
 // * a Pod was created/updated/deleted
 func (hc *HabitatController) syncServiceGroup(key string) error {
-	obj, exists, err := hc.store.GetByKey(key)
+	obj, exists, err := hc.sgInformer.GetStore().GetByKey(key)
 	if err != nil {
 		return err
 	}
@@ -668,7 +669,7 @@ func (hc *HabitatController) podNeedsUpdate(oldPod, newPod *apiv1.Pod) bool {
 func (hc *HabitatController) getServiceGroupFromPod(pod *apiv1.Pod) (*crv1.ServiceGroup, error) {
 	key := serviceGroupKeyFromPod(pod)
 
-	obj, exists, err := hc.store.GetByKey(key)
+	obj, exists, err := hc.sgInformer.GetStore().GetByKey(key)
 	if err != nil {
 		return nil, err
 	}
