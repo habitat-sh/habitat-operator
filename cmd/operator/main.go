@@ -26,7 +26,6 @@ import (
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	habitatclient "github.com/kinvolk/habitat-operator/pkg/habitat/client"
@@ -53,7 +52,7 @@ func run() int {
 	}
 
 	// Build operator config.
-	config, err := buildConfig(*kubeconfig)
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
 		level.Error(logger).Log("msg", err)
 		return 1
@@ -123,12 +122,4 @@ func run() int {
 
 func main() {
 	os.Exit(run())
-}
-
-func buildConfig(kubeconfig string) (*rest.Config, error) {
-	if kubeconfig != "" {
-		return clientcmd.BuildConfigFromFlags("", kubeconfig)
-	}
-
-	return rest.InClusterConfig()
 }
