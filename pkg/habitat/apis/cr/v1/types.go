@@ -61,7 +61,7 @@ type Habitat struct {
 	Config string `json:"config"`
 	// The name of the secret that contains the ring key.
 	// Optional.
-	RingKey string `json:"ringKey,omitempty"`
+	RingSecretName string `json:"ringSecretName,omitempty"`
 }
 
 type Topology string
