@@ -63,8 +63,9 @@ type HabitatController struct {
 	// Jobs are strings, with the format "namespace/name".
 	queue workqueue.RateLimitingInterface
 
-	sgInformer  cache.SharedIndexInformer
-	podInformer cache.SharedIndexInformer
+	sgInformer        cache.SharedIndexInformer
+	podInformer       cache.SharedIndexInformer
+	configMapInformer cache.SharedIndexInformer
 }
 
 type Config struct {
@@ -103,6 +104,8 @@ func (hc *HabitatController) Run(ctx context.Context) error {
 	hc.watchServiceGroups(ctx)
 
 	hc.watchPods(ctx)
+
+	hc.watchConfigMaps(ctx)
 
 	// Start the synchronous queue consumer.
 	go hc.worker()
@@ -155,6 +158,36 @@ func (hc *HabitatController) watchServiceGroups(ctx context.Context) {
 
 	// The k8sController will start processing events from the API.
 	go hc.sgInformer.Run(ctx.Done())
+}
+
+func (hc *HabitatController) watchConfigMaps(ctx context.Context) {
+	ls := labels.SelectorFromSet(labels.Set(map[string]string{
+		crv1.HabitatLabel:  "true",
+		crv1.TopologyLabel: crv1.TopologyLeader,
+	}))
+	source := newListWatchFromClientWithLabels(
+		hc.config.KubernetesClientset.CoreV1().RESTClient(),
+		"configmaps",
+		apiv1.NamespaceAll,
+		ls)
+
+	hc.configMapInformer = cache.NewSharedIndexInformer(
+		source,
+		// The object type.
+		&apiv1.ConfigMap{},
+		// resyncPeriod
+		// Every resyncPeriod, all resources in the cache will retrigger events.
+		// Set to 0 to disable the resync.
+		resyncPeriod,
+		cache.Indexers{},
+	)
+	hc.configMapInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		UpdateFunc: hc.onConfigMapUpdate,
+		DeleteFunc: hc.onConfigMapDelete,
+	})
+
+	// The k8sController will start processing events from the API.
+	go hc.configMapInformer.Run(ctx.Done())
 }
 
 func (hc *HabitatController) handleServiceGroupCreation(sg *crv1.ServiceGroup) error {
@@ -305,6 +338,62 @@ func (hc *HabitatController) handleConfigMap(sg *crv1.ServiceGroup, deploymentUI
 	}
 
 	return nil
+}
+
+func (hc *HabitatController) onConfigMapUpdate(oldObj, newObj interface{}) {
+	oldCM, ok1 := oldObj.(*apiv1.ConfigMap)
+	if !ok1 {
+		level.Error(hc.logger).Log("msg", "Failed to type assert ConfigMap", "obj", oldObj)
+		return
+	}
+
+	newCM, ok2 := newObj.(*apiv1.ConfigMap)
+	if !ok2 {
+		level.Error(hc.logger).Log("msg", "Failed to type assert ConfigMap", "obj", newObj)
+		return
+	}
+
+	if !hc.configMapNeedsUpdate(oldCM, newCM) {
+		return
+	}
+
+	sg, err := hc.getServiceGroupFromConfigMap(newCM)
+	if err != nil {
+		if sgErr, ok := err.(serviceGroupNotFoundError); !ok {
+			level.Error(hc.logger).Log("msg", sgErr)
+			return
+		}
+
+		// This only means the ConfigMap and the ServiceGroup watchers are not in sync.
+		level.Debug(hc.logger).Log("msg", "ServiceGroup not found", "function", "onConfigMapUpdate")
+
+		return
+	}
+
+	hc.enqueueSG(sg)
+}
+
+func (hc *HabitatController) onConfigMapDelete(obj interface{}) {
+	cm, ok := obj.(*apiv1.ConfigMap)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert ConfigMap", "obj", obj)
+		return
+	}
+
+	sg, err := hc.getServiceGroupFromConfigMap(cm)
+	if err != nil {
+		if sgErr, ok := err.(serviceGroupNotFoundError); !ok {
+			level.Error(hc.logger).Log("msg", sgErr)
+			return
+		}
+
+		// This only means the Pod and the ServiceGroup watchers are not in sync.
+		level.Debug(hc.logger).Log("msg", "ServiceGroup not found", "function", "onConfigMapDelete")
+
+		return
+	}
+
+	hc.enqueueSG(sg)
 }
 
 func (hc *HabitatController) handleServiceGroupDeletion(key string) error {
@@ -619,6 +708,7 @@ func (hc *HabitatController) processNextItem() bool {
 // It is invoked when any of these events happen:
 // * a ServiceGroup was created/updated/deleted
 // * a Pod was created/updated/deleted
+// * a ConfigMap was created/updated/deleted
 func (hc *HabitatController) syncServiceGroup(key string) error {
 	obj, exists, err := hc.sgInformer.GetStore().GetByKey(key)
 	if err != nil {
@@ -683,6 +773,25 @@ func (hc *HabitatController) getServiceGroupFromPod(pod *apiv1.Pod) (*crv1.Servi
 	return sg, nil
 }
 
+func (hc *HabitatController) getServiceGroupFromConfigMap(cm *apiv1.ConfigMap) (*crv1.ServiceGroup, error) {
+	key := serviceGroupKeyFromConfigMap(cm)
+
+	obj, exists, err := hc.sgInformer.GetStore().GetByKey(key)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, serviceGroupNotFoundError{key: key}
+	}
+
+	sg, ok := obj.(*crv1.ServiceGroup)
+	if !ok {
+		return nil, fmt.Errorf("unknown object type in store: %v", obj)
+	}
+
+	return sg, nil
+}
+
 func newConfigMap(sgName string, parentUID types.UID, ip string) *apiv1.ConfigMap {
 	return &apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -702,10 +811,35 @@ func newConfigMap(sgName string, parentUID types.UID, ip string) *apiv1.ConfigMa
 	}
 }
 
+func (hc *HabitatController) configMapNeedsUpdate(oldCM, newCM *apiv1.ConfigMap) bool {
+	// Ignore identical objects.
+	// https://github.com/kubernetes/kubernetes/blob/7e630154dfc7b2155f8946a06f92e96e268dcbcd/pkg/controller/replicaset/replica_set.go#L276-L277
+	if oldCM.ResourceVersion == newCM.ResourceVersion {
+		level.Debug(hc.logger).Log("msg", "Update ignored as it didn't change ConfigMap resource version", "pod", newCM)
+		return false
+	}
+
+	// Ignore changes that don't change the leader IP.
+	if oldCM.Data[peerFile] == newCM.Data[peerFile] {
+		level.Debug(hc.logger).Log("msg", "Update ignored as it didn't change leader IP", "configmap", newCM)
+		return false
+	}
+
+	return true
+}
+
 func serviceGroupKeyFromPod(pod *apiv1.Pod) string {
 	sgName := pod.Labels[crv1.ServiceGroupLabel]
 
 	key := fmt.Sprintf("%s/%s", pod.Namespace, sgName)
+
+	return key
+}
+
+func serviceGroupKeyFromConfigMap(cm *apiv1.ConfigMap) string {
+	sgName := cm.Labels[crv1.ServiceGroupLabel]
+
+	key := fmt.Sprintf("%s/%s", cm.Namespace, sgName)
 
 	return key
 }
