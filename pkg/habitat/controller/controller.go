@@ -213,7 +213,9 @@ func (hc *HabitatController) getRunningPods(namespace, label string) ([]apiv1.Po
 	fs := fields.SelectorFromSet(fields.Set{
 		"status.phase": "Running",
 	})
-	ls := fields.SelectorFromSet(fields.Set(map[string]string{
+	ls := labels.SelectorFromSet(labels.Set(map[string]string{
+		crv1.HabitatLabel:      "true",
+		crv1.TopologyLabel:     crv1.TopologyLeader.String(),
 		crv1.ServiceGroupLabel: label,
 	}))
 
@@ -344,7 +346,13 @@ func (hc *HabitatController) handleServiceGroupDeletion(key string) error {
 }
 
 func (hc *HabitatController) watchPods(ctx context.Context) {
-	ls := labels.SelectorFromSet(labels.Set(map[string]string{"habitat": "true"}))
+	ls := labels.SelectorFromSet(labels.Set(map[string]string{
+		crv1.HabitatLabel: "true",
+		// We are only interested in Pods in a leader topology, since they are the
+		// only ones for whom a peer IP ConfigMap needs to be managed.
+		crv1.TopologyLabel: crv1.TopologyLeader.String(),
+	}))
+
 	clw := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
 		"pods",
@@ -443,6 +451,12 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 	// is set, habitat by default sets standalone topology.
 	topology := crv1.TopologyStandalone
 
+	// These two variables relate to the mounting of the peer-ip ConfigMap, and
+	// are only used by the leader-follower topology, so we leave them blank for
+	// the default case.
+	var volumeMounts []apiv1.VolumeMount
+	var volumes []apiv1.Volume
+
 	if sg.Spec.Habitat.Topology == crv1.TopologyLeader {
 		topology = crv1.TopologyLeader
 
@@ -452,6 +466,33 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 			"--topology", topology.String(),
 			"--peer-watch-file", path,
 		)
+
+		volumeMounts = []apiv1.VolumeMount{
+			{
+				Name:      "config",
+				MountPath: configMapDir,
+				ReadOnly:  true,
+			},
+		}
+
+		volumes = []apiv1.Volume{
+			{
+				Name: "config",
+				VolumeSource: apiv1.VolumeSource{
+					ConfigMap: &apiv1.ConfigMapVolumeSource{
+						LocalObjectReference: apiv1.LocalObjectReference{
+							Name: configMapName(sg.Name),
+						},
+						Items: []apiv1.KeyToPath{
+							{
+								Key:  peerFile,
+								Path: peerFilename,
+							},
+						},
+					},
+				},
+			},
+		}
 	}
 
 	base := &appsv1beta1.Deployment{
@@ -471,37 +512,14 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 				Spec: apiv1.PodSpec{
 					Containers: []apiv1.Container{
 						{
-							Name:  "habitat-service",
-							Image: sg.Spec.Image,
-							Args:  habArgs,
-							VolumeMounts: []apiv1.VolumeMount{
-								{
-									Name:      "config",
-									MountPath: configMapDir,
-									ReadOnly:  true,
-								},
-							},
+							Name:         "habitat-service",
+							Image:        sg.Spec.Image,
+							Args:         habArgs,
+							VolumeMounts: volumeMounts,
 						},
 					},
 					// Define the volume for the ConfigMap.
-					Volumes: []apiv1.Volume{
-						{
-							Name: "config",
-							VolumeSource: apiv1.VolumeSource{
-								ConfigMap: &apiv1.ConfigMapVolumeSource{
-									LocalObjectReference: apiv1.LocalObjectReference{
-										Name: configMapName(sg.Name),
-									},
-									Items: []apiv1.KeyToPath{
-										{
-											Key:  peerFile,
-											Path: peerFilename,
-										},
-									},
-								},
-							},
-						},
-					},
+					Volumes: volumes,
 				},
 			},
 		},
