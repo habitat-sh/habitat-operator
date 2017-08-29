@@ -66,3 +66,13 @@ To run unit tests, run:
     make test
 
 [crd]: https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/
+
+## Testing
+
+To run end-to-end tests you need a `minikube` up and running. After that just run:
+ 
+    make TESTIMAGE=YOUR_OPERATOR_IMAGE e2e
+
+Clean up after the tests by either running `minikube delete` (this will delete your entire cluster) or:
+
+    make clean-test
