@@ -44,6 +44,7 @@ func run() int {
 
 	// Set up logging.
 	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+	logger = log.With(logger, "ts", log.DefaultTimestamp)
 
 	if *verbose {
 		logger = level.NewFilter(logger, level.AllowDebug())
