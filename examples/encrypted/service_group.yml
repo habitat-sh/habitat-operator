@@ -1,14 +1,15 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: ring-key-20170816102049
+  # the name must mirror the ring filename, without the extension
+  name: example-encrypted-ring-20170829113029
   labels:
     habitat: "true"
     ring-key: "true"
 type: Opaque
 data:
   # base64-encoded ring key
-  ring-key: U1lNLVNFQy0xCnJpbmcta2V5LTIwMTcwODE2MTAyMDQ5CgpyTmtKbkJxZHppVWdmdnYweEVhaWpzMWxHUGZUdHBLdFg0L0xaMmpQcWdJPQo=
+  ring-key: U1lNLVNFQy0xCmV4YW1wbGUtZW5jcnlwdGVkLXJpbmctMjAxNzA4MjkxMTMwMjkKClFGZm9ZTHJOV3NNRk93Tk4wb0F1d3d4WjA1aVBMdTQxSUdGSzJISVFqTlk9
 ---
 apiVersion: habitat.sh/v1
 kind: ServiceGroup
@@ -21,4 +22,4 @@ spec:
   habitat:
     topology: leader
     # the name of the secret containing the ring key
-    ringKey: ring-key-20170816102049
+    ringSecretName: example-encrypted-ring-20170829113029

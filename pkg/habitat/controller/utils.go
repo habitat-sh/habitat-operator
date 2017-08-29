@@ -48,6 +48,16 @@ func validateCustomObject(sg crv1.ServiceGroup) error {
 		return fmt.Errorf("unkown topology: %s", spec.Habitat.Topology)
 	}
 
+	if rsn := spec.Habitat.RingSecretName; rsn != "" {
+		ringParts := ringRegexp.FindStringSubmatch(rsn)
+
+		// The ringParts slice should have a second element for the capturing group
+		// in the ringRegexp regular expression, containing the ring's name.
+		if len(ringParts) < 2 {
+			return fmt.Errorf("malformed ring secret name: %s", rsn)
+		}
+	}
+
 	return nil
 }
 

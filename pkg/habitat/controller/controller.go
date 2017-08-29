@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/go-kit/kit/log"
@@ -51,7 +52,12 @@ const (
 	ringSecretKey = "ring-key"
 	// The extension of the key file.
 	ringKeyFileExt = "sym.key"
+	// Keys are saved to disk with the format `<name>-<revision>.<extension>`.
+	// This regexp captures the name part.
+	ringKeyRegexp = `^([\w_-]+)-\d{14}$`
 )
+
+var ringRegexp *regexp.Regexp = regexp.MustCompile(ringKeyRegexp)
 
 type HabitatController struct {
 	config Config
@@ -536,18 +542,22 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 	}
 
 	// Handle ring key, if one is specified.
-	if ringName := sg.Spec.Habitat.RingKey; ringName != "" {
-		s, err := hc.config.KubernetesClientset.CoreV1().Secrets(apiv1.NamespaceDefault).Get(ringName, metav1.GetOptions{})
+	if ringSecretName := sg.Spec.Habitat.RingSecretName; ringSecretName != "" {
+		s, err := hc.config.KubernetesClientset.CoreV1().Secrets(apiv1.NamespaceDefault).Get(ringSecretName, metav1.GetOptions{})
 		if err != nil {
 			level.Error(hc.logger).Log("msg", "Could not find Secret containing ring key")
 			return nil, err
 		}
 
 		// The filename under which the ring key is saved.
-		ringKeyFile := fmt.Sprintf("%s.%s", ringName, ringKeyFileExt)
+		ringKeyFile := fmt.Sprintf("%s.%s", ringSecretName, ringKeyFileExt)
+
+		// Extract the bare ring name, by removing the revision.
+		// Validation has already been performed by this point.
+		ringName := ringRegexp.FindStringSubmatch(ringSecretName)[1]
 
 		v := &apiv1.Volume{
-			Name: ringName,
+			Name: ringSecretName,
 			VolumeSource: apiv1.VolumeSource{
 				Secret: &apiv1.SecretVolumeSource{
 					SecretName: s.Name,
@@ -562,7 +572,7 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 		}
 
 		vm := &apiv1.VolumeMount{
-			Name:      ringName,
+			Name:      ringSecretName,
 			MountPath: "/hab/cache/keys",
 			// This directory cannot be made read-only, as the supervisor writes to
 			// it during its operation.

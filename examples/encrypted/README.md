@@ -12,14 +12,14 @@ for platform-specific instructions on base64 encoding).
 The encoded key can then be used as the value of the `ring-key` key in a Kubernetes
 secret.
 
-The secret's name should be the same as the filename of the key, minus the
+The secret's name must be the same as the filename of the key, minus the
 extension.
 
 For example, for a key named `foobar`, the key file might be something like
-`foobar-20170824094632.sym.key`, and the secret name should be
+`foobar-20170824094632.sym.key`, and the secret name must be
 `foobar-20170824094632`.
 
-The secret's name must additionally be referenced in the `ServiceGroup` object's `ringKey`
+The secret's name must additionally be referenced in the `ServiceGroup` object's `ringSecretName`
 key.
 
 ## Deletion
