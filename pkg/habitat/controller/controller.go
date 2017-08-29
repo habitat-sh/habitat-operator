@@ -137,13 +137,13 @@ func (hc *HabitatController) watchServiceGroups(ctx context.Context) {
 			UpdateFunc: func(oldObj, newObj interface{}) {
 				oldSG, ok := oldObj.(*crv1.ServiceGroup)
 				if !ok {
-					level.Error(hc.logger).Log("msg", "Failed to type assert pod", "obj", oldObj)
+					level.Error(hc.logger).Log("msg", "Failed to type assert ServiceGroup", "obj", oldObj)
 					return
 				}
 
 				newSG, ok := newObj.(*crv1.ServiceGroup)
 				if !ok {
-					level.Error(hc.logger).Log("msg", "Failed to type assert pod", "obj", newObj)
+					level.Error(hc.logger).Log("msg", "Failed to type assert ServiceGroup", "obj", newObj)
 					return
 				}
 
