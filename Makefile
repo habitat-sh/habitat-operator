@@ -6,10 +6,10 @@ TAG := $(shell git describe --tags --always)
 TESTIMAGE :=
 
 build:
-	go build -i github.com/kinvolk/habitat-operator/cmd/operator
+	go build -i github.com/kinvolk/habitat-operator/cmd/habitat-operator
 
 linux:
-	env GOOS=linux go build github.com/kinvolk/habitat-operator/cmd/operator
+	env GOOS=linux go build github.com/kinvolk/habitat-operator/cmd/habitat-operator
 
 image: linux
 	docker build -t "$(IMAGE):$(TAG)" .
