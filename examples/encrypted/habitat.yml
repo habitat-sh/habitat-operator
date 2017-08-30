@@ -12,14 +12,14 @@ data:
   ring-key: U1lNLVNFQy0xCmV4YW1wbGUtZW5jcnlwdGVkLXJpbmctMjAxNzA4MjkxMTMwMjkKClFGZm9ZTHJOV3NNRk93Tk4wb0F1d3d4WjA1aVBMdTQxSUdGSzJISVFqTlk9
 ---
 apiVersion: habitat.sh/v1
-kind: ServiceGroup
+kind: Habitat
 metadata:
-  name: example-encrypted-service-group
+  name: example-encrypted-habitat
 spec:
   # the core/nginx habitat service packaged as a Docker image
   image: kinvolk/consul-hab
   count: 3
-  habitat:
+  service:
     topology: leader
     # the name of the secret containing the ring key
     ringSecretName: example-encrypted-ring-20170829113029

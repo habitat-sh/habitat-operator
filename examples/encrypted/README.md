@@ -1,4 +1,4 @@
-# Encrypted ServiceGroup example
+# Encrypted Habitat example
 
 By default supervisors will communicate with no encryption. This example demostrates how to secure the communication.
 
@@ -21,19 +21,19 @@ For example, for a key named `foobar`, the key file might be something like
 `foobar-20170824094632.sym.key`, and the secret name must be
 `foobar-20170824094632`.
 
-The secret's name must additionally be referenced in the `ServiceGroup` object's `ringSecretName` key.
+The secret's name must additionally be referenced in the `Habitat` object's `ringSecretName` key.
 
 After the Habitat operator is up and running, execute the following command from the root of this repository:
 
 ```
-kubectl create -f examples/encrypted/service_group.yml
+kubectl create -f examples/encrypted/habitat.yml
 ```
 
 ## Deletion
 
-The Habitat operator does not delete the Secret on ServiceGroup deletion. This is
+The Habitat operator does not delete the Secret on Habitat deletion. This is
 because the user might want to re-use the secret across multiple
-`ServiceGroup`s and `ServiceGroup` lifecycles.
+`Habitat`s and `Habitat` lifecycles.
 
 To delete the Secret simply run:
 

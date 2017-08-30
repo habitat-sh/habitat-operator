@@ -1,4 +1,4 @@
-# Namespaced ServiceGroup example
+# Namespaced Habitat example
 
 This demonstrates how to deploy service in a [Kubernetes namespace](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/).
 
@@ -6,6 +6,6 @@ This demonstrates how to deploy service in a [Kubernetes namespace](https://kube
 
 Simply run:
 
- `kubectl create -f examples/namespaced/service_group.yml`.
+ `kubectl create -f examples/namespaced/habitat.yml`.
 
-Note that any Secrets used by a `ServiceGroup` must be in the same namespace as the `ServiceGroup` itself.
+Note that any Secrets used by a `Habitat` must be in the same namespace as the `Habitat` itself.

@@ -6,9 +6,9 @@ A topology describes the intended relationship between members within a Habitat 
 
 Simply run:
 
-  `kubectl create -f examples/leader/service_group.yml`.
+  `kubectl create -f examples/leader/habitat.yml`.
 
 This will deploy 3 instances of consul Habitat service.
 
-Note: Whenever creating a `leader` topology ServiceGroup you have to specify `count` 3 or more and would be best if the number is odd, this is so the election can take place.
+Note: Whenever creating a `leader` topology specify instance `count` of 3 or more and would be best if the number is odd, this is so the election can take place.
 

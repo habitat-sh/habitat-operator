@@ -36,17 +36,17 @@ const (
 	nodejsImage = "kinvolk/nodejs-hab:test"
 )
 
-// TestServiceGroupCreate tests service group creation.
-func TestServiceGroupCreate(t *testing.T) {
-	sgName := "test-standalone"
-	sg := utils.NewStandaloneSG(sgName, "foobar", nodejsImage)
+// TestHabitatCreate tests Habitat creation.
+func TestHabitatCreate(t *testing.T) {
+	habitatName := "test-standalone"
+	habitat := utils.NewStandaloneHabitat(habitatName, "foobar", nodejsImage)
 
-	if err := framework.CreateSG(sg); err != nil {
+	if err := framework.CreateHabitat(habitat); err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(sgName, 1); err != nil {
+	if err := framework.WaitForResources(habitatName, 1); err != nil {
 		t.Fatal(err)
 	}
 
@@ -56,16 +56,16 @@ func TestServiceGroupCreate(t *testing.T) {
 	}
 }
 
-// TestServiceGroupInitialConfig tests initial configuration.
-func TestServiceGroupInitialConfig(t *testing.T) {
-	sgName := "mytutorialapp"
+// TestHabitatInitialConfig tests initial configuration.
+func TestHabitatInitialConfig(t *testing.T) {
+	habitatName := "mytutorialapp"
 	msg := "Hello from Tests!"
 	configMsg := fmt.Sprintf("message = '%s'", msg)
 
 	// Create Secret as a user would.
 	secret := &apiv1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: sgName,
+			Name: habitatName,
 		},
 		Data: map[string][]byte{
 			"user.toml": []byte(configMsg),
@@ -77,26 +77,26 @@ func TestServiceGroupInitialConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sg := utils.NewStandaloneSG(sgName, "foobar", nodejsImage)
-	utils.AddConfigToSG(sg)
+	habitat := utils.NewStandaloneHabitat(habitatName, "foobar", nodejsImage)
+	utils.AddConfigToHabitat(habitat)
 
-	if err := framework.CreateSG(sg); err != nil {
+	if err := framework.CreateHabitat(habitat); err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(sgName, 1); err != nil {
+	if err := framework.WaitForResources(habitatName, 1); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create Kubernetes Service to expose port.
 	service := &apiv1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: sgName,
+			Name: habitatName,
 		},
 		Spec: apiv1.ServiceSpec{
 			Selector: map[string]string{
-				crv1.ServiceGroupLabel: sgName,
+				crv1.HabitatNameLabel: habitatName,
 			},
 			Type: "NodePort",
 			Ports: []apiv1.ServicePort{
@@ -116,7 +116,7 @@ func TestServiceGroupInitialConfig(t *testing.T) {
 	}
 
 	// Wait until endpoints are ready.
-	if err := framework.WaitForEndpoints(sgName); err != nil {
+	if err := framework.WaitForEndpoints(habitatName); err != nil {
 		t.Fatal(err)
 	}
 	time.Sleep(waitForPorts)
@@ -145,33 +145,33 @@ func TestServiceGroupInitialConfig(t *testing.T) {
 	}
 
 	// Delete Service so it doesn't interfere with other tests.
-	if err := framework.DeleteService(sgName); err != nil {
+	if err := framework.DeleteService(habitatName); err != nil {
 		t.Fatal(err)
 	}
 }
 
-// TestServiceGroupFunctioning tests that operator deploys a habitat service and that it has started.
-func TestServiceGroupFunctioning(t *testing.T) {
-	sgName := "test-service-group"
-	sg := utils.NewStandaloneSG(sgName, "foobar", nodejsImage)
+// TestHabitatFunctioning tests that operator deploys a Habitat service and that it has started.
+func TestHabitatFunctioning(t *testing.T) {
+	habitatName := "test-habitat"
+	habitat := utils.NewStandaloneHabitat(habitatName, "foobar", nodejsImage)
 
-	if err := framework.CreateSG(sg); err != nil {
+	if err := framework.CreateHabitat(habitat); err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(sgName, 1); err != nil {
+	if err := framework.WaitForResources(habitatName, 1); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create Kubernetes Service to expose port.
 	service := &apiv1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: sgName,
+			Name: habitatName,
 		},
 		Spec: apiv1.ServiceSpec{
 			Selector: map[string]string{
-				crv1.ServiceGroupLabel: sgName,
+				crv1.HabitatNameLabel: habitatName,
 			},
 			Type: "NodePort",
 			Ports: []apiv1.ServicePort{
@@ -190,7 +190,7 @@ func TestServiceGroupFunctioning(t *testing.T) {
 	}
 
 	// Wait until endpoints are ready.
-	if err := framework.WaitForEndpoints(sgName); err != nil {
+	if err := framework.WaitForEndpoints(habitatName); err != nil {
 		t.Fatal(err)
 	}
 	time.Sleep(waitForPorts)
@@ -220,43 +220,43 @@ func TestServiceGroupFunctioning(t *testing.T) {
 	}
 
 	// Delete Service so it doesn't interfere with other tests.
-	if err := framework.DeleteService(sgName); err != nil {
+	if err := framework.DeleteService(habitatName); err != nil {
 		t.Fatal(err)
 	}
 }
 
-// TestServiceGroupDelete tests Service Group deletion.
-func TestServiceGroupDelete(t *testing.T) {
-	sgName := "test-deletion"
-	sg := utils.NewStandaloneSG(sgName, "foobar", nodejsImage)
+// TestHabitatDelete tests Habitat deletion.
+func TestHabitatDelete(t *testing.T) {
+	habitatName := "test-deletion"
+	habitat := utils.NewStandaloneHabitat(habitatName, "foobar", nodejsImage)
 
-	if err := framework.CreateSG(sg); err != nil {
+	if err := framework.CreateHabitat(habitat); err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(sgName, 1); err != nil {
+	if err := framework.WaitForResources(habitatName, 1); err != nil {
 		t.Fatal(err)
 	}
 
-	// Delete SG.
-	if err := framework.DeleteSG(sgName); err != nil {
+	// Delete Habitat.
+	if err := framework.DeleteHabitat(habitatName); err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for resources to be deleted.
-	if err := framework.WaitForResources(sgName, 0); err != nil {
+	if err := framework.WaitForResources(habitatName, 0); err != nil {
 		t.Fatal(err)
 	}
 
 	// Check if all the resources the operator creates are deleted.
 	// We do not care about secrets being deleted, as the user needs to delete those manually.
-	d, err := framework.KubeClient.AppsV1beta1().Deployments(utils.TestNs).Get(sgName, metav1.GetOptions{})
+	d, err := framework.KubeClient.AppsV1beta1().Deployments(utils.TestNs).Get(habitatName, metav1.GetOptions{})
 	if err == nil && d != nil {
 		t.Fatal("Deployment was not deleted.")
 	}
 
-	// The CM with the peer IP should still be alive, despite the SG being deleted as it was created outside of the scope of a SG.
+	// The CM with the peer IP should still be alive, despite the Habitat being deleted as it was created outside of the scope of a Habitat.
 	_, err = framework.KubeClient.CoreV1().ConfigMaps(utils.TestNs).Get(configMapName, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -265,39 +265,39 @@ func TestServiceGroupDelete(t *testing.T) {
 
 // TestBind tests that the operator correctly created two Habitat Services and bound them together.
 func TestBind(t *testing.T) {
-	// Create two SG to test binding between them.
-	sgGoName := "test-bind-go"
+	// Create two Habitat to test binding between them.
+	habitatGoName := "test-bind-go"
 	bindName := "db"
-	sgGo := utils.NewStandaloneSG(sgGoName, "foobar", "kinvolk/bindgo-hab:test")
-	utils.AddBindToSG(sgGo, bindName, "postgresql")
+	habitatGo := utils.NewStandaloneHabitat(habitatGoName, "foobar", "kinvolk/bindgo-hab:test")
+	utils.AddBindToHabitat(habitatGo, bindName, "postgresql")
 
-	if err := framework.CreateSG(sgGo); err != nil {
+	if err := framework.CreateHabitat(habitatGo); err != nil {
 		t.Fatal(err)
 	}
 
-	sgDBName := "test-bind-db"
-	sgDB := utils.NewStandaloneSG(sgDBName, "foobar", "kinvolk/postgresql-hab:test")
+	habitatDBName := "test-bind-db"
+	habitatDB := utils.NewStandaloneHabitat(habitatDBName, "foobar", "kinvolk/postgresql-hab:test")
 
-	if err := framework.CreateSG(sgDB); err != nil {
+	if err := framework.CreateHabitat(habitatDB); err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(sgGoName, 1); err != nil {
+	if err := framework.WaitForResources(habitatGoName, 1); err != nil {
 		t.Fatal(err)
 	}
-	if err := framework.WaitForResources(sgDBName, 1); err != nil {
+	if err := framework.WaitForResources(habitatDBName, 1); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create Kubernetes Service to expose port.
 	service := &apiv1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: sgGoName,
+			Name: habitatGoName,
 		},
 		Spec: apiv1.ServiceSpec{
 			Selector: map[string]string{
-				crv1.ServiceGroupLabel: sgGoName,
+				crv1.HabitatNameLabel: habitatGoName,
 			},
 			Type: "NodePort",
 			Ports: []apiv1.ServicePort{
@@ -317,7 +317,7 @@ func TestBind(t *testing.T) {
 	}
 
 	// Wait until endpoints are ready.
-	if err := framework.WaitForEndpoints(sgGoName); err != nil {
+	if err := framework.WaitForEndpoints(habitatGoName); err != nil {
 		t.Fatal(err)
 	}
 	time.Sleep(waitForPorts)
@@ -349,7 +349,7 @@ func TestBind(t *testing.T) {
 	}
 
 	// Delete Service so it doesn't interfere with other tests.
-	if err := framework.DeleteService(sgGoName); err != nil {
+	if err := framework.DeleteService(habitatGoName); err != nil {
 		t.Fatal(err)
 	}
 }

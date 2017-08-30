@@ -7,6 +7,6 @@ A topology describes the intended relationship between members within a Habitat 
 
 Simply run:
 
-  `kubectl create -f examples/standalone/service_group.yml`.
+  `kubectl create -f examples/standalone/habitat.yml`.
 
 This will deploy an instance of an nginx Habitat service.

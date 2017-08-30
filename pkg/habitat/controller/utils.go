@@ -27,28 +27,28 @@ import (
 
 const leaderFollowerTopologyMinCount = 3
 
-type serviceGroupNotFoundError struct {
+type habitatNotFoundError struct {
 	key string
 }
 
-func (err serviceGroupNotFoundError) Error() string {
-	return fmt.Sprintf("could not find ServiceGroup with key %s", err.key)
+func (err habitatNotFoundError) Error() string {
+	return fmt.Sprintf("could not find Habitat with key %s", err.key)
 }
 
-func validateCustomObject(sg crv1.ServiceGroup) error {
-	spec := sg.Spec
+func validateCustomObject(h crv1.Habitat) error {
+	spec := h.Spec
 
-	switch spec.Habitat.Topology {
+	switch spec.Service.Topology {
 	case crv1.TopologyStandalone:
 	case crv1.TopologyLeader:
 		if spec.Count < leaderFollowerTopologyMinCount {
 			return fmt.Errorf("too few instances: %d, leader-follower topology requires at least %d", spec.Count, leaderFollowerTopologyMinCount)
 		}
 	default:
-		return fmt.Errorf("unkown topology: %s", spec.Habitat.Topology)
+		return fmt.Errorf("unkown topology: %s", spec.Service.Topology)
 	}
 
-	if rsn := spec.Habitat.RingSecretName; rsn != "" {
+	if rsn := spec.Service.RingSecretName; rsn != "" {
 		ringParts := ringRegexp.FindStringSubmatch(rsn)
 
 		// The ringParts slice should have a second element for the capturing group
