@@ -18,19 +18,15 @@ script](https://gist.github.com/krnowak/3c854e94245e2f33a8366e629bfb09c8).
 
 ## Installing
 
-    go get -u github.com/kinvolk/habitat-operator/cmd/operator
+    go get -u github.com/kinvolk/habitat-operator/cmd/habitat-operator
 
 ## Usage
 
-### Running outside of the Kubernetes cluster:
+### Running outside of a Kubernetes cluster:
 
-First build the `habitat-operator` binary by running:
+Start the operator by running:
 
-    make build
-
-This will produce a binary file, then start your operator by running:
-
-    operator --kubeconfig ~/.kube/config
+    habitat-operator --kubeconfig ~/.kube/config
 
 To try out the operator with an example service, run:
 
@@ -38,7 +34,7 @@ To try out the operator with an example service, run:
 
 This will create a 1-pod deployment of an `nginx` Habitat service.
 
-### Running inside of the Kubernetes cluster:
+### Running inside a Kubernetes cluster:
 
 First build the image:
 
@@ -47,6 +43,20 @@ First build the image:
 This will produce a `kinvolk/habitat-operator` image, which can then be deployed to your cluster.
 
 The name of the generated docker image can be changed with an `IMAGE` variable, for example `make image IMAGE=mycorp/my-habitat-operator`. If the `habitat-operator` name is fine, then a `REPO` variable can be used like `make image REPO=mycorp` to generate the `mycorp/habitat-operator` image. Use the `TAG` variable to change the tag to something else (the default value is taken from `git describe --tags --always`) and a `HUB` variable to avoid using the default docker hub.
+
+## Testing
+
+To run unit tests, run:
+
+    make test
+
+To run end-to-end tests you need to have `minikube` up and running. After that just run:
+ 
+    make TESTIMAGE=YOUR_OPERATOR_IMAGE e2e
+
+Clean up after the tests with:
+
+    make clean-test
 
 ## Contributing
 
@@ -59,20 +69,4 @@ If you add, remove or change an import, run:
 
     dep ensure
 
-### Testing
-
-To run unit tests, run:
-
-    make test
-
 [crd]: https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/
-
-## Testing
-
-To run end-to-end tests you need a `minikube` up and running. After that just run:
- 
-    make TESTIMAGE=YOUR_OPERATOR_IMAGE e2e
-
-Clean up after the tests by either running `minikube delete` (this will delete your entire cluster) or:
-
-    make clean-test
