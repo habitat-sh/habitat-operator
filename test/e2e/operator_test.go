@@ -19,11 +19,16 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
 
 	crv1 "github.com/kinvolk/habitat-operator/pkg/habitat/apis/cr/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiv1 "k8s.io/client-go/pkg/api/v1"
+)
+
+const (
+	waitForPorts = 1 * time.Minute
 )
 
 // TestServiceGroupCreate tests service group creation.
@@ -108,6 +113,7 @@ func TestServiceGroupInitialConfig(t *testing.T) {
 	if err := framework.WaitForEndpoints(sgName); err != nil {
 		t.Fatal(err)
 	}
+	time.Sleep(waitForPorts)
 
 	// Get response from Habitat Service.
 	url := fmt.Sprintf("http://%s:30003/", framework.ExternalIP)
@@ -130,6 +136,11 @@ func TestServiceGroupInitialConfig(t *testing.T) {
 	actualMsg := string(bodyBytes)
 	if msg != actualMsg {
 		t.Fatalf("Initial Configuration failed. Msg did not match the one expected. Expected: %s got: %s", msg, actualMsg)
+	}
+
+	// Delete Service so it doesn't interfere with other tests.
+	if err := framework.DeleteService(sgName); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -176,6 +187,7 @@ func TestServiceGroupFunctioning(t *testing.T) {
 	if err := framework.WaitForEndpoints(sgName); err != nil {
 		t.Fatal(err)
 	}
+	time.Sleep(waitForPorts)
 
 	// Get response from Habitat Service.
 	url := fmt.Sprintf("http://%s:30002/", framework.ExternalIP)
@@ -199,6 +211,11 @@ func TestServiceGroupFunctioning(t *testing.T) {
 	actualMsg := string(bodyBytes)
 	if expectedMsg != actualMsg {
 		t.Fatalf("Habitat Service msg does not match one in default.toml. Expected: %s got: %s", expectedMsg, actualMsg)
+	}
+
+	// Delete Service so it doesn't interfere with other tests.
+	if err := framework.DeleteService(sgName); err != nil {
+		t.Fatal(err)
 	}
 }
 
