@@ -1,5 +1,5 @@
 FROM alpine:3.6
 
-COPY operator /operator
+COPY habitat-operator /habitat-operator
 
-ENTRYPOINT ["/operator"]
+ENTRYPOINT ["/habitat-operator"]
