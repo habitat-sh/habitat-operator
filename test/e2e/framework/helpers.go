@@ -108,3 +108,7 @@ func (f *Framework) DeleteSG(sgName string) error {
 		Do().
 		Error()
 }
+
+func (f *Framework) DeleteService(service string) error {
+	return f.KubeClient.CoreV1().Services(apiv1.NamespaceDefault).Delete(service, &metav1.DeleteOptions{})
+}

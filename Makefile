@@ -9,7 +9,8 @@ build:
 	go build -i github.com/kinvolk/habitat-operator/cmd/habitat-operator
 
 linux:
-	env GOOS=linux go build github.com/kinvolk/habitat-operator/cmd/habitat-operator
+	# Compile statically linked binary for linux.
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -i --ldflags="-s" -o habitat-operator github.com/kinvolk/habitat-operator/cmd/habitat-operator
 
 image: linux
 	docker build -t "$(IMAGE):$(TAG)" .
