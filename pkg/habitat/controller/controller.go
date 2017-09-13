@@ -445,14 +445,14 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 
 	if sg.Spec.Habitat.Topology == crv1.TopologyLeader {
 		topology = crv1.TopologyLeader
-
-		path := fmt.Sprintf("%s/%s", configMapDir, peerFilename)
-
-		habArgs = append(habArgs,
-			"--topology", topology.String(),
-			"--peer-watch-file", path,
-		)
 	}
+
+	path := fmt.Sprintf("%s/%s", configMapDir, peerFilename)
+
+	habArgs = append(habArgs,
+		"--topology", topology.String(),
+		"--peer-watch-file", path,
+	)
 
 	base := &appsv1beta1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
