@@ -42,7 +42,7 @@ func validateCustomObject(sg crv1.ServiceGroup) error {
 	case crv1.TopologyStandalone:
 	case crv1.TopologyLeader:
 		if spec.Count < leaderFollowerTopologyMinCount {
-			return fmt.Errorf("too few instances: %s", spec.Count)
+			return fmt.Errorf("too few instances: %d, leader-follower topology requires at least %d", spec.Count, leaderFollowerTopologyMinCount)
 		}
 	default:
 		return fmt.Errorf("unkown topology: %s", spec.Habitat.Topology)
