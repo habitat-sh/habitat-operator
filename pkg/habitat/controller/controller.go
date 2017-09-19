@@ -45,8 +45,9 @@ const (
 	userTomlFile = "user.toml"
 	configMapDir = "/habitat-operator"
 
-	peerFilename = "peer-ip"
-	peerFile     = "peer-watch-file"
+	peerFilename  = "peer-ip"
+	peerFile      = "peer-watch-file"
+	configMapName = peerFile
 
 	// The key under which the ring key is stored in the Kubernetes Secret.
 	ringSecretKey = "ring-key"
@@ -209,12 +210,12 @@ func (hc *HabitatController) handleServiceGroupCreation(sg *crv1.ServiceGroup) e
 	return nil
 }
 
-func (hc *HabitatController) getRunningPods(namespace, label string) ([]apiv1.Pod, error) {
+func (hc *HabitatController) getRunningPods(namespace string) ([]apiv1.Pod, error) {
 	fs := fields.SelectorFromSet(fields.Set{
 		"status.phase": "Running",
 	})
 	ls := fields.SelectorFromSet(fields.Set(map[string]string{
-		crv1.ServiceGroupLabel: label,
+		crv1.HabitatLabel: "true",
 	}))
 
 	running := metav1.ListOptions{
@@ -241,7 +242,7 @@ func (hc *HabitatController) writeLeaderIP(cm *apiv1.ConfigMap, ip string) error
 }
 
 func (hc *HabitatController) handleConfigMap(sg *crv1.ServiceGroup, deploymentUID types.UID) error {
-	runningPods, err := hc.getRunningPods(sg.Namespace, sg.Name)
+	runningPods, err := hc.getRunningPods(sg.Namespace)
 	if err != nil {
 		return err
 	}
@@ -490,7 +491,7 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 							VolumeSource: apiv1.VolumeSource{
 								ConfigMap: &apiv1.ConfigMapVolumeSource{
 									LocalObjectReference: apiv1.LocalObjectReference{
-										Name: configMapName(sg.Name),
+										Name: configMapName,
 									},
 									Items: []apiv1.KeyToPath{
 										{
@@ -697,15 +698,7 @@ func (hc *HabitatController) getServiceGroupFromPod(pod *apiv1.Pod) (*crv1.Servi
 func newConfigMap(sgName string, parentUID types.UID, ip string) *apiv1.ConfigMap {
 	return &apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: configMapName(sgName),
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: "extensions/v1beta1",
-					Kind:       "Deployment",
-					Name:       sgName,
-					UID:        parentUID,
-				},
-			},
+			Name: configMapName,
 		},
 		Data: map[string]string{
 			peerFile: ip,
@@ -719,8 +712,4 @@ func serviceGroupKeyFromPod(pod *apiv1.Pod) string {
 	key := fmt.Sprintf("%s/%s", pod.Namespace, sgName)
 
 	return key
-}
-
-func configMapName(sgName string) string {
-	return sgName
 }
