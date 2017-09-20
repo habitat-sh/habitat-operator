@@ -28,7 +28,8 @@ import (
 )
 
 const (
-	waitForPorts = 1 * time.Minute
+	waitForPorts  = 1 * time.Minute
+	configMapName = "peer-watch-file"
 )
 
 // TestServiceGroupCreate tests service group creation.
@@ -45,7 +46,7 @@ func TestServiceGroupCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err := framework.KubeClient.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(sgName, metav1.GetOptions{})
+	_, err := framework.KubeClient.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(configMapName, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -250,8 +251,9 @@ func TestServiceGroupDelete(t *testing.T) {
 		t.Fatal("Deployment was not deleted.")
 	}
 
-	cm, err := framework.KubeClient.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(sgName, metav1.GetOptions{})
-	if err == nil && cm != nil {
-		t.Fatal("ConfigMap was not deleted.")
+	// The CM with the peer IP should still be alive, despite the SG being deleted as it was created outside of the scope of a SG.
+	_, err = framework.KubeClient.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(configMapName, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
 	}
 }
