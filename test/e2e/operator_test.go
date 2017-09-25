@@ -18,10 +18,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
 	crv1 "github.com/kinvolk/habitat-operator/pkg/habitat/apis/cr/v1"
+	utils "github.com/kinvolk/habitat-operator/test/e2e/framework"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiv1 "k8s.io/client-go/pkg/api/v1"
@@ -30,12 +32,14 @@ import (
 const (
 	waitForPorts  = 1 * time.Minute
 	configMapName = "peer-watch-file"
+
+	nodejsImage = "kinvolk/nodejs-hab:test"
 )
 
 // TestServiceGroupCreate tests service group creation.
 func TestServiceGroupCreate(t *testing.T) {
 	sgName := "test-standalone"
-	sg := framework.NewStandaloneSG(sgName, "foobar", false)
+	sg := utils.NewStandaloneSG(sgName, "foobar", nodejsImage)
 
 	if err := framework.CreateSG(sg); err != nil {
 		t.Fatal(err)
@@ -73,7 +77,8 @@ func TestServiceGroupInitialConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sg := framework.NewStandaloneSG(sgName, "foobar", true)
+	sg := utils.NewStandaloneSG(sgName, "foobar", nodejsImage)
+	utils.AddConfigToSG(sg)
 
 	if err := framework.CreateSG(sg); err != nil {
 		t.Fatal(err)
@@ -148,7 +153,7 @@ func TestServiceGroupInitialConfig(t *testing.T) {
 // TestServiceGroupFunctioning tests that operator deploys a habitat service and that it has started.
 func TestServiceGroupFunctioning(t *testing.T) {
 	sgName := "test-service-group"
-	sg := framework.NewStandaloneSG(sgName, "foobar", false)
+	sg := utils.NewStandaloneSG(sgName, "foobar", nodejsImage)
 
 	if err := framework.CreateSG(sg); err != nil {
 		t.Fatal(err)
@@ -223,7 +228,7 @@ func TestServiceGroupFunctioning(t *testing.T) {
 // TestServiceGroupDelete tests Service Group deletion.
 func TestServiceGroupDelete(t *testing.T) {
 	sgName := "test-deletion"
-	sg := framework.NewStandaloneSG(sgName, "foobar", false)
+	sg := utils.NewStandaloneSG(sgName, "foobar", nodejsImage)
 
 	if err := framework.CreateSG(sg); err != nil {
 		t.Fatal(err)
@@ -254,6 +259,97 @@ func TestServiceGroupDelete(t *testing.T) {
 	// The CM with the peer IP should still be alive, despite the SG being deleted as it was created outside of the scope of a SG.
 	_, err = framework.KubeClient.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(configMapName, metav1.GetOptions{})
 	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestBind tests that the operator correctly created two Habitat Services and bound them together.
+func TestBind(t *testing.T) {
+	// Create two SG to test binding between them.
+	sgGoName := "test-bind-go"
+	bindName := "db"
+	sgGo := utils.NewStandaloneSG(sgGoName, "foobar", "kinvolk/bindgo-hab:test")
+	utils.AddBindToSG(sgGo, bindName, "postgresql")
+
+	if err := framework.CreateSG(sgGo); err != nil {
+		t.Fatal(err)
+	}
+
+	sgDBName := "test-bind-db"
+	sgDB := utils.NewStandaloneSG(sgDBName, "foobar", "kinvolk/postgresql-hab:test")
+
+	if err := framework.CreateSG(sgDB); err != nil {
+		t.Fatal(err)
+	}
+
+	// Wait for resources to be ready.
+	if err := framework.WaitForResources(sgGoName, 1); err != nil {
+		t.Fatal(err)
+	}
+	if err := framework.WaitForResources(sgDBName, 1); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create Kubernetes Service to expose port.
+	service := &apiv1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: sgGoName,
+		},
+		Spec: apiv1.ServiceSpec{
+			Selector: map[string]string{
+				crv1.ServiceGroupLabel: sgGoName,
+			},
+			Type: "NodePort",
+			Ports: []apiv1.ServicePort{
+				apiv1.ServicePort{
+					Name:     "go",
+					NodePort: 30005,
+					Port:     5555,
+				},
+			},
+		},
+	}
+
+	// Create Service.
+	_, err := framework.KubeClient.CoreV1().Services(apiv1.NamespaceDefault).Create(service)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Wait until endpoints are ready.
+	if err := framework.WaitForEndpoints(sgGoName); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(waitForPorts)
+
+	// Get response from Habitat Service.
+	url := fmt.Sprintf("http://%s:30005/", framework.ExternalIP)
+	resp, err := http.Get(url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Habitat Service did not start correctly.")
+	}
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// This msg is set in the config of the kinvolk/bindgo-hab Go Habitat Service.
+	expectedMsg := "hello from port: 5432"
+	actualMsg := string(bodyBytes)
+	// actualMsg can contain whitespace and newlines or different formatting,
+	// the only thing we need to check is it contains the expectedMsg.
+	if !strings.Contains(actualMsg, expectedMsg) {
+		t.Fatalf("Habitat Service msg does not match one in default.toml. Expected: *%s* got: *%s*", expectedMsg, actualMsg)
+	}
+
+	// Delete Service so it doesn't interfere with other tests.
+	if err := framework.DeleteService(sgGoName); err != nil {
 		t.Fatal(err)
 	}
 }

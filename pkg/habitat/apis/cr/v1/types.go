@@ -62,6 +62,18 @@ type Habitat struct {
 	// The name of the secret that contains the ring key.
 	// Optional.
 	RingSecretName string `json:"ringSecretName,omitempty"`
+	// Bind is when one service connects to another forming a producer/consumer relationship.
+	// Optional.
+	Bind []Bind `json:"bind,omitempty"`
+}
+
+type Bind struct {
+	// Name is the name of the bind specified in the Habitat configuration files.
+	Name string `json:"name"`
+	// Service is the name of the service this bind refers to.
+	Service string `json:"service"`
+	// Group is the group of the service this bind refers to.
+	Group string `json:"group"`
 }
 
 type Topology string

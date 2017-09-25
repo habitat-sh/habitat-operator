@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
 	"time"
 
@@ -28,7 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	apiv1 "k8s.io/client-go/pkg/api/v1"
 	appsv1beta1 "k8s.io/client-go/pkg/apis/apps/v1beta1"
@@ -203,7 +203,7 @@ func (hc *HabitatController) handleServiceGroupCreation(sg *crv1.ServiceGroup) e
 	}
 
 	// Handle creation/updating of peer IP ConfigMap.
-	if err := hc.handleConfigMap(sg, d.UID); err != nil {
+	if err := hc.handleConfigMap(sg); err != nil {
 		return err
 	}
 
@@ -241,7 +241,7 @@ func (hc *HabitatController) writeLeaderIP(cm *apiv1.ConfigMap, ip string) error
 	return nil
 }
 
-func (hc *HabitatController) handleConfigMap(sg *crv1.ServiceGroup, deploymentUID types.UID) error {
+func (hc *HabitatController) handleConfigMap(sg *crv1.ServiceGroup) error {
 	runningPods, err := hc.getRunningPods(sg.Namespace)
 	if err != nil {
 		return err
@@ -249,7 +249,7 @@ func (hc *HabitatController) handleConfigMap(sg *crv1.ServiceGroup, deploymentUI
 
 	if len(runningPods) == 0 {
 		// No running Pods, create an empty ConfigMap.
-		newCM := newConfigMap(sg.Name, deploymentUID, "")
+		newCM := newConfigMap(sg.Name, "")
 
 		cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(sg.Namespace).Create(newCM)
 		if err != nil {
@@ -278,7 +278,7 @@ func (hc *HabitatController) handleConfigMap(sg *crv1.ServiceGroup, deploymentUI
 	// There are running Pods, add the IP of one of them to the ConfigMap.
 	leaderIP := runningPods[0].Status.PodIP
 
-	newCM := newConfigMap(sg.Name, deploymentUID, leaderIP)
+	newCM := newConfigMap(sg.Name, leaderIP)
 
 	cm, err := hc.config.KubernetesClientset.CoreV1Client.ConfigMaps(sg.Namespace).Create(newCM)
 	if err != nil {
@@ -454,6 +454,15 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 		"--topology", topology.String(),
 		"--peer-watch-file", path,
 	)
+
+	// Runtime binding.
+	// One Service connects to another forming a producer/consumer relationship.
+	for _, bind := range sg.Spec.Habitat.Bind {
+		// Pass --bind flag.
+		bindArg := fmt.Sprintf("%s:%s.%s", bind.Name, bind.Service, bind.Group)
+		habArgs = append(habArgs,
+			"--bind", bindArg)
+	}
 
 	base := &appsv1beta1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -651,12 +660,12 @@ func (hc *HabitatController) syncServiceGroup(key string) error {
 }
 
 func (hc *HabitatController) serviceGroupNeedsUpdate(oldSG, newSG *crv1.ServiceGroup) bool {
-	if oldSG.Spec != newSG.Spec {
+	if reflect.DeepEqual(oldSG.Spec, newSG.Spec) {
 		level.Debug(hc.logger).Log("msg", "Update ignored as it didn't change ServiceGroup spec", "sg", newSG)
-		return true
+		return false
 	}
 
-	return false
+	return true
 }
 
 func (hc *HabitatController) podNeedsUpdate(oldPod, newPod *apiv1.Pod) bool {
@@ -695,7 +704,7 @@ func (hc *HabitatController) getServiceGroupFromPod(pod *apiv1.Pod) (*crv1.Servi
 	return sg, nil
 }
 
-func newConfigMap(sgName string, parentUID types.UID, ip string) *apiv1.ConfigMap {
+func newConfigMap(sgName string, ip string) *apiv1.ConfigMap {
 	return &apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: configMapName,
