@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
 	"time"
 
@@ -660,12 +661,12 @@ func (hc *HabitatController) syncServiceGroup(key string) error {
 }
 
 func (hc *HabitatController) serviceGroupNeedsUpdate(oldSG, newSG *crv1.ServiceGroup) bool {
-	if oldSG.Spec != newSG.Spec {
+	if reflect.DeepEqual(oldSG.Spec, newSG.Spec) {
 		level.Debug(hc.logger).Log("msg", "Update ignored as it didn't change ServiceGroup spec", "sg", newSG)
-		return true
+		return false
 	}
 
-	return false
+	return true
 }
 
 func (hc *HabitatController) podNeedsUpdate(oldPod, newPod *apiv1.Pod) bool {
