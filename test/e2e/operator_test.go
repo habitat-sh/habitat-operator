@@ -22,6 +22,7 @@ import (
 	"time"
 
 	crv1 "github.com/kinvolk/habitat-operator/pkg/habitat/apis/cr/v1"
+	utils "github.com/kinvolk/habitat-operator/test/e2e/framework"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiv1 "k8s.io/client-go/pkg/api/v1"
@@ -30,12 +31,14 @@ import (
 const (
 	waitForPorts  = 1 * time.Minute
 	configMapName = "peer-watch-file"
+
+	nodejsImage = "kinvolk/nodejs-hab:test"
 )
 
 // TestServiceGroupCreate tests service group creation.
 func TestServiceGroupCreate(t *testing.T) {
 	sgName := "test-standalone"
-	sg := framework.NewStandaloneSG(sgName, "foobar", false)
+	sg := utils.NewStandaloneSG(sgName, "foobar", nodejsImage)
 
 	if err := framework.CreateSG(sg); err != nil {
 		t.Fatal(err)
@@ -73,7 +76,8 @@ func TestServiceGroupInitialConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sg := framework.NewStandaloneSG(sgName, "foobar", true)
+	sg := utils.NewStandaloneSG(sgName, "foobar", nodejsImage)
+	utils.AddConfigToSG(sg)
 
 	if err := framework.CreateSG(sg); err != nil {
 		t.Fatal(err)
@@ -148,7 +152,7 @@ func TestServiceGroupInitialConfig(t *testing.T) {
 // TestServiceGroupFunctioning tests that operator deploys a habitat service and that it has started.
 func TestServiceGroupFunctioning(t *testing.T) {
 	sgName := "test-service-group"
-	sg := framework.NewStandaloneSG(sgName, "foobar", false)
+	sg := utils.NewStandaloneSG(sgName, "foobar", nodejsImage)
 
 	if err := framework.CreateSG(sg); err != nil {
 		t.Fatal(err)
@@ -223,7 +227,7 @@ func TestServiceGroupFunctioning(t *testing.T) {
 // TestServiceGroupDelete tests Service Group deletion.
 func TestServiceGroupDelete(t *testing.T) {
 	sgName := "test-deletion"
-	sg := framework.NewStandaloneSG(sgName, "foobar", false)
+	sg := utils.NewStandaloneSG(sgName, "foobar", nodejsImage)
 
 	if err := framework.CreateSG(sg); err != nil {
 		t.Fatal(err)

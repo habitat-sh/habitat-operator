@@ -27,13 +27,13 @@ import (
 )
 
 // NewStandaloneSG returns a new Standalone ServiceGroup.
-func (f *Framework) NewStandaloneSG(sgName, group string, secret bool) *crv1.ServiceGroup {
-	sg := crv1.ServiceGroup{
+func NewStandaloneSG(sgName, group, image string) *crv1.ServiceGroup {
+	return &crv1.ServiceGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: sgName,
 		},
 		Spec: crv1.ServiceGroupSpec{
-			Image: "kinvolk/nodejs-hab",
+			Image: image,
 			Count: 1,
 			Habitat: crv1.Habitat{
 				Group:    group,
@@ -41,11 +41,20 @@ func (f *Framework) NewStandaloneSG(sgName, group string, secret bool) *crv1.Ser
 			},
 		},
 	}
+}
 
-	if secret {
-		sg.Spec.Habitat.Config = sgName
-	}
-	return &sg
+// AddConfigToSG adds config fields to the ServiceGroup.
+func AddConfigToSG(sg *crv1.ServiceGroup) {
+	sg.Spec.Habitat.Config = sg.ObjectMeta.Name
+}
+
+// AddBindToSG appends bind fields to the ServiceGroup.
+func AddBindToSG(sg *crv1.ServiceGroup, bindName, bindService string) {
+	sg.Spec.Habitat.Bind = append(sg.Spec.Habitat.Bind, crv1.Bind{
+		Name:    bindName,
+		Service: bindService,
+		Group:   sg.Spec.Habitat.Group,
+	})
 }
 
 // CreateSG creates a ServiceGroup.
