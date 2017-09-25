@@ -2,7 +2,9 @@
 
 This demonstrates how to run two Habitat Services with a [binding](https://www.habitat.sh/docs/run-packages-binding/) between them.
 
-After the Habitat Operator is up and running, execute the following command from the root of this repository:
+## Workflow
+
+After the Habitat operator is up and running, execute the following command from the root of this repository:
 
 ```
 kubectl create -f examples/bind/service_group.yml
