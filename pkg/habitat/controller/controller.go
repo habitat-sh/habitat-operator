@@ -455,6 +455,15 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 		"--peer-watch-file", path,
 	)
 
+	// Runtime binding.
+	// One Service connects to another forming a producer/consumer relationship.
+	for _, bind := range sg.Spec.Habitat.Bind {
+		// Pass --bind flag.
+		bindArg := fmt.Sprintf("%s:%s.%s", bind.Name, bind.Service, bind.Group)
+		habArgs = append(habArgs,
+			"--bind", bindArg)
+	}
+
 	base := &appsv1beta1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: sg.Name,
