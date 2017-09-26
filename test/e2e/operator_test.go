@@ -50,7 +50,7 @@ func TestServiceGroupCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err := framework.KubeClient.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(configMapName, metav1.GetOptions{})
+	_, err := framework.KubeClient.CoreV1().ConfigMaps(utils.TestNs).Get(configMapName, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +72,7 @@ func TestServiceGroupInitialConfig(t *testing.T) {
 		},
 	}
 
-	_, err := framework.KubeClient.CoreV1().Secrets(apiv1.NamespaceDefault).Create(secret)
+	_, err := framework.KubeClient.CoreV1().Secrets(utils.TestNs).Create(secret)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +110,7 @@ func TestServiceGroupInitialConfig(t *testing.T) {
 	}
 
 	// Create Service.
-	_, err = framework.KubeClient.CoreV1().Services(apiv1.NamespaceDefault).Create(service)
+	_, err = framework.KubeClient.CoreV1().Services(utils.TestNs).Create(service)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,7 +184,7 @@ func TestServiceGroupFunctioning(t *testing.T) {
 		},
 	}
 	// Create Service.
-	_, err := framework.KubeClient.CoreV1().Services(apiv1.NamespaceDefault).Create(service)
+	_, err := framework.KubeClient.CoreV1().Services(utils.TestNs).Create(service)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -251,13 +251,13 @@ func TestServiceGroupDelete(t *testing.T) {
 
 	// Check if all the resources the operator creates are deleted.
 	// We do not care about secrets being deleted, as the user needs to delete those manually.
-	d, err := framework.KubeClient.AppsV1beta1().Deployments(apiv1.NamespaceDefault).Get(sgName, metav1.GetOptions{})
+	d, err := framework.KubeClient.AppsV1beta1().Deployments(utils.TestNs).Get(sgName, metav1.GetOptions{})
 	if err == nil && d != nil {
 		t.Fatal("Deployment was not deleted.")
 	}
 
 	// The CM with the peer IP should still be alive, despite the SG being deleted as it was created outside of the scope of a SG.
-	_, err = framework.KubeClient.CoreV1().ConfigMaps(apiv1.NamespaceDefault).Get(configMapName, metav1.GetOptions{})
+	_, err = framework.KubeClient.CoreV1().ConfigMaps(utils.TestNs).Get(configMapName, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -311,7 +311,7 @@ func TestBind(t *testing.T) {
 	}
 
 	// Create Service.
-	_, err := framework.KubeClient.CoreV1().Services(apiv1.NamespaceDefault).Create(service)
+	_, err := framework.KubeClient.CoreV1().Services(utils.TestNs).Create(service)
 	if err != nil {
 		t.Fatal(err)
 	}

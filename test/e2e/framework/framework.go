@@ -28,6 +28,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+const (
+	TestNs = "testing"
+)
+
 type Framework struct {
 	Image      string
 	KubeClient kubernetes.Interface
@@ -59,6 +63,16 @@ func Setup(image, kubeconfig, externalIP string) (*Framework, error) {
 		ExternalIP: externalIP,
 	}
 
+	// Create a new Kubernetes namespace for testing purposes.
+	_, err = f.KubeClient.CoreV1().Namespaces().Create(&apiv1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: TestNs,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	if err = f.setupOperator(); err != nil {
 		return nil, err
 	}
@@ -86,7 +100,7 @@ func (f *Framework) setupOperator() error {
 	}
 
 	// Create pod with the Habitat operator image.
-	_, err := f.KubeClient.CoreV1().Pods(apiv1.NamespaceDefault).Create(pod)
+	_, err := f.KubeClient.CoreV1().Pods(TestNs).Create(pod)
 	if err != nil {
 		return err
 	}
