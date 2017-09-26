@@ -19,7 +19,6 @@ import (
 
 	crv1 "github.com/kinvolk/habitat-operator/pkg/habitat/apis/cr/v1"
 
-	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -60,7 +59,7 @@ func AddBindToSG(sg *crv1.ServiceGroup, bindName, bindService string) {
 // CreateSG creates a ServiceGroup.
 func (f *Framework) CreateSG(sg *crv1.ServiceGroup) error {
 	return f.Client.Post().
-		Namespace(apiv1.NamespaceDefault).
+		Namespace(TestNs).
 		Resource(crv1.ServiceGroupResourcePlural).
 		Body(sg).
 		Do().
@@ -80,7 +79,7 @@ func (f *Framework) WaitForResources(sgName string, numPods int) error {
 			crv1.ServiceGroupLabel: sgName,
 		})
 
-		pods, err := f.KubeClient.CoreV1().Pods(apiv1.NamespaceDefault).List(metav1.ListOptions{FieldSelector: fs.String(), LabelSelector: ls.String()})
+		pods, err := f.KubeClient.CoreV1().Pods(TestNs).List(metav1.ListOptions{FieldSelector: fs.String(), LabelSelector: ls.String()})
 		if err != nil {
 			return false, err
 		}
@@ -95,7 +94,7 @@ func (f *Framework) WaitForResources(sgName string, numPods int) error {
 
 func (f *Framework) WaitForEndpoints(sgName string) error {
 	return wait.Poll(time.Second, time.Minute*5, func() (bool, error) {
-		ep, err := f.KubeClient.CoreV1().Endpoints(apiv1.NamespaceDefault).Get(sgName, metav1.GetOptions{})
+		ep, err := f.KubeClient.CoreV1().Endpoints(TestNs).Get(sgName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -111,7 +110,7 @@ func (f *Framework) WaitForEndpoints(sgName string) error {
 // DeleteSG deletes a ServiceGroup as a user would.
 func (f *Framework) DeleteSG(sgName string) error {
 	return f.Client.Delete().
-		Namespace(apiv1.NamespaceDefault).
+		Namespace(TestNs).
 		Resource(crv1.ServiceGroupResourcePlural).
 		Name(sgName).
 		Do().
@@ -119,5 +118,5 @@ func (f *Framework) DeleteSG(sgName string) error {
 }
 
 func (f *Framework) DeleteService(service string) error {
-	return f.KubeClient.CoreV1().Services(apiv1.NamespaceDefault).Delete(service, &metav1.DeleteOptions{})
+	return f.KubeClient.CoreV1().Services(TestNs).Delete(service, &metav1.DeleteOptions{})
 }

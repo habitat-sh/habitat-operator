@@ -23,13 +23,6 @@ e2e:
 	go test -v ./test/e2e/ --image "$(TESTIMAGE)" --kubeconfig ~/.kube/config --ip "$(EIP)"
 
 clean-test:
-	kubectl delete sg mytutorialapp
-	kubectl delete sg test-service-group
-	kubectl delete sg test-standalone
-	kubectl delete sg test-bind-go
-	kubectl delete sg test-bind-db
-	kubectl delete crd servicegroups.habitat.sh
-	kubectl delete pod habitat-operator
-	kubectl delete secret mytutorialapp
+	kubectl delete namespace testing
 
 .PHONY: build test linux image e2e clean-test
