@@ -55,10 +55,10 @@ type Habitat struct {
 	Group string `json:"group"`
 	// Topology is the value of the --topology flag for the hab client.
 	Topology `json:"topology"`
-	// Config is the name of the Secret that the user has previously created.
+	// ConfigSecretName is the name of the Secret containing the config the user has previously created.
 	// The file with this name is mounted inside of the pod. Habitat will
 	// use it for initial configuration of the service.
-	Config string `json:"config"`
+	ConfigSecretName string `json:"config"`
 	// The name of the secret that contains the ring key.
 	// Optional.
 	RingSecretName string `json:"ringSecretName,omitempty"`

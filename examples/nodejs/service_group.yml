@@ -21,7 +21,7 @@ spec:
     topology: standalone
     group: nodejs
     # Create Secret with the initial configuration you want.
-    config: user-toml-secret
+    configSecretName: user-toml-secret
 ---
 apiVersion: v1
 kind: Service

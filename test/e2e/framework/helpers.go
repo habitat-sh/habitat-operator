@@ -42,9 +42,9 @@ func NewStandaloneSG(sgName, group, image string) *crv1.ServiceGroup {
 	}
 }
 
-// AddConfigToSG adds config fields to the ServiceGroup.
+// AddConfigToSG adds a ConfigSecretName field to the ServiceGroup.
 func AddConfigToSG(sg *crv1.ServiceGroup) {
-	sg.Spec.Habitat.Config = sg.ObjectMeta.Name
+	sg.Spec.Habitat.ConfigSecretName = sg.ObjectMeta.Name
 }
 
 // AddBindToSG appends bind fields to the ServiceGroup.
