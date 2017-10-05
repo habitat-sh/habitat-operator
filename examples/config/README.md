@@ -7,7 +7,7 @@ NOTE: Adding secret configuration to the `default.toml` is discouraged, as it wi
 
 After the Habitat operator is up and running, execute the following command from the root of this repository:
 
-`kubectl create -f /examples/nodejs`
+`kubectl create -f examples/config/service_group.yml`
 
 This will create a [Kubernetes Secret](https://kubernetes.io/docs/concepts/configuration/secret/) with the configurations and a simple Node.js application that will display a msg. When running on minikube, it can be accessed under port `30001` of the minikube VM. `minikube ip` can be used to retrieve the IP.
 Initially our app is configured to display the msg `"Hello world."`. Because we override this with the Secret we just created, our app will instead display `Hello from our Habitat-Operator!`.
