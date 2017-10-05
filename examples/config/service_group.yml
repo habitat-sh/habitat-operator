@@ -32,10 +32,12 @@ spec:
     service-group: mytutorialapp
   type: NodePort
   ports:
+  # This endpoint displays the message from the secret
   - name: web
     nodePort: 30001
     port: 5555
     protocol: TCP
+  # This endpoint exposes the Habitat supervisor API
   - name: http-gateway
     nodePort : 32767
     port: 9631
