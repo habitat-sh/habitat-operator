@@ -58,7 +58,7 @@ type Habitat struct {
 	// ConfigSecretName is the name of the Secret containing the config the user has previously created.
 	// The file with this name is mounted inside of the pod. Habitat will
 	// use it for initial configuration of the service.
-	ConfigSecretName string `json:"config"`
+	ConfigSecretName string `json:"configSecretName,omitempty"`
 	// The name of the secret that contains the ring key.
 	// Optional.
 	RingSecretName string `json:"ringSecretName,omitempty"`
