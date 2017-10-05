@@ -543,7 +543,8 @@ func (hc *HabitatController) newDeployment(sg *crv1.ServiceGroup) (*appsv1beta1.
 		secretVolumeMount := &apiv1.VolumeMount{
 			Name: "initialconfig",
 			// Our user.toml file must be in a directory with the same name as the service.
-			MountPath: fmt.Sprintf("/hab/svc/%s", sg.Name),
+			MountPath: fmt.Sprintf("/hab/svc/%s/%s", sg.Name, userTomlFile),
+			SubPath:   userTomlFile,
 			ReadOnly:  false,
 		}
 
