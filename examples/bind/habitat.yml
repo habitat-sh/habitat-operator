@@ -1,21 +1,21 @@
 apiVersion: habitat.sh/v1
-kind: ServiceGroup
+kind: Habitat 
 metadata:
   name: db
 spec:
   image: kinvolk/postgresql-hab
   count: 1
-  habitat:
+  service:
     topology: standalone
 ---
 apiVersion: habitat.sh/v1
-kind: ServiceGroup
+kind: Habitat
 metadata:
   name: go
 spec:
   image: kinvolk/bindgo-hab
   count: 1
-  habitat:
+  service:
     topology: standalone
     bind:
       # Name is the name of the bind specified in the Habitat configuration files.
@@ -31,7 +31,7 @@ metadata:
   name: go-service
 spec:
   selector:
-    service-group: go
+    habitat-name: go
   type: NodePort
   ports:
   - name: web

@@ -2,23 +2,23 @@
 
 The following is a description of the Habitat operator API. To see manifest example files, have a look at the [examples directory](https://github.com/kinvolk/habitat-operator/tree/master/examples).
 
-## ServiceGroup
+## Habitat
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/api-reference/v1.6/#objectmeta-v1-meta) | true |
-| spec |  | [ServiceGroupSpec](#servicegroupspec) | true |
+| spec |  | [HabitatSpec](#habitatspec) | true |
 | status |  |  | false |
 
-## ServiceGroupSpec
+## HabitatSpec
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| count | Count is the amount of Services that should start in this Service Group. | int | true |
+| count | Count is the amount of Services that should start in Habitat. | int | true |
 | image | Image is the Docker image of the Habitat Service. | string | true |
-| habitat |  | [Habitat](#habitat) | true |
+| service |  | [Service](#service) | true |
 
-## Habitat
+## Service
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |

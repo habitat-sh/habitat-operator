@@ -25,16 +25,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-// NewStandaloneSG returns a new Standalone ServiceGroup.
-func NewStandaloneSG(sgName, group, image string) *crv1.ServiceGroup {
-	return &crv1.ServiceGroup{
+// NewStandaloneHabitat returns a new Standalone Habitat.
+func NewStandaloneHabitat(habitatName, group, image string) *crv1.Habitat {
+	return &crv1.Habitat{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: sgName,
+			Name: habitatName,
 		},
-		Spec: crv1.ServiceGroupSpec{
+		Spec: crv1.HabitatSpec{
 			Image: image,
 			Count: 1,
-			Habitat: crv1.Habitat{
+			Service: crv1.Service{
 				Group:    group,
 				Topology: crv1.TopologyStandalone,
 			},
@@ -42,26 +42,26 @@ func NewStandaloneSG(sgName, group, image string) *crv1.ServiceGroup {
 	}
 }
 
-// AddConfigToSG adds a ConfigSecretName field to the ServiceGroup.
-func AddConfigToSG(sg *crv1.ServiceGroup) {
-	sg.Spec.Habitat.ConfigSecretName = sg.ObjectMeta.Name
+// AddConfigToHabitat adds a ConfigSecretName field to the Habitat.
+func AddConfigToHabitat(habitat *crv1.Habitat) {
+	habitat.Spec.Service.ConfigSecretName = habitat.ObjectMeta.Name
 }
 
-// AddBindToSG appends bind fields to the ServiceGroup.
-func AddBindToSG(sg *crv1.ServiceGroup, bindName, bindService string) {
-	sg.Spec.Habitat.Bind = append(sg.Spec.Habitat.Bind, crv1.Bind{
+// AddBindToHabitat appends bind fields to the Habitat.
+func AddBindToHabitat(habitat *crv1.Habitat, bindName, bindService string) {
+	habitat.Spec.Service.Bind = append(habitat.Spec.Service.Bind, crv1.Bind{
 		Name:    bindName,
 		Service: bindService,
-		Group:   sg.Spec.Habitat.Group,
+		Group:   habitat.Spec.Service.Group,
 	})
 }
 
-// CreateSG creates a ServiceGroup.
-func (f *Framework) CreateSG(sg *crv1.ServiceGroup) error {
+// CreateHabitat creates a Habitat.
+func (f *Framework) CreateHabitat(habitat *crv1.Habitat) error {
 	return f.Client.Post().
 		Namespace(TestNs).
-		Resource(crv1.ServiceGroupResourcePlural).
-		Body(sg).
+		Resource(crv1.HabitatResourcePlural).
+		Body(habitat).
 		Do().
 		Error()
 }
@@ -69,14 +69,14 @@ func (f *Framework) CreateSG(sg *crv1.ServiceGroup) error {
 // WaitForResources waits until numPods are in the "Running" state.
 // We wait for pods, because those take the longest to create.
 // Waiting for anything else would be already testing.
-func (f *Framework) WaitForResources(sgName string, numPods int) error {
+func (f *Framework) WaitForResources(habitatName string, numPods int) error {
 	return wait.Poll(2*time.Second, 5*time.Minute, func() (bool, error) {
 		fs := fields.SelectorFromSet(fields.Set{
 			"status.phase": "Running",
 		})
 
 		ls := labels.SelectorFromSet(labels.Set{
-			crv1.ServiceGroupLabel: sgName,
+			crv1.HabitatNameLabel: habitatName,
 		})
 
 		pods, err := f.KubeClient.CoreV1().Pods(TestNs).List(metav1.ListOptions{FieldSelector: fs.String(), LabelSelector: ls.String()})
@@ -92,9 +92,9 @@ func (f *Framework) WaitForResources(sgName string, numPods int) error {
 	})
 }
 
-func (f *Framework) WaitForEndpoints(sgName string) error {
+func (f *Framework) WaitForEndpoints(habitatName string) error {
 	return wait.Poll(time.Second, time.Minute*5, func() (bool, error) {
-		ep, err := f.KubeClient.CoreV1().Endpoints(TestNs).Get(sgName, metav1.GetOptions{})
+		ep, err := f.KubeClient.CoreV1().Endpoints(TestNs).Get(habitatName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -107,12 +107,12 @@ func (f *Framework) WaitForEndpoints(sgName string) error {
 	})
 }
 
-// DeleteSG deletes a ServiceGroup as a user would.
-func (f *Framework) DeleteSG(sgName string) error {
+// DeleteHabitat deletes a Habitat as a user would.
+func (f *Framework) DeleteHabitat(habitatName string) error {
 	return f.Client.Delete().
 		Namespace(TestNs).
-		Resource(crv1.ServiceGroupResourcePlural).
-		Name(sgName).
+		Resource(crv1.HabitatResourcePlural).
+		Name(habitatName).
 		Do().
 		Error()
 }

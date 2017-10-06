@@ -66,7 +66,7 @@ func run() int {
 		return 1
 	}
 
-	// Create ServiceGroup CRD.
+	// Create Habitat CRD.
 	_, crdErr := habitatclient.CreateCRD(apiextensionsclientset)
 	if crdErr != nil {
 		if !apierrors.IsAlreadyExists(crdErr) {
@@ -74,9 +74,9 @@ func run() int {
 			return 1
 		}
 
-		level.Info(logger).Log("msg", "ServiceGroup CRD already exists, continuing")
+		level.Info(logger).Log("msg", "Habitat CRD already exists, continuing")
 	} else {
-		level.Info(logger).Log("msg", "created ServiceGroup CRD")
+		level.Info(logger).Log("msg", "created Habitat CRD")
 	}
 
 	habitatClient, scheme, err := habitatclient.NewClient(config)
