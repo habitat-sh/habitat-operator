@@ -4,6 +4,7 @@
 # habitat-operator
 
 This project is currently unstable - breaking changes may still land in the future.
+
 Note: At the moment the Habitat operator requires a forked version of the Habitat supervisor that adds support for the `--peer-watch-file` flag. See [this issue](https://github.com/habitat-sh/habitat/issues/2735) to track progress on upstreaming the feature.
 
 ## Overview
@@ -45,7 +46,7 @@ The name of the generated docker image can be changed with an `IMAGE` variable, 
 
 To create an example service run:
 
-    kubectl create -f examples/standalone/service_group.yml
+    kubectl create -f examples/standalone/habitat.yml
 
 This will create a single-pod deployment of an `nginx` Habitat service.
 More examples are located in the [example directory](https://github.com/kinvolk/habitat-operator/tree/master/examples/).
