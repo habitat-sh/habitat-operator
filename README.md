@@ -5,8 +5,6 @@
 
 This project is currently unstable - breaking changes may still land in the future.
 
-Note: At the moment the Habitat operator requires a forked version of the Habitat supervisor that adds support for the `--peer-watch-file` flag. See [this issue](https://github.com/habitat-sh/habitat/issues/2735) to track progress on upstreaming the feature.
-
 ## Overview
 
 The Habitat operator is a Kubernetes controller designed to solve running and auto-managing Habitat Services on Kubernetes. It does this by making use of [`Custom Resource Definition`][crd]s.
@@ -17,8 +15,8 @@ For a more detailed description of the Habitat operator API have a look at the [
 
 ## Prerequisites
 
+- Habitat `>= 0.36.0`
 - Kubernetes `>= 1.7.0`.
-- Forked version of the Habitat supervisor. This means that images need to be created using the aforementioned fork of the `hab` client, which can be accomplished following [this script](https://gist.github.com/LiliC/c028fc4687f466e3e3bd5981d2529173).
 
 ## Installing
 
