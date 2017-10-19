@@ -844,6 +844,9 @@ func newConfigMap(ip string) *apiv1.ConfigMap {
 	return &apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: configMapName,
+			Labels: map[string]string{
+				crv1.HabitatLabel: "true",
+			},
 		},
 		Data: map[string]string{
 			peerFile: ip,
