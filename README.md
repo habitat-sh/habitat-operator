@@ -32,6 +32,8 @@ Start the Habitat operator by running:
 
 ### Running inside a Kubernetes cluster
 
+#### Building image from source
+
 First build the image:
 
     make image
@@ -39,6 +41,10 @@ First build the image:
 This will produce a `kinvolk/habitat-operator` image, which can then be deployed to your cluster.
 
 The name of the generated docker image can be changed with an `IMAGE` variable, for example `make image IMAGE=mycorp/my-habitat-operator`. If the `habitat-operator` name is fine, then a `REPO` variable can be used like `make image REPO=mycorp` to generate the `mycorp/habitat-operator` image. Use the `TAG` variable to change the tag to something else (the default value is taken from `git describe --tags --always`) and a `HUB` variable to avoid using the default docker hub.
+
+#### Using release image
+
+Habitat operator images are located [here](https://hub.docker.com/r/kinvolk/habitat-operator/), they are tagged with the release version.
 
 ### Deploying an example
 
