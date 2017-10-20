@@ -23,7 +23,7 @@ The following is a description of the Habitat operator API. To see manifest exam
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | group | group is a logical grouping of services with the same package and topology type connected together in a ring. Defaults to `default`. | string | false |
-| topology | A topology describes the intended relationship between peers within a service group. Specify either `standalone` or `leader` topology.  | Topology | true |
+| topology | A topology describes the intended relationship between peers within a service group. Specify either `standalone` or `leader` topology.  | string | true |
 | configSecretName | configSecretName is the name of the Kubernetes Secret containing the config file - user.toml - that the user has previously created. Habitat will use it for initial configuration of the service. | string | false |
 | ringSecretName | The name of the Kubernetes Secret that contains the ring key, which encrypts the communication between Habitat supervisors. | string | false |
 | bind | When one service connects to another forming a producer/consumer relationship. Able to specify multiple binds. | [][Bind](#bind) | false |
