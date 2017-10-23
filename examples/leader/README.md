@@ -11,4 +11,3 @@ Simply run:
 This will deploy 3 instances of consul Habitat service.
 
 Note: Whenever creating a `leader` topology specify instance `count` of 3 or more and would be best if the number is odd, this is so the election can take place.
-
