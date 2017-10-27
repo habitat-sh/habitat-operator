@@ -333,10 +333,6 @@ func (hc *HabitatController) handlePodUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	if oldPod.ObjectMeta.Labels[crv1.HabitatLabel] != "true" {
-		return
-	}
-
 	newPod, ok2 := newObj.(*apiv1.Pod)
 	if !ok2 {
 		level.Error(hc.logger).Log("msg", "Failed to type assert pod", "obj", newObj)
