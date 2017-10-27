@@ -442,6 +442,9 @@ func (hc *HabitatController) handleConfigMap(h *crv1.Habitat) error {
 			if err := hc.writeLeaderIP(cm, ""); err != nil {
 				return err
 			}
+
+			level.Info(hc.logger).Log("msg", "removed peer IP from ConfigMap", "name", newCM.Name)
+
 			return nil
 		}
 
