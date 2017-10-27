@@ -196,7 +196,7 @@ func (hc *HabitatController) cacheConfigMap() {
 }
 
 func (hc *HabitatController) watchPods(ctx context.Context) {
-	ls := labels.SelectorFromSet(labels.Set(map[string]string{"habitat": "true"}))
+	ls := labels.SelectorFromSet(labels.Set(map[string]string{crv1.HabitatLabel: "true"}))
 
 	source := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
@@ -253,7 +253,7 @@ func (hc *HabitatController) handleDeployAdd(obj interface{}) {
 		return
 	}
 
-	if d.ObjectMeta.Labels["habitat"] == "true" {
+	if d.ObjectMeta.Labels[crv1.HabitatLabel] == "true" {
 		hc.enqueue(obj)
 	}
 }
@@ -265,7 +265,7 @@ func (hc *HabitatController) handleDeployUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	if d.ObjectMeta.Labels["habitat"] == "true" {
+	if d.ObjectMeta.Labels[crv1.HabitatLabel] == "true" {
 		hc.enqueue(newObj)
 	}
 }
@@ -277,28 +277,28 @@ func (hc *HabitatController) handleDeployDelete(obj interface{}) {
 		return
 	}
 
-	if d.ObjectMeta.Labels["habitat"] == "true" {
+	if d.ObjectMeta.Labels[crv1.HabitatLabel] == "true" {
 		hc.enqueue(obj)
 	}
 }
 
 func (hc *HabitatController) handleCMAdd(obj interface{}) {
 	cm := obj.(*apiv1.ConfigMap)
-	if cm.ObjectMeta.Labels["habitat"] == "true" {
+	if cm.ObjectMeta.Labels[crv1.HabitatLabel] == "true" {
 		hc.enqueueNs(cm.GetNamespace())
 	}
 }
 
 func (hc *HabitatController) handleCMUpdate(oldObj, newObj interface{}) {
 	cm := newObj.(*apiv1.ConfigMap)
-	if cm.ObjectMeta.Labels["habitat"] == "true" {
+	if cm.ObjectMeta.Labels[crv1.HabitatLabel] == "true" {
 		hc.enqueueNs(cm.GetNamespace())
 	}
 }
 
 func (hc *HabitatController) handleCMDelete(obj interface{}) {
 	cm := obj.(*apiv1.ConfigMap)
-	if cm.ObjectMeta.Labels["habitat"] == "true" {
+	if cm.ObjectMeta.Labels[crv1.HabitatLabel] == "true" {
 		hc.enqueueNs(cm.GetNamespace())
 	}
 }
@@ -314,7 +314,7 @@ func (hc *HabitatController) enqueueNs(ns string) {
 
 func (hc *HabitatController) handlePodAdd(obj interface{}) {
 	pod := obj.(*apiv1.Pod)
-	if pod.ObjectMeta.Labels["habitat"] == "true" {
+	if pod.ObjectMeta.Labels[crv1.HabitatLabel] == "true" {
 		h, err := hc.getHabitatFromPod(pod)
 		if err != nil {
 			if hErr, ok := err.(habitatNotFoundError); !ok {
@@ -333,7 +333,7 @@ func (hc *HabitatController) handlePodUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	if oldPod.ObjectMeta.Labels["habitat"] != "true" {
+	if oldPod.ObjectMeta.Labels[crv1.HabitatLabel] != "true" {
 		return
 	}
 
@@ -370,7 +370,7 @@ func (hc *HabitatController) handlePodDelete(obj interface{}) {
 		return
 	}
 
-	if pod.ObjectMeta.Labels["habitat"] != "true" {
+	if pod.ObjectMeta.Labels[crv1.HabitatLabel] != "true" {
 		return
 	}
 
