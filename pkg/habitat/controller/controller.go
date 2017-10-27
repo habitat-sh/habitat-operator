@@ -282,34 +282,33 @@ func (hc *HabitatController) handleDeployDelete(obj interface{}) {
 	}
 }
 
-func (hc *HabitatController) handleCMAdd(obj interface{}) {
-	cm := obj.(*apiv1.ConfigMap)
-	if cm.ObjectMeta.Labels[crv1.HabitatLabel] == "true" {
-		hc.enqueueNs(cm.GetNamespace())
+func (hc *HabitatController) enqueueCM(obj interface{}) {
+	cm, ok := obj.(*apiv1.ConfigMap)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert ConfigMap", "obj", obj)
+		return
 	}
+
+	if cm.ObjectMeta.Labels[crv1.HabitatLabel] == "true" {
+		cache.ListAll(hc.habInformer.GetStore(), labels.Everything(), func(obj interface{}) {
+			h := obj.(*crv1.Habitat)
+			if h.Namespace == cm.GetNamespace() {
+				hc.enqueue(h)
+			}
+		})
+	}
+}
+
+func (hc *HabitatController) handleCMAdd(obj interface{}) {
+	hc.enqueueCM(obj)
 }
 
 func (hc *HabitatController) handleCMUpdate(oldObj, newObj interface{}) {
-	cm := newObj.(*apiv1.ConfigMap)
-	if cm.ObjectMeta.Labels[crv1.HabitatLabel] == "true" {
-		hc.enqueueNs(cm.GetNamespace())
-	}
+	hc.enqueueCM(newObj)
 }
 
 func (hc *HabitatController) handleCMDelete(obj interface{}) {
-	cm := obj.(*apiv1.ConfigMap)
-	if cm.ObjectMeta.Labels[crv1.HabitatLabel] == "true" {
-		hc.enqueueNs(cm.GetNamespace())
-	}
-}
-
-func (hc *HabitatController) enqueueNs(ns string) {
-	cache.ListAll(hc.habInformer.GetStore(), labels.Everything(), func(obj interface{}) {
-		h := obj.(*crv1.Habitat)
-		if h.Namespace == ns {
-			hc.enqueue(h)
-		}
-	})
+	hc.enqueueCM(obj)
 }
 
 func (hc *HabitatController) handlePodAdd(obj interface{}) {
