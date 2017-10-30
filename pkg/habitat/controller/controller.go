@@ -252,8 +252,7 @@ func (hc *HabitatController) handleDeployAdd(obj interface{}) {
 		level.Error(hc.logger).Log("msg", "Failed to type assert deployment", "obj", obj)
 		return
 	}
-
-	if d.ObjectMeta.Labels[crv1.HabitatLabel] == "true" {
+	if isHabitatObject(&d.ObjectMeta) {
 		hc.enqueue(obj)
 	}
 }
@@ -265,7 +264,7 @@ func (hc *HabitatController) handleDeployUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	if d.ObjectMeta.Labels[crv1.HabitatLabel] == "true" {
+	if isHabitatObject(&d.ObjectMeta) {
 		hc.enqueue(newObj)
 	}
 }
@@ -277,7 +276,7 @@ func (hc *HabitatController) handleDeployDelete(obj interface{}) {
 		return
 	}
 
-	if d.ObjectMeta.Labels[crv1.HabitatLabel] == "true" {
+	if isHabitatObject(&d.ObjectMeta) {
 		hc.enqueue(obj)
 	}
 }
@@ -289,7 +288,7 @@ func (hc *HabitatController) enqueueCM(obj interface{}) {
 		return
 	}
 
-	if cm.ObjectMeta.Labels[crv1.HabitatLabel] == "true" {
+	if isHabitatObject(&cm.ObjectMeta) {
 		cache.ListAll(hc.habInformer.GetStore(), labels.Everything(), func(obj interface{}) {
 			h := obj.(*crv1.Habitat)
 			if h.Namespace == cm.GetNamespace() {
@@ -313,7 +312,7 @@ func (hc *HabitatController) handleCMDelete(obj interface{}) {
 
 func (hc *HabitatController) handlePodAdd(obj interface{}) {
 	pod := obj.(*apiv1.Pod)
-	if pod.ObjectMeta.Labels[crv1.HabitatLabel] == "true" {
+	if isHabitatObject(&pod.ObjectMeta) {
 		h, err := hc.getHabitatFromPod(pod)
 		if err != nil {
 			if hErr, ok := err.(habitatNotFoundError); !ok {
@@ -365,7 +364,7 @@ func (hc *HabitatController) handlePodDelete(obj interface{}) {
 		return
 	}
 
-	if pod.ObjectMeta.Labels[crv1.HabitatLabel] != "true" {
+	if !isHabitatObject(&pod.ObjectMeta) {
 		return
 	}
 
@@ -858,4 +857,8 @@ func habitatKeyFromPod(pod *apiv1.Pod) string {
 	key := fmt.Sprintf("%s/%s", pod.Namespace, hName)
 
 	return key
+}
+
+func isHabitatObject(objMeta *metav1.ObjectMeta) bool {
+	return objMeta.Labels[crv1.HabitatLabel] == "true"
 }
