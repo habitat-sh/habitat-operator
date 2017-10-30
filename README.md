@@ -46,6 +46,12 @@ The name of the generated docker image can be changed with an `IMAGE` variable, 
 
 Habitat operator images are located [here](https://hub.docker.com/r/kinvolk/habitat-operator/), they are tagged with the release version.
 
+#### Deploying Habitat operator
+
+To deploy the operator inside the Kubernetes cluster use the Deployment manifest file located under the examples directory:
+
+    kubectl create -f examples/habitat-operator-deployment.yml
+
 ### Deploying an example
 
 To create an example service run:
