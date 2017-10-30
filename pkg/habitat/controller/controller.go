@@ -290,7 +290,11 @@ func (hc *HabitatController) enqueueCM(obj interface{}) {
 
 	if isHabitatObject(&cm.ObjectMeta) {
 		cache.ListAll(hc.habInformer.GetStore(), labels.Everything(), func(obj interface{}) {
-			h := obj.(*crv1.Habitat)
+			h, ok := obj.(*crv1.Habitat)
+			if !ok {
+				level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
+				return
+			}
 			if h.Namespace == cm.GetNamespace() {
 				hc.enqueue(h)
 			}
@@ -311,7 +315,11 @@ func (hc *HabitatController) handleCMDelete(obj interface{}) {
 }
 
 func (hc *HabitatController) handlePodAdd(obj interface{}) {
-	pod := obj.(*apiv1.Pod)
+	pod, ok := obj.(*apiv1.Pod)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert pod", "obj", obj)
+		return
+	}
 	if isHabitatObject(&pod.ObjectMeta) {
 		h, err := hc.getHabitatFromPod(pod)
 		if err != nil {
@@ -720,16 +728,22 @@ func (hc *HabitatController) processNextItem() bool {
 	}
 	defer hc.queue.Done(key)
 
-	err := hc.conform(key.(string))
+	k, ok := key.(string)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert key", "obj", key)
+		return false
+	}
+
+	err := hc.conform(k)
 	if err != nil {
 		level.Error(hc.logger).Log("msg", "Habitat could not be synced, requeueing", "msg", err)
 
-		hc.queue.AddRateLimited(key)
+		hc.queue.AddRateLimited(k)
 
 		return true
 	}
 
-	hc.queue.Forget(key)
+	hc.queue.Forget(k)
 
 	return true
 }
