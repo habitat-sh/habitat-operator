@@ -1,4 +1,3 @@
-EIP := $(shell minikube ip)
 HUB :=
 REPO := kinvolk
 IMAGE := $(if $(HUB),$(HUB)/)$(REPO)/habitat-operator
@@ -18,9 +17,10 @@ image: linux
 test:
 	go test -v $(shell go list ./... | grep -v /vendor/ | grep -v /test/)
 
+# requires minikube to be running
 e2e:
 	@if test 'x$(TESTIMAGE)' = 'x'; then echo "TESTIMAGE must be passed."; exit 1; fi
-	go test -v ./test/e2e/ --image "$(TESTIMAGE)" --kubeconfig ~/.kube/config --ip "$(EIP)"
+	go test -v ./test/e2e/ --image "$(TESTIMAGE)" --kubeconfig ~/.kube/config --ip "$$(minikube ip)"
 
 clean-test:
 	kubectl delete namespace testing
