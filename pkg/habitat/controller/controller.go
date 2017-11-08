@@ -718,10 +718,10 @@ func (hc *HabitatController) newDeployment(h *crv1.Habitat) (*appsv1beta1.Deploy
 	return base, nil
 }
 
-func (hc *HabitatController) enqueue(obj interface{}) {
-	k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+func (hc *HabitatController) enqueue(hab *crv1.Habitat) {
+	k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(hab)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", "Object key could not be retrieved", "object", obj)
+		level.Error(hc.logger).Log("msg", "Object key could not be retrieved", "object", hab)
 		return
 	}
 
