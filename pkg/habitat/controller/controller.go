@@ -261,11 +261,18 @@ func (hc *HabitatController) handleHabDelete(obj interface{}) {
 func (hc *HabitatController) handleDeployAdd(obj interface{}) {
 	d, ok := obj.(*appsv1beta1.Deployment)
 	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to type assert deployment", "obj", obj)
+		level.Error(hc.logger).Log("msg", "Failed to type assert Deployment", "obj", obj)
 		return
 	}
+
 	if isHabitatObject(&d.ObjectMeta) {
-		hc.enqueue(obj)
+		h, err := hc.getHabitatFromResource(d)
+		if err != nil {
+			level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+			return
+		}
+
+		hc.enqueue(h)
 	}
 }
 
@@ -277,7 +284,13 @@ func (hc *HabitatController) handleDeployUpdate(oldObj, newObj interface{}) {
 	}
 
 	if isHabitatObject(&d.ObjectMeta) {
-		hc.enqueue(newObj)
+		h, err := hc.getHabitatFromResource(d)
+		if err != nil {
+			level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+			return
+		}
+
+		hc.enqueue(h)
 	}
 }
 
@@ -289,7 +302,14 @@ func (hc *HabitatController) handleDeployDelete(obj interface{}) {
 	}
 
 	if isHabitatObject(&d.ObjectMeta) {
-		hc.enqueue(obj)
+		h, err := hc.getHabitatFromResource(d)
+		if err != nil {
+			// Could not find Habitat, it must have already been removed.
+			level.Debug(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+			return
+		}
+
+		hc.enqueue(h)
 	}
 }
 
