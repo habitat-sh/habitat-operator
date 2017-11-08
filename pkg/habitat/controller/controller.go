@@ -221,7 +221,13 @@ func (hc *HabitatController) watchPods(ctx context.Context) {
 }
 
 func (hc *HabitatController) handleHabAdd(obj interface{}) {
-	hc.enqueue(obj)
+	h, ok := obj.(*crv1.Habitat)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
+		return
+	}
+
+	hc.enqueue(h)
 }
 
 func (hc *HabitatController) handleHabUpdate(oldObj, newObj interface{}) {
@@ -243,7 +249,13 @@ func (hc *HabitatController) handleHabUpdate(oldObj, newObj interface{}) {
 }
 
 func (hc *HabitatController) handleHabDelete(obj interface{}) {
-	hc.enqueue(obj)
+	h, ok := obj.(*crv1.Habitat)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
+		return
+	}
+
+	hc.enqueue(h)
 }
 
 func (hc *HabitatController) handleDeployAdd(obj interface{}) {
