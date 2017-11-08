@@ -782,10 +782,14 @@ func (hc *HabitatController) conform(key string) error {
 	}
 
 	// Create Deployment, if it doesn't already exist.
-	_, err = hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(h.Namespace).Create(deployment)
-	if err != nil {
+	if _, err := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(h.Namespace).Create(deployment); err != nil {
 		// Was the error due to the Deployment already existing?
-		if !apierrors.IsAlreadyExists(err) {
+		if apierrors.IsAlreadyExists(err) {
+			// If yes, update the Deployment.
+			if _, err := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(h.Namespace).Update(deployment); err != nil {
+				return err
+			}
+		} else {
 			return err
 		}
 		_, err = hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(h.Namespace).Get(deployment.Name, metav1.GetOptions{})
