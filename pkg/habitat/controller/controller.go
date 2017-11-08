@@ -333,7 +333,7 @@ func (hc *HabitatController) handlePodAdd(obj interface{}) {
 		return
 	}
 	if isHabitatObject(&pod.ObjectMeta) {
-		h, err := hc.getHabitatFromPod(pod)
+		h, err := hc.getHabitatFromResource(pod)
 		if err != nil {
 			if hErr, ok := err.(habitatNotFoundError); !ok {
 				level.Error(hc.logger).Log("msg", hErr)
@@ -361,7 +361,7 @@ func (hc *HabitatController) handlePodUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	h, err := hc.getHabitatFromPod(newPod)
+	h, err := hc.getHabitatFromResource(newPod)
 	if err != nil {
 		if hErr, ok := err.(habitatNotFoundError); !ok {
 			level.Error(hc.logger).Log("msg", hErr)
@@ -388,7 +388,7 @@ func (hc *HabitatController) handlePodDelete(obj interface{}) {
 		return
 	}
 
-	h, err := hc.getHabitatFromPod(pod)
+	h, err := hc.getHabitatFromResource(pod)
 	if err != nil {
 		if hErr, ok := err.(habitatNotFoundError); !ok {
 			level.Error(hc.logger).Log("msg", hErr)
@@ -848,8 +848,8 @@ func (hc *HabitatController) podNeedsUpdate(oldPod, newPod *apiv1.Pod) bool {
 	return true
 }
 
-func (hc *HabitatController) getHabitatFromPod(pod *apiv1.Pod) (*crv1.Habitat, error) {
-	key := habitatKeyFromPod(pod)
+func (hc *HabitatController) getHabitatFromResource(r metav1.Object) (*crv1.Habitat, error) {
+	key := habitatKeyFromResource(r)
 
 	obj, exists, err := hc.habInformer.GetStore().GetByKey(key)
 	if err != nil {
@@ -881,10 +881,9 @@ func newConfigMap(ip string) *apiv1.ConfigMap {
 	}
 }
 
-func habitatKeyFromPod(pod *apiv1.Pod) string {
-	hName := pod.Labels[crv1.HabitatNameLabel]
-
-	key := fmt.Sprintf("%s/%s", pod.Namespace, hName)
+func habitatKeyFromResource(r metav1.Object) string {
+	hName := r.GetLabels()[crv1.HabitatNameLabel]
+	key := fmt.Sprintf("%s/%s", r.GetNamespace(), hName)
 
 	return key
 }
