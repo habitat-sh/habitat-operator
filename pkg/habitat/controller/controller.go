@@ -56,6 +56,9 @@ const (
 	// Keys are saved to disk with the format `<name>-<revision>.<extension>`.
 	// This regexp captures the name part.
 	ringKeyRegexp = `^([\w_-]+)-\d{14}$`
+
+	// The default channel for habitat applications, if not specified.
+	defaultHabChannel = "unstable"
 )
 
 var ringRegexp *regexp.Regexp = regexp.MustCompile(ringKeyRegexp)
@@ -67,11 +70,13 @@ type HabitatController struct {
 	// queue contains the jobs that will be handled by syncHabitat.
 	// A workqueue.RateLimitingInterface is a queue where failing jobs are re-enqueued with an exponential
 	// delay, so that jobs in a crashing loop don't fill the queue.
-	queue workqueue.RateLimitingInterface
+	habitatQueue          workqueue.RateLimitingInterface
+	habitatPromotionQueue workqueue.RateLimitingInterface
 
-	habInformer    cache.SharedIndexInformer
-	deployInformer cache.SharedIndexInformer
-	cMInformer     cache.SharedIndexInformer
+	habInformer          cache.SharedIndexInformer
+	habPromotionInformer cache.SharedIndexInformer
+	deployInformer       cache.SharedIndexInformer
+	cMInformer           cache.SharedIndexInformer
 }
 
 type Config struct {
@@ -95,9 +100,10 @@ func New(config Config, logger log.Logger) (*HabitatController, error) {
 	}
 
 	hc := &HabitatController{
-		config: config,
-		logger: logger,
-		queue:  workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "habitat"),
+		config:                config,
+		logger:                logger,
+		habitatQueue:          workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "habitat"),
+		habitatPromotionQueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "habitatPromotion"),
 	}
 
 	return hc, nil
@@ -108,16 +114,19 @@ func (hc *HabitatController) Run(ctx context.Context) error {
 	level.Info(hc.logger).Log("msg", "Watching Habitat objects")
 
 	hc.cacheHab()
+	hc.cacheHabPromotion()
 	hc.cacheDeployment()
 	hc.cacheConfigMap()
 	hc.watchPods(ctx)
 
 	go hc.habInformer.Run(ctx.Done())
+	go hc.habPromotionInformer.Run(ctx.Done())
 	go hc.deployInformer.Run(ctx.Done())
 	go hc.cMInformer.Run(ctx.Done())
 
 	// Start the synchronous queue consumer.
-	go hc.worker()
+	go hc.habitatWorker()
+	go hc.habitatPromotionWorker()
 
 	// This channel is closed when the context is canceled or times out.
 	<-ctx.Done()
@@ -146,6 +155,29 @@ func (hc *HabitatController) cacheHab() {
 		AddFunc:    hc.handleHabAdd,
 		UpdateFunc: hc.handleHabUpdate,
 		DeleteFunc: hc.handleHabDelete,
+	})
+}
+
+func (hc *HabitatController) cacheHabPromotion() {
+	source := cache.NewListWatchFromClient(
+		hc.config.HabitatClient,
+		crv1.HabitatPromotionResourcePlural,
+		apiv1.NamespaceAll,
+		fields.Everything())
+
+	hc.habPromotionInformer = cache.NewSharedIndexInformer(
+		source,
+
+		// The object type.
+		&crv1.HabitatPromotion{},
+		resyncPeriod,
+		cache.Indexers{},
+	)
+
+	hc.habPromotionInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    hc.handleHabPromotionAdd,
+		UpdateFunc: hc.handleHabPromotionUpdate,
+		DeleteFunc: hc.handleHabPromotionDelete,
 	})
 }
 
@@ -227,7 +259,7 @@ func (hc *HabitatController) handleHabAdd(obj interface{}) {
 		return
 	}
 
-	hc.enqueue(h)
+	hc.enqueueHabitat(h)
 }
 
 func (hc *HabitatController) handleHabUpdate(oldObj, newObj interface{}) {
@@ -243,8 +275,19 @@ func (hc *HabitatController) handleHabUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	if hc.habitatNeedsUpdate(oldHab, newHab) {
-		hc.enqueue(newHab)
+	if hc.habitatIsPromotiond(oldHab, newHab) {
+		// Remove old deployment
+		deploymentName := hc.deploymentName(oldHab.Name, oldHab.Spec.Channel)
+		if err := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(apiv1.NamespaceDefault).Delete(deploymentName, &metav1.DeleteOptions{}); err != nil {
+			level.Error(hc.logger).Log("msg", "Failed to delete deployment", "name", deploymentName)
+			return
+		}
+		level.Info(hc.logger).Log("msg", "created deployment", "name", deploymentName)
+
+		hc.enqueueHabitat(newHab)
+
+	} else if hc.habitatNeedsUpdate(oldHab, newHab) {
+		hc.enqueueHabitat(newHab)
 	}
 }
 
@@ -255,7 +298,45 @@ func (hc *HabitatController) handleHabDelete(obj interface{}) {
 		return
 	}
 
-	hc.enqueue(h)
+	hc.enqueueHabitat(h)
+}
+
+func (hc *HabitatController) handleHabPromotionAdd(obj interface{}) {
+	hp, ok := obj.(*crv1.HabitatPromotion)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert HabitatPromotion", "obj", obj)
+		return
+	}
+
+	hc.enqueueHabitatPromotion(hp)
+}
+
+func (hc *HabitatController) handleHabPromotionUpdate(oldObj, newObj interface{}) {
+	oldHabProm, ok := oldObj.(*crv1.HabitatPromotion)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert HabitatPromotion", "obj", oldObj)
+		return
+	}
+
+	newHabProm, ok := newObj.(*crv1.HabitatPromotion)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert HabitatPromotion", "obj", newObj)
+		return
+	}
+
+	if hc.habitatPromotionNeedsUpdate(oldHabProm, newHabProm) {
+		hc.enqueueHabitatPromotion(newHabProm)
+	}
+}
+
+func (hc *HabitatController) handleHabPromotionDelete(obj interface{}) {
+	hp, ok := obj.(*crv1.HabitatPromotion)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert HabitatPromotion", "obj", obj)
+		return
+	}
+
+	hc.enqueueHabitatPromotion(hp)
 }
 
 func (hc *HabitatController) handleDeployAdd(obj interface{}) {
@@ -268,11 +349,16 @@ func (hc *HabitatController) handleDeployAdd(obj interface{}) {
 	if isHabitatObject(&d.ObjectMeta) {
 		h, err := hc.getHabitatFromLabeledResource(d)
 		if err != nil {
+			if hErr, ok := err.(habitatNotFoundError); !ok {
+				level.Error(hc.logger).Log("msg", hErr)
+
+			}
+
 			level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
 			return
 		}
 
-		hc.enqueue(h)
+		hc.enqueueHabitat(h)
 	}
 }
 
@@ -286,11 +372,17 @@ func (hc *HabitatController) handleDeployUpdate(oldObj, newObj interface{}) {
 	if isHabitatObject(&d.ObjectMeta) {
 		h, err := hc.getHabitatFromLabeledResource(d)
 		if err != nil {
+			if hErr, ok := err.(habitatNotFoundError); !ok {
+				level.Error(hc.logger).Log("msg", hErr)
+				return
+			}
+
+			// This only means the Deployment and the Habitat watchers are not in sync.
 			level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
 			return
 		}
 
-		hc.enqueue(h)
+		hc.enqueueHabitat(h)
 	}
 }
 
@@ -301,16 +393,24 @@ func (hc *HabitatController) handleDeployDelete(obj interface{}) {
 		return
 	}
 
-	if isHabitatObject(&d.ObjectMeta) {
-		h, err := hc.getHabitatFromLabeledResource(d)
-		if err != nil {
-			// Could not find Habitat, it must have already been removed.
-			level.Debug(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+	if !isHabitatObject(&d.ObjectMeta) {
+		return
+	}
+
+	h, err := hc.getHabitatFromLabeledResource(d)
+	if err != nil {
+		if hErr, ok := err.(habitatNotFoundError); !ok {
+			level.Error(hc.logger).Log("msg", hErr)
 			return
 		}
 
-		hc.enqueue(h)
+		// This only means the Deployment and the Habitat watchers are not in sync.
+		level.Debug(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+
+		return
 	}
+
+	hc.enqueueHabitat(h)
 }
 
 func (hc *HabitatController) enqueueCM(obj interface{}) {
@@ -328,7 +428,7 @@ func (hc *HabitatController) enqueueCM(obj interface{}) {
 				return
 			}
 			if h.Namespace == cm.GetNamespace() {
-				hc.enqueue(h)
+				hc.enqueueHabitat(h)
 			}
 		})
 	}
@@ -358,7 +458,7 @@ func (hc *HabitatController) handlePodAdd(obj interface{}) {
 			level.Error(hc.logger).Log("msg", err)
 			return
 		}
-		hc.enqueue(h)
+		hc.enqueueHabitat(h)
 	}
 }
 
@@ -392,7 +492,7 @@ func (hc *HabitatController) handlePodUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	hc.enqueue(h)
+	hc.enqueueHabitat(h)
 }
 
 func (hc *HabitatController) handlePodDelete(obj interface{}) {
@@ -419,7 +519,7 @@ func (hc *HabitatController) handlePodDelete(obj interface{}) {
 		return
 	}
 
-	hc.enqueue(h)
+	hc.enqueueHabitat(h)
 }
 
 func (hc *HabitatController) getRunningPods(namespace string) ([]apiv1.Pod, error) {
@@ -559,6 +659,13 @@ func (hc *HabitatController) handleHabitatDeletion(key string) error {
 	return nil
 }
 
+func (hc *HabitatController) deploymentName(habitatName, channel string) string {
+	if channel == "" {
+		channel = defaultHabChannel
+	}
+	return fmt.Sprintf("%s-%s", habitatName, channel)
+}
+
 func (hc *HabitatController) newDeployment(h *crv1.Habitat) (*appsv1beta1.Deployment, error) {
 	// This value needs to be passed as a *int32, so we convert it, assign it to a
 	// variable and afterwards pass a pointer to it.
@@ -601,16 +708,17 @@ func (hc *HabitatController) newDeployment(h *crv1.Habitat) (*appsv1beta1.Deploy
 
 	base := &appsv1beta1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: h.Name,
+			Name: hc.deploymentName(h.Name, h.Spec.Channel),
 		},
 		Spec: appsv1beta1.DeploymentSpec{
 			Replicas: &count,
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						crv1.HabitatLabel:     "true",
-						crv1.HabitatNameLabel: h.Name,
-						crv1.TopologyLabel:    topology.String(),
+						crv1.HabitatLabel:        "true",
+						crv1.HabitatNameLabel:    h.Name,
+						crv1.TopologyLabel:       topology.String(),
+						crv1.HabitatChannelLabel: h.Spec.Channel,
 					},
 				},
 				Spec: apiv1.PodSpec{
@@ -736,7 +844,7 @@ func (hc *HabitatController) newDeployment(h *crv1.Habitat) (*appsv1beta1.Deploy
 	return base, nil
 }
 
-func (hc *HabitatController) enqueue(hab *crv1.Habitat) {
+func (hc *HabitatController) enqueueHabitat(hab *crv1.Habitat) {
 	if hab == nil {
 		level.Error(hc.logger).Log("msg", "Habitat object was nil", "object", hab)
 		return
@@ -748,20 +856,20 @@ func (hc *HabitatController) enqueue(hab *crv1.Habitat) {
 		return
 	}
 
-	hc.queue.Add(k)
+	hc.habitatQueue.Add(k)
 }
 
-func (hc *HabitatController) worker() {
-	for hc.processNextItem() {
+func (hc *HabitatController) habitatWorker() {
+	for hc.processNextHabitatItem() {
 	}
 }
 
-func (hc *HabitatController) processNextItem() bool {
-	key, quit := hc.queue.Get()
+func (hc *HabitatController) processNextHabitatItem() bool {
+	key, quit := hc.habitatQueue.Get()
 	if quit {
 		return false
 	}
-	defer hc.queue.Done(key)
+	defer hc.habitatQueue.Done(key)
 
 	k, ok := key.(string)
 	if !ok {
@@ -769,16 +877,16 @@ func (hc *HabitatController) processNextItem() bool {
 		return false
 	}
 
-	err := hc.conform(k)
+	err := hc.conformHabitat(k)
 	if err != nil {
 		level.Error(hc.logger).Log("msg", "Habitat could not be synced, requeueing", "msg", err)
 
-		hc.queue.AddRateLimited(k)
+		hc.habitatQueue.AddRateLimited(k)
 
 		return true
 	}
 
-	hc.queue.Forget(k)
+	hc.habitatQueue.Forget(k)
 
 	return true
 }
@@ -786,7 +894,7 @@ func (hc *HabitatController) processNextItem() bool {
 // conform is where the reconciliation takes place.
 // It is invoked when any of the following resources get created, updated or deleted:
 // Habitat, Pod, Deployment, ConfigMap.
-func (hc *HabitatController) conform(key string) error {
+func (hc *HabitatController) conformHabitat(key string) error {
 	obj, exists, err := hc.habInformer.GetStore().GetByKey(key)
 	if err != nil {
 		return err
@@ -805,7 +913,7 @@ func (hc *HabitatController) conform(key string) error {
 	level.Debug(hc.logger).Log("function", "handle Habitat Creation", "msg", h.ObjectMeta.SelfLink)
 
 	// Validate object.
-	if err := validateCustomObject(*h); err != nil {
+	if err := validateHabitat(*h); err != nil {
 		return err
 	}
 
@@ -845,9 +953,114 @@ func (hc *HabitatController) conform(key string) error {
 	return nil
 }
 
+func (hc *HabitatController) habitatIsPromotiond(oldHabitat, newHabitat *crv1.Habitat) bool {
+	if oldHabitat.Spec.Channel != newHabitat.Spec.Channel {
+		level.Debug(hc.logger).Log("msg", "Habitat is promoted", "h", newHabitat)
+		return true
+	}
+
+	return false
+}
+
 func (hc *HabitatController) habitatNeedsUpdate(oldHabitat, newHabitat *crv1.Habitat) bool {
 	if reflect.DeepEqual(oldHabitat.Spec, newHabitat.Spec) {
 		level.Debug(hc.logger).Log("msg", "Update ignored as it didn't change Habitat spec", "h", newHabitat)
+		return false
+	}
+
+	return true
+}
+
+func (hc *HabitatController) enqueueHabitatPromotion(habProm *crv1.HabitatPromotion) {
+	k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(habProm)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", "Object key could not be retrieved", "object", habProm)
+		return
+	}
+
+	hc.habitatPromotionQueue.Add(k)
+}
+
+func (hc *HabitatController) habitatPromotionWorker() {
+	for hc.processNextHabitatPromotionItem() {
+	}
+}
+
+func (hc *HabitatController) processNextHabitatPromotionItem() bool {
+	key, quit := hc.habitatPromotionQueue.Get()
+	if quit {
+		return false
+	}
+	defer hc.habitatPromotionQueue.Done(key)
+
+	k, ok := key.(string)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert key", "obj", key)
+		return false
+	}
+
+	if err := hc.conformHabitatPromotion(k); err != nil {
+		level.Error(hc.logger).Log("msg", "HabitatPromotion could not be synced, requeueing", "msg", err)
+		hc.habitatPromotionQueue.AddRateLimited(k)
+
+		return true
+	}
+
+	hc.habitatPromotionQueue.Forget(k)
+
+	return true
+}
+
+func (hc *HabitatController) conformHabitatPromotion(key string) error {
+	obj, exists, err := hc.habPromotionInformer.GetStore().GetByKey(key)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		// The HabitatPromotion was deleted.
+		// No action is required there.
+		return nil
+	}
+
+	// The HabitatPromotion was either created or updated.
+	hp, ok := obj.(*crv1.HabitatPromotion)
+	if !ok {
+		return fmt.Errorf("unknown event type")
+	}
+
+	level.Debug(hc.logger).Log("function", "handle HabitatPromotion creation", "msg", hp.ObjectMeta.SelfLink)
+
+	var habList crv1.HabitatList
+	if err := hc.config.HabitatClient.Get().
+		Resource(crv1.HabitatResourcePlural).
+		Namespace(apiv1.NamespaceDefault).
+		Param("labelSelector", fmt.Sprintf("%s=%s", crv1.HabitatNameLabel, hp.Spec.HabitatName)).
+		Do().Into(&habList); err != nil {
+		return err
+	}
+
+	if len(habList.Items) < 1 {
+		return fmt.Errorf("cannot find habitat object with name %s", hp.Spec.HabitatName)
+	}
+
+	for _, hab := range habList.Items {
+		var result crv1.Habitat
+		hab.Spec.Channel = hp.Spec.NewChannel
+		if err := hc.config.HabitatClient.Put().
+			Resource(crv1.HabitatResourcePlural).
+			Name(hab.ObjectMeta.Name).
+			Namespace(apiv1.NamespaceDefault).
+			Body(&hab).Do().Into(&result); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (hc *HabitatController) habitatPromotionNeedsUpdate(oldHabProm, newHabProm *crv1.HabitatPromotion) bool {
+	if reflect.DeepEqual(oldHabProm.Spec, newHabProm.Spec) {
+		level.Debug(hc.logger).Log("msg", "Update ignored as it didn't change HabitatPromotion spec", "hp", newHabProm)
 		return false
 	}
 

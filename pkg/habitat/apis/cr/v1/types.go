@@ -29,6 +29,12 @@ const (
 	HabitatNameLabel = "habitat-name"
 
 	TopologyLabel = "topology"
+
+	// HabitatChannelLabel contains the information about stability of application.
+	// Example: 'channel: production'
+	HabitatChannelLabel = "channel"
+
+	HabitatPromotionResourcePlural = "habitatpromotions"
 )
 
 type Habitat struct {
@@ -44,6 +50,9 @@ type HabitatSpec struct {
 	// Image is the Docker image of the Habitat Service.
 	Image   string  `json:"image"`
 	Service Service `json:"service"`
+	// Channel is the information about stability of the application, expressed as a label in Kubernetes.
+	// Optional.
+	Channel string `json:"channel,omitempty"`
 }
 
 type HabitatStatus struct {
@@ -94,8 +103,34 @@ const (
 	TopologyLeader     Topology = "leader"
 )
 
+type HabitatPromotion struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata"`
+	Spec              HabitatPromotionSpec   `json:"spec"`
+	Status            HabitatPromotionStatus `json:"status,omitempty"`
+}
+
+type HabitatPromotionSpec struct {
+	HabitatName string `json:"habitatName"`
+	OldChannel  string `json:"oldChannel"`
+	NewChannel  string `json:"newChannel"`
+}
+
+type HabitatPromotionStatus struct {
+	State   HabitatPromotionState `json:"state,omitempty"`
+	Message string                `json:"message,omitempty"`
+}
+
+type HabitatPromotionState string
+
 type HabitatList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 	Items           []Habitat `json:"items"`
+}
+
+type HabitatPromotionList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+	Items           []HabitatPromotion `json:"items"`
 }

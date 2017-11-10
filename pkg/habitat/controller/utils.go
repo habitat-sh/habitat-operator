@@ -35,7 +35,7 @@ func (err habitatNotFoundError) Error() string {
 	return fmt.Sprintf("could not find Habitat with key %s", err.key)
 }
 
-func validateCustomObject(h crv1.Habitat) error {
+func validateHabitat(h crv1.Habitat) error {
 	spec := h.Spec
 
 	switch spec.Service.Topology {
