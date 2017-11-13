@@ -741,7 +741,7 @@ func (hc *HabitatController) newDeployment(h *crv1.Habitat) (*appsv1beta1.Deploy
 func (hc *HabitatController) enqueue(hab *crv1.Habitat) {
 	k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(hab)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", "Object key could not be retrieved", "object", hab)
+		level.Error(hc.logger).Log("msg", "Habitat object key could not be retrieved", "object", hab)
 		return
 	}
 
