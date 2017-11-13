@@ -266,7 +266,7 @@ func (hc *HabitatController) handleDeployAdd(obj interface{}) {
 	}
 
 	if isHabitatObject(&d.ObjectMeta) {
-		h, err := hc.getHabitatFromResource(d)
+		h, err := hc.getHabitatFromLabeledResource(d)
 		if err != nil {
 			level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
 			return
@@ -284,7 +284,7 @@ func (hc *HabitatController) handleDeployUpdate(oldObj, newObj interface{}) {
 	}
 
 	if isHabitatObject(&d.ObjectMeta) {
-		h, err := hc.getHabitatFromResource(d)
+		h, err := hc.getHabitatFromLabeledResource(d)
 		if err != nil {
 			level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
 			return
@@ -302,7 +302,7 @@ func (hc *HabitatController) handleDeployDelete(obj interface{}) {
 	}
 
 	if isHabitatObject(&d.ObjectMeta) {
-		h, err := hc.getHabitatFromResource(d)
+		h, err := hc.getHabitatFromLabeledResource(d)
 		if err != nil {
 			// Could not find Habitat, it must have already been removed.
 			level.Debug(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
@@ -353,7 +353,7 @@ func (hc *HabitatController) handlePodAdd(obj interface{}) {
 		return
 	}
 	if isHabitatObject(&pod.ObjectMeta) {
-		h, err := hc.getHabitatFromResource(pod)
+		h, err := hc.getHabitatFromLabeledResource(pod)
 		if err != nil {
 			if hErr, ok := err.(habitatNotFoundError); !ok {
 				level.Error(hc.logger).Log("msg", hErr)
@@ -381,7 +381,7 @@ func (hc *HabitatController) handlePodUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	h, err := hc.getHabitatFromResource(newPod)
+	h, err := hc.getHabitatFromLabeledResource(newPod)
 	if err != nil {
 		if hErr, ok := err.(habitatNotFoundError); !ok {
 			level.Error(hc.logger).Log("msg", hErr)
@@ -408,7 +408,7 @@ func (hc *HabitatController) handlePodDelete(obj interface{}) {
 		return
 	}
 
-	h, err := hc.getHabitatFromResource(pod)
+	h, err := hc.getHabitatFromLabeledResource(pod)
 	if err != nil {
 		if hErr, ok := err.(habitatNotFoundError); !ok {
 			level.Error(hc.logger).Log("msg", hErr)
@@ -868,8 +868,8 @@ func (hc *HabitatController) podNeedsUpdate(oldPod, newPod *apiv1.Pod) bool {
 	return true
 }
 
-func (hc *HabitatController) getHabitatFromResource(r metav1.Object) (*crv1.Habitat, error) {
-	key, err := habitatKeyFromResource(r)
+func (hc *HabitatController) getHabitatFromLabeledResource(r metav1.Object) (*crv1.Habitat, error) {
+	key, err := habitatKeyFromLabeledResource(r)
 	if err != nil {
 		return nil, err
 	}
@@ -890,7 +890,9 @@ func (hc *HabitatController) getHabitatFromResource(r metav1.Object) (*crv1.Habi
 	return h, nil
 }
 
-func habitatKeyFromResource(r metav1.Object) (string, error) {
+// habitatKeyFromLabeledResource returns a Store key for any resource tagged
+// with the `HabitatNameLabel`.
+func habitatKeyFromLabeledResource(r metav1.Object) (string, error) {
 	hName := r.GetLabels()[crv1.HabitatNameLabel]
 	if hName == "" {
 		return "", fmt.Errorf("Could not retrieve %q label", crv1.HabitatNameLabel)
