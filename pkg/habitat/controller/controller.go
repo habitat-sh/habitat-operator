@@ -869,7 +869,10 @@ func (hc *HabitatController) podNeedsUpdate(oldPod, newPod *apiv1.Pod) bool {
 }
 
 func (hc *HabitatController) getHabitatFromResource(r metav1.Object) (*crv1.Habitat, error) {
-	key := habitatKeyFromResource(r)
+	key, err := habitatKeyFromResource(r)
+	if err != nil {
+		return nil, err
+	}
 
 	obj, exists, err := hc.habInformer.GetStore().GetByKey(key)
 	if err != nil {
@@ -887,6 +890,17 @@ func (hc *HabitatController) getHabitatFromResource(r metav1.Object) (*crv1.Habi
 	return h, nil
 }
 
+func habitatKeyFromResource(r metav1.Object) (string, error) {
+	hName := r.GetLabels()[crv1.HabitatNameLabel]
+	if hName == "" {
+		return "", fmt.Errorf("Could not retrieve %q label", crv1.HabitatNameLabel)
+	}
+
+	key := fmt.Sprintf("%s/%s", r.GetNamespace(), hName)
+
+	return key, nil
+}
+
 func newConfigMap(ip string) *apiv1.ConfigMap {
 	return &apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -899,13 +913,6 @@ func newConfigMap(ip string) *apiv1.ConfigMap {
 			peerFile: ip,
 		},
 	}
-}
-
-func habitatKeyFromResource(r metav1.Object) string {
-	hName := r.GetLabels()[crv1.HabitatNameLabel]
-	key := fmt.Sprintf("%s/%s", r.GetNamespace(), hName)
-
-	return key
 }
 
 func isHabitatObject(objMeta *metav1.ObjectMeta) bool {
