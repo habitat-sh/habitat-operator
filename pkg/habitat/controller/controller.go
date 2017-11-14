@@ -221,7 +221,13 @@ func (hc *HabitatController) watchPods(ctx context.Context) {
 }
 
 func (hc *HabitatController) handleHabAdd(obj interface{}) {
-	hc.enqueue(obj)
+	h, ok := obj.(*crv1.Habitat)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
+		return
+	}
+
+	hc.enqueue(h)
 }
 
 func (hc *HabitatController) handleHabUpdate(oldObj, newObj interface{}) {
@@ -243,17 +249,30 @@ func (hc *HabitatController) handleHabUpdate(oldObj, newObj interface{}) {
 }
 
 func (hc *HabitatController) handleHabDelete(obj interface{}) {
-	hc.enqueue(obj)
+	h, ok := obj.(*crv1.Habitat)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
+		return
+	}
+
+	hc.enqueue(h)
 }
 
 func (hc *HabitatController) handleDeployAdd(obj interface{}) {
 	d, ok := obj.(*appsv1beta1.Deployment)
 	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to type assert deployment", "obj", obj)
+		level.Error(hc.logger).Log("msg", "Failed to type assert Deployment", "obj", obj)
 		return
 	}
+
 	if isHabitatObject(&d.ObjectMeta) {
-		hc.enqueue(obj)
+		h, err := hc.getHabitatFromLabeledResource(d)
+		if err != nil {
+			level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+			return
+		}
+
+		hc.enqueue(h)
 	}
 }
 
@@ -265,7 +284,13 @@ func (hc *HabitatController) handleDeployUpdate(oldObj, newObj interface{}) {
 	}
 
 	if isHabitatObject(&d.ObjectMeta) {
-		hc.enqueue(newObj)
+		h, err := hc.getHabitatFromLabeledResource(d)
+		if err != nil {
+			level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+			return
+		}
+
+		hc.enqueue(h)
 	}
 }
 
@@ -277,7 +302,14 @@ func (hc *HabitatController) handleDeployDelete(obj interface{}) {
 	}
 
 	if isHabitatObject(&d.ObjectMeta) {
-		hc.enqueue(obj)
+		h, err := hc.getHabitatFromLabeledResource(d)
+		if err != nil {
+			// Could not find Habitat, it must have already been removed.
+			level.Debug(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+			return
+		}
+
+		hc.enqueue(h)
 	}
 }
 
@@ -321,7 +353,7 @@ func (hc *HabitatController) handlePodAdd(obj interface{}) {
 		return
 	}
 	if isHabitatObject(&pod.ObjectMeta) {
-		h, err := hc.getHabitatFromPod(pod)
+		h, err := hc.getHabitatFromLabeledResource(pod)
 		if err != nil {
 			if hErr, ok := err.(habitatNotFoundError); !ok {
 				level.Error(hc.logger).Log("msg", hErr)
@@ -349,7 +381,7 @@ func (hc *HabitatController) handlePodUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	h, err := hc.getHabitatFromPod(newPod)
+	h, err := hc.getHabitatFromLabeledResource(newPod)
 	if err != nil {
 		if hErr, ok := err.(habitatNotFoundError); !ok {
 			level.Error(hc.logger).Log("msg", hErr)
@@ -376,7 +408,7 @@ func (hc *HabitatController) handlePodDelete(obj interface{}) {
 		return
 	}
 
-	h, err := hc.getHabitatFromPod(pod)
+	h, err := hc.getHabitatFromLabeledResource(pod)
 	if err != nil {
 		if hErr, ok := err.(habitatNotFoundError); !ok {
 			level.Error(hc.logger).Log("msg", hErr)
@@ -706,10 +738,10 @@ func (hc *HabitatController) newDeployment(h *crv1.Habitat) (*appsv1beta1.Deploy
 	return base, nil
 }
 
-func (hc *HabitatController) enqueue(obj interface{}) {
-	k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+func (hc *HabitatController) enqueue(hab *crv1.Habitat) {
+	k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(hab)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", "Object key could not be retrieved", "object", obj)
+		level.Error(hc.logger).Log("msg", "Habitat object key could not be retrieved", "object", hab)
 		return
 	}
 
@@ -836,8 +868,11 @@ func (hc *HabitatController) podNeedsUpdate(oldPod, newPod *apiv1.Pod) bool {
 	return true
 }
 
-func (hc *HabitatController) getHabitatFromPod(pod *apiv1.Pod) (*crv1.Habitat, error) {
-	key := habitatKeyFromPod(pod)
+func (hc *HabitatController) getHabitatFromLabeledResource(r metav1.Object) (*crv1.Habitat, error) {
+	key, err := habitatKeyFromLabeledResource(r)
+	if err != nil {
+		return nil, err
+	}
 
 	obj, exists, err := hc.habInformer.GetStore().GetByKey(key)
 	if err != nil {
@@ -855,6 +890,19 @@ func (hc *HabitatController) getHabitatFromPod(pod *apiv1.Pod) (*crv1.Habitat, e
 	return h, nil
 }
 
+// habitatKeyFromLabeledResource returns a Store key for any resource tagged
+// with the `HabitatNameLabel`.
+func habitatKeyFromLabeledResource(r metav1.Object) (string, error) {
+	hName := r.GetLabels()[crv1.HabitatNameLabel]
+	if hName == "" {
+		return "", fmt.Errorf("Could not retrieve %q label", crv1.HabitatNameLabel)
+	}
+
+	key := fmt.Sprintf("%s/%s", r.GetNamespace(), hName)
+
+	return key, nil
+}
+
 func newConfigMap(ip string) *apiv1.ConfigMap {
 	return &apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -867,14 +915,6 @@ func newConfigMap(ip string) *apiv1.ConfigMap {
 			peerFile: ip,
 		},
 	}
-}
-
-func habitatKeyFromPod(pod *apiv1.Pod) string {
-	hName := pod.Labels[crv1.HabitatNameLabel]
-
-	key := fmt.Sprintf("%s/%s", pod.Namespace, hName)
-
-	return key
 }
 
 func isHabitatObject(objMeta *metav1.ObjectMeta) bool {
