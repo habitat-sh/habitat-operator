@@ -25,4 +25,8 @@ e2e:
 clean-test:
 	kubectl delete namespace testing
 
-.PHONY: build test linux image e2e clean-test
+update-version:
+	find examples -name "*.yml" -type f -exec sed -i.bak "s/habitat-operator:.*/habitat-operator:v$$(cat VERSION)/g" '{}' \;
+	find examples -name "*.yml.bak" -type f -exec rm '{}' \;
+
+.PHONY: build test linux image e2e clean-test update-version
