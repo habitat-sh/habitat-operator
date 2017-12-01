@@ -355,12 +355,10 @@ func (hc *HabitatController) handlePodAdd(obj interface{}) {
 	if isHabitatObject(&pod.ObjectMeta) {
 		h, err := hc.getHabitatFromLabeledResource(pod)
 		if err != nil {
-			if hErr, ok := err.(habitatNotFoundError); !ok {
-				level.Error(hc.logger).Log("msg", hErr)
-				return
-			}
-			hc.enqueue(h)
+			level.Error(hc.logger).Log("msg", err)
+			return
 		}
+		hc.enqueue(h)
 	}
 }
 
