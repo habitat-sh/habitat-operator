@@ -355,12 +355,10 @@ func (hc *HabitatController) handlePodAdd(obj interface{}) {
 	if isHabitatObject(&pod.ObjectMeta) {
 		h, err := hc.getHabitatFromLabeledResource(pod)
 		if err != nil {
-			if hErr, ok := err.(habitatNotFoundError); !ok {
-				level.Error(hc.logger).Log("msg", hErr)
-				return
-			}
-			hc.enqueue(h)
+			level.Error(hc.logger).Log("msg", err)
+			return
 		}
+		hc.enqueue(h)
 	}
 }
 
@@ -739,6 +737,11 @@ func (hc *HabitatController) newDeployment(h *crv1.Habitat) (*appsv1beta1.Deploy
 }
 
 func (hc *HabitatController) enqueue(hab *crv1.Habitat) {
+	if hab == nil {
+		level.Error(hc.logger).Log("msg", "Habitat object was nil", "object", hab)
+		return
+	}
+
 	k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(hab)
 	if err != nil {
 		level.Error(hc.logger).Log("msg", "Habitat object key could not be retrieved", "object", hab)
