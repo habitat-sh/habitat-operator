@@ -41,6 +41,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&Habitat{},
 		&HabitatList{},
+		&HabitatPromotion{},
+		&HabitatPromotionList{},
 	)
 
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)

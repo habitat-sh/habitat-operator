@@ -24,7 +24,6 @@ import (
 	"github.com/go-kit/kit/log/level"
 	flag "github.com/spf13/pflag"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -66,15 +65,10 @@ func run() int {
 		return 1
 	}
 
-	// Create Habitat CRD.
-	_, crdErr := habitatclient.CreateCRD(apiextensionsclientset)
-	if crdErr != nil {
-		if !apierrors.IsAlreadyExists(crdErr) {
-			level.Error(logger).Log("msg", crdErr)
-			return 1
-		}
-
-		level.Info(logger).Log("msg", "Habitat CRD already exists, continuing")
+	// Create Habitat CRDs.
+	if crdErr := habitatclient.CreateCRDs(apiextensionsclientset, log.With(logger, "coponent", "crd")); crdErr != nil {
+		level.Error(logger).Log("msg", crdErr)
+		return 1
 	} else {
 		level.Info(logger).Log("msg", "created Habitat CRD")
 	}

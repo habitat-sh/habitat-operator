@@ -61,6 +61,12 @@ To create an example service run:
 This will create a single-pod deployment of an `nginx` Habitat service.
 More examples are located in the [example directory](https://github.com/kinvolk/habitat-operator/tree/master/examples/).
 
+### Promoting a Habitat application
+
+By default, the example service from `examples/standalone/habitat.yml` uses the `staging` channel. To promote it to the `production` channel, use the following example:
+
+    kubectl create -f examples/standalone/habitat-promote.yml
+
 ## Contributing
 
 ### Dependency management

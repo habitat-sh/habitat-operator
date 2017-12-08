@@ -35,3 +35,19 @@ The following is a description of the Habitat operator API. To see manifest exam
 | name | Name of the bind specified in the Habitat configuration files. | string | true |
 | service | Name of the service this bind refers to. | string | true |
 | group | Group of the service this bind refers to. | string | true |
+
+## HabitatPromote
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/api-reference/v1.6/#objectmeta-v1-meta) | true |
+| spec |  | [HabitatSpec](#habitatspec) | true |
+| status |  |  | false |
+
+## HabitatPromoteSpec
+
+| Field | Description | Scheme | Required |
+| ----- | ----------- | ------ | -------- |
+| habitatName | Name of the Habitat object to promote. | string | true |
+| oldChannel | Name of the channel the Habitat application is on before the promotion. | string | true |
+| newChannel | Name of the channel the Habitat application is moved to as part of the promotion. | string | true |

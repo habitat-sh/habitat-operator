@@ -1,0 +1,8 @@
+apiVersion: habitat.sh/v1
+kind: HabitatPromotion
+metadata:
+  name: example-standalone-habitat
+spec:
+  habitatName: example-standalone-habitat
+  oldChannel: staging
+  newChannel: production
