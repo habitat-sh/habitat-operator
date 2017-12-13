@@ -110,7 +110,7 @@ func New(config Config, logger log.Logger) (*HabitatController, error) {
 }
 
 // Run starts a Habitat resource controller.
-func (hc *HabitatController) Run(ctx context.Context) error {
+func (hc *HabitatController) Run(workers int, ctx context.Context) error {
 	// Make sure the work queue is shutdown which will trigger workers to end.
 	defer hc.queue.ShutDown()
 
@@ -131,9 +131,12 @@ func (hc *HabitatController) Run(ctx context.Context) error {
 	}
 	level.Debug(hc.logger).Log("msg", "Caches synced")
 
-	// Start the synchronous queue consumer. If the worker exits because of a
+	// Start the synchronous queue consumers. If a worker exits because of a
 	// failed job, it will be restarted after a delay of 1 second.
-	go wait.Until(hc.worker, time.Second, ctx.Done())
+	for i := 0; i < workers; i++ {
+		level.Debug(hc.logger).Log("msg", "Starting worker", "id", i)
+		go wait.Until(hc.worker, time.Second, ctx.Done())
+	}
 
 	// This channel is closed when the context is canceled or times out.
 	<-ctx.Done()
