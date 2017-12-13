@@ -72,6 +72,11 @@ type HabitatController struct {
 	habInformer    cache.SharedIndexInformer
 	deployInformer cache.SharedIndexInformer
 	cmInformer     cache.SharedIndexInformer
+
+	// cache.InformerSynced returns true if the store has been synced at least once.
+	habInformerSynced    cache.InformerSynced
+	deployInformerSynced cache.InformerSynced
+	cmInformerSynced     cache.InformerSynced
 }
 
 type Config struct {
@@ -116,6 +121,12 @@ func (hc *HabitatController) Run(ctx context.Context) error {
 	go hc.deployInformer.Run(ctx.Done())
 	go hc.cmInformer.Run(ctx.Done())
 
+	// Wait for caches to be synced before starting workers.
+	if !cache.WaitForCacheSync(ctx.Done(), hc.habInformerSynced, hc.deployInformerSynced, hc.cmInformerSynced) {
+		return nil
+	}
+	level.Debug(hc.logger).Log("msg", "Caches synced")
+
 	// Start the synchronous queue consumer.
 	go hc.worker()
 
@@ -147,6 +158,8 @@ func (hc *HabitatController) cacheHab() {
 		UpdateFunc: hc.handleHabUpdate,
 		DeleteFunc: hc.handleHabDelete,
 	})
+
+	hc.habInformerSynced = hc.habInformer.HasSynced
 }
 
 func (hc *HabitatController) cacheDeployment() {
@@ -168,6 +181,8 @@ func (hc *HabitatController) cacheDeployment() {
 		UpdateFunc: hc.handleDeployUpdate,
 		DeleteFunc: hc.handleDeployDelete,
 	})
+
+	hc.deployInformerSynced = hc.deployInformer.HasSynced
 }
 
 func (hc *HabitatController) cacheConfigMap() {
@@ -193,6 +208,8 @@ func (hc *HabitatController) cacheConfigMap() {
 		UpdateFunc: hc.handleCMUpdate,
 		DeleteFunc: hc.handleCMDelete,
 	})
+
+	hc.cmInformerSynced = hc.cmInformer.HasSynced
 }
 
 func (hc *HabitatController) watchPods(ctx context.Context) {
