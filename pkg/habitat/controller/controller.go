@@ -105,6 +105,9 @@ func New(config Config, logger log.Logger) (*HabitatController, error) {
 
 // Run starts a Habitat resource controller.
 func (hc *HabitatController) Run(ctx context.Context) error {
+	// Make sure the work queue is shutdown which will trigger workers to end.
+	defer hc.queue.ShutDown()
+
 	level.Info(hc.logger).Log("msg", "Watching Habitat objects")
 
 	hc.cacheHab()
@@ -757,10 +760,12 @@ func (hc *HabitatController) worker() {
 }
 
 func (hc *HabitatController) processNextItem() bool {
+	// Process an item, unless `queue.ShutDown()` has been called, in which case we exit.
 	key, quit := hc.queue.Get()
 	if quit {
 		return false
 	}
+
 	defer hc.queue.Done(key)
 
 	k, ok := key.(string)
@@ -778,6 +783,7 @@ func (hc *HabitatController) processNextItem() bool {
 		return true
 	}
 
+	// If there was no error, tell the queue it can stop tracking failure history for the key.
 	hc.queue.Forget(k)
 
 	return true
