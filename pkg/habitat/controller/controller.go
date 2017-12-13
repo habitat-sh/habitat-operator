@@ -71,7 +71,7 @@ type HabitatController struct {
 
 	habInformer    cache.SharedIndexInformer
 	deployInformer cache.SharedIndexInformer
-	cMInformer     cache.SharedIndexInformer
+	cmInformer     cache.SharedIndexInformer
 }
 
 type Config struct {
@@ -114,7 +114,7 @@ func (hc *HabitatController) Run(ctx context.Context) error {
 
 	go hc.habInformer.Run(ctx.Done())
 	go hc.deployInformer.Run(ctx.Done())
-	go hc.cMInformer.Run(ctx.Done())
+	go hc.cmInformer.Run(ctx.Done())
 
 	// Start the synchronous queue consumer.
 	go hc.worker()
@@ -181,14 +181,14 @@ func (hc *HabitatController) cacheConfigMap() {
 		apiv1.NamespaceAll,
 		ls)
 
-	hc.cMInformer = cache.NewSharedIndexInformer(
+	hc.cmInformer = cache.NewSharedIndexInformer(
 		source,
 		&apiv1.ConfigMap{},
 		resyncPeriod,
 		cache.Indexers{},
 	)
 
-	hc.cMInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	hc.cmInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    hc.handleCMAdd,
 		UpdateFunc: hc.handleCMUpdate,
 		DeleteFunc: hc.handleCMDelete,
