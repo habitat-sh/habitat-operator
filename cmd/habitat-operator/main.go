@@ -18,6 +18,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 
 	"github.com/go-kit/kit/log"
@@ -105,7 +106,7 @@ func run() int {
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
-	go hc.Run(ctx)
+	go hc.Run(runtime.NumCPU(), ctx)
 
 	term := make(chan os.Signal)
 	// Relay these signals to the `term` channel.
