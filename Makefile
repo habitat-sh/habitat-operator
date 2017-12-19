@@ -9,7 +9,7 @@ build:
 
 linux:
 	# Compile statically linked binary for linux.
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build --ldflags="-s" -o habitat-operator github.com/kinvolk/habitat-operator/cmd/habitat-operator
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s" -o habitat-operator github.com/kinvolk/habitat-operator/cmd/habitat-operator
 
 image: linux
 	docker build -t "$(IMAGE):$(TAG)" .
