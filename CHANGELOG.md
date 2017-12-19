@@ -1,6 +1,6 @@
 # Habitat operator CHANGELOG
 
-## [v0.2.0](https://github.com/kinvolk/habitat-operator/tree/v0.2.0) (2017-20-11)
+## [v0.2.0](https://github.com/kinvolk/habitat-operator/tree/v0.2.0) (20-11-2017)
 [Full changelog](https://github.com/kinvolk/habitat-operator/compare/v0.1.0...v0.2.0)
 
 ### Features & Enhancements
