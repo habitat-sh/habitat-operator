@@ -22,6 +22,19 @@ For a more detailed description of the Habitat operator API have a look at the [
 
     go get -u github.com/kinvolk/habitat-operator/cmd/habitat-operator
 
+## Building manually from source directory
+
+First clone the operator:
+
+    git clone https://github.com/kinvolk/habitat-operator.git
+    cd habitat-operator
+
+Then build it:
+
+    make build
+
+Note: Make sure the source directory is in your `$GOPATH` before you execute the above command.
+
 ## Usage
 
 ### Running outside of a Kubernetes cluster
@@ -29,6 +42,10 @@ For a more detailed description of the Habitat operator API have a look at the [
 Start the Habitat operator by running:
 
     habitat-operator --kubeconfig ~/.kube/config
+
+If you built the operator manually, you'll have to specify the path to the binary. So from the root of the source directory, run:
+
+    ./habitat-operator --kubeconfig ~/.kube/config
 
 ### Running inside a Kubernetes cluster
 
