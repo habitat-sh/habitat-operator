@@ -198,11 +198,15 @@ func (hc *HabitatController) cacheConfigMap() {
 		habv1.HabitatLabel: "true",
 	}))
 
+	options := metav1.ListOptions{
+		LabelSelector: ls.String(),
+	}
+
 	source := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
 		"configmaps",
 		apiv1.NamespaceAll,
-		ls)
+		options)
 
 	hc.cmInformer = cache.NewSharedIndexInformer(
 		source,
@@ -221,13 +225,18 @@ func (hc *HabitatController) cacheConfigMap() {
 }
 
 func (hc *HabitatController) watchPods(ctx context.Context) {
-	ls := labels.SelectorFromSet(labels.Set(map[string]string{habv1.HabitatLabel: "true"}))
+	ls := labels.SelectorFromSet(labels.Set(map[string]string{
+		habv1.HabitatLabel: "true",
+	}))
 
+	options := metav1.ListOptions{
+		LabelSelector: ls.String(),
+	}
 	source := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
 		"pods",
 		apiv1.NamespaceAll,
-		ls)
+		options)
 
 	c := cache.NewSharedIndexInformer(
 		source,
