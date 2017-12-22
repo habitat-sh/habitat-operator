@@ -17,9 +17,8 @@
 package framework
 
 import (
-	habclient "github.com/kinvolk/habitat-operator/pkg/habitat/client"
-
-	crv1 "github.com/kinvolk/habitat-operator/pkg/habitat/apis/cr/v1"
+	habv1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1"
+	habclient "github.com/kinvolk/habitat-operator/pkg/client"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -86,7 +85,7 @@ func (f *Framework) setupOperator() error {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 			Labels: map[string]string{
-				crv1.HabitatNameLabel: name,
+				habv1.HabitatNameLabel: name,
 			},
 		},
 		Spec: apiv1.PodSpec{

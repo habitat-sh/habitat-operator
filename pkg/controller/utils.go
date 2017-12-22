@@ -17,7 +17,8 @@ package controller
 import (
 	"fmt"
 
-	crv1 "github.com/kinvolk/habitat-operator/pkg/habitat/apis/cr/v1"
+	habv1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -35,12 +36,12 @@ func (err habitatNotFoundError) Error() string {
 	return fmt.Sprintf("could not find Habitat with key %s", err.key)
 }
 
-func validateCustomObject(h crv1.Habitat) error {
+func validateCustomObject(h habv1.Habitat) error {
 	spec := h.Spec
 
 	switch spec.Service.Topology {
-	case crv1.TopologyStandalone:
-	case crv1.TopologyLeader:
+	case habv1.TopologyStandalone:
+	case habv1.TopologyLeader:
 		if spec.Count < leaderFollowerTopologyMinCount {
 			return fmt.Errorf("too few instances: %d, leader-follower topology requires at least %d", spec.Count, leaderFollowerTopologyMinCount)
 		}

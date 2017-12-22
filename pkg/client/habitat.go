@@ -18,7 +18,8 @@ import (
 	"reflect"
 	"time"
 
-	crv1 "github.com/kinvolk/habitat-operator/pkg/habitat/apis/cr/v1"
+	habv1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1"
+
 	apiv1 "k8s.io/api/core/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -29,7 +30,7 @@ import (
 )
 
 const (
-	habitatCRDName           = crv1.HabitatResourcePlural + "." + crv1.GroupName
+	habitatCRDName           = habv1.HabitatResourcePlural + "." + habv1.GroupName
 	habitatResourceShortName = "hab"
 
 	pollInterval = 500 * time.Millisecond
@@ -44,12 +45,12 @@ func CreateCRD(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.C
 			Name: habitatCRDName,
 		},
 		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
-			Group:   crv1.GroupName,
-			Version: crv1.SchemeGroupVersion.Version,
+			Group:   habv1.GroupName,
+			Version: habv1.SchemeGroupVersion.Version,
 			Scope:   apiextensionsv1beta1.NamespaceScoped,
 			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
-				Plural:     crv1.HabitatResourcePlural,
-				Kind:       reflect.TypeOf(crv1.Habitat{}).Name(),
+				Plural:     habv1.HabitatResourcePlural,
+				Kind:       reflect.TypeOf(habv1.Habitat{}).Name(),
 				ShortNames: []string{habitatResourceShortName},
 			},
 		},
@@ -101,14 +102,14 @@ func CreateCRD(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.C
 // WaitForHabitatInstanceProcessed polls the API for a specific Habitat with a state of "Processed".
 func WaitForHabitatInstanceProcessed(client *rest.RESTClient, name string) error {
 	return wait.Poll(100*time.Millisecond, 10*time.Second, func() (bool, error) {
-		var hab crv1.Habitat
+		var hab habv1.Habitat
 		err := client.Get().
-			Resource(crv1.HabitatResourcePlural).
+			Resource(habv1.HabitatResourcePlural).
 			Namespace(apiv1.NamespaceDefault).
 			Name(name).
 			Do().Into(&hab)
 
-		if err == nil && hab.Status.State == crv1.HabitatStateProcessed {
+		if err == nil && hab.Status.State == habv1.HabitatStateProcessed {
 			return true, nil
 		}
 

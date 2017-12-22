@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	crv1 "github.com/kinvolk/habitat-operator/pkg/habitat/apis/cr/v1"
+	habv1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1"
 	utils "github.com/kinvolk/habitat-operator/test/e2e/framework"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -96,7 +96,7 @@ func TestHabitatInitialConfig(t *testing.T) {
 		},
 		Spec: apiv1.ServiceSpec{
 			Selector: map[string]string{
-				crv1.HabitatNameLabel: habitatName,
+				habv1.HabitatNameLabel: habitatName,
 			},
 			Type: "NodePort",
 			Ports: []apiv1.ServicePort{
@@ -171,7 +171,7 @@ func TestHabitatFunctioning(t *testing.T) {
 		},
 		Spec: apiv1.ServiceSpec{
 			Selector: map[string]string{
-				crv1.HabitatNameLabel: habitatName,
+				habv1.HabitatNameLabel: habitatName,
 			},
 			Type: "NodePort",
 			Ports: []apiv1.ServicePort{
@@ -297,7 +297,7 @@ func TestBind(t *testing.T) {
 		},
 		Spec: apiv1.ServiceSpec{
 			Selector: map[string]string{
-				crv1.HabitatNameLabel: habitatGoName,
+				habv1.HabitatNameLabel: habitatGoName,
 			},
 			Type: "NodePort",
 			Ports: []apiv1.ServicePort{
