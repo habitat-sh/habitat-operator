@@ -16,7 +16,7 @@ For a more detailed description of the Habitat operator API have a look at the [
 ## Prerequisites
 
 - Habitat `>= 0.36.0`
-- Kubernetes `>= 1.7.0`.
+- Kubernetes cluster with version `1.7.x`, `1.8.x` or `1.9.x`.
 
 ## Installing
 
