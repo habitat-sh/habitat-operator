@@ -31,6 +31,8 @@ const (
 	TopologyLabel = "topology"
 )
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
 type Habitat struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
@@ -93,6 +95,8 @@ const (
 	TopologyStandalone Topology = "standalone"
 	TopologyLeader     Topology = "leader"
 )
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type HabitatList struct {
 	metav1.TypeMeta `json:",inline"`
