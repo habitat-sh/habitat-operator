@@ -20,10 +20,13 @@ import (
 
 	"github.com/google/gofuzz"
 
-	apitesting "k8s.io/apimachinery/pkg/api/testing"
+	"k8s.io/apimachinery/pkg/api/testing/fuzzer"
+	roundtrip "k8s.io/apimachinery/pkg/api/testing/roundtrip"
+	metafuzzer "k8s.io/apimachinery/pkg/apis/meta/fuzzer"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
 var _ runtime.Object = &Habitat{}
@@ -32,7 +35,7 @@ var _ metav1.ObjectMetaAccessor = &Habitat{}
 var _ runtime.Object = &HabitatList{}
 var _ metav1.ListMetaAccessor = &HabitatList{}
 
-func habitatFuzzerFuncs(t apitesting.TestingCommon) []interface{} {
+func habitatFuzzerFuncs(codecs runtimeserializer.CodecFactory) []interface{} {
 	return []interface{}{
 		func(obj *HabitatList, c fuzz.Continue) {
 			c.FuzzNoCustom(obj)
@@ -53,9 +56,9 @@ func TestRoundTrip(t *testing.T) {
 	AddToScheme(scheme)
 
 	seed := rand.Int63()
-	fuzzerFuncs := apitesting.MergeFuzzerFuncs(t, apitesting.GenericFuzzerFuncs(t, codecs), habitatFuzzerFuncs(t))
-	fuzzer := apitesting.FuzzerFor(fuzzerFuncs, rand.NewSource(seed))
+	fuzzerFuncs := fuzzer.MergeFuzzerFuncs(metafuzzer.Funcs, habitatFuzzerFuncs)
+	fuzzer := fuzzer.FuzzerFor(fuzzerFuncs, rand.NewSource(seed), codecs)
 
-	apitesting.RoundTripSpecificKindWithoutProtobuf(t, SchemeGroupVersion.WithKind("Habitat"), scheme, codecs, fuzzer, nil)
-	apitesting.RoundTripSpecificKindWithoutProtobuf(t, SchemeGroupVersion.WithKind("HabitatList"), scheme, codecs, fuzzer, nil)
+	roundtrip.RoundTripSpecificKindWithoutProtobuf(t, SchemeGroupVersion.WithKind("Habitat"), scheme, codecs, fuzzer, nil)
+	roundtrip.RoundTripSpecificKindWithoutProtobuf(t, SchemeGroupVersion.WithKind("HabitatList"), scheme, codecs, fuzzer, nil)
 }
