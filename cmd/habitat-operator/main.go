@@ -29,8 +29,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	habitatclient "github.com/kinvolk/habitat-operator/pkg/habitat/client"
-	habitatcontroller "github.com/kinvolk/habitat-operator/pkg/habitat/controller"
+	habclient "github.com/kinvolk/habitat-operator/pkg/client"
+	habcontroller "github.com/kinvolk/habitat-operator/pkg/controller"
 )
 
 type Config struct {
@@ -68,7 +68,7 @@ func run() int {
 	}
 
 	// Create Habitat CRD.
-	_, crdErr := habitatclient.CreateCRD(apiextensionsclientset)
+	_, crdErr := habclient.CreateCRD(apiextensionsclientset)
 	if crdErr != nil {
 		if !apierrors.IsAlreadyExists(crdErr) {
 			level.Error(logger).Log("msg", crdErr)
@@ -80,7 +80,7 @@ func run() int {
 		level.Info(logger).Log("msg", "created Habitat CRD")
 	}
 
-	habitatClient, scheme, err := habitatclient.NewClient(config)
+	habClient, scheme, err := habclient.NewClient(config)
 	if err != nil {
 		level.Error(logger).Log("msg", err)
 		return 1
@@ -93,12 +93,12 @@ func run() int {
 		return 1
 	}
 
-	controllerConfig := habitatcontroller.Config{
-		HabitatClient:       habitatClient,
+	controllerConfig := habcontroller.Config{
+		HabitatClient:       habClient,
 		KubernetesClientset: clientset,
 		Scheme:              scheme,
 	}
-	hc, err := habitatcontroller.New(controllerConfig, log.With(logger, "component", "controller"))
+	hc, err := habcontroller.New(controllerConfig, log.With(logger, "component", "controller"))
 	if err != nil {
 		level.Error(logger).Log("msg", err)
 		return 1
