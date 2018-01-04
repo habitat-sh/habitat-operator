@@ -24,6 +24,8 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	appsv1beta1 "k8s.io/api/apps/v1beta1"
+	apiv1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -31,8 +33,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	apiv1 "k8s.io/client-go/pkg/api/v1"
-	appsv1beta1 "k8s.io/client-go/pkg/apis/apps/v1beta1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -198,11 +198,15 @@ func (hc *HabitatController) cacheConfigMap() {
 		habv1.HabitatLabel: "true",
 	}))
 
+	options := metav1.ListOptions{
+		LabelSelector: ls.String(),
+	}
+
 	source := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
 		"configmaps",
 		apiv1.NamespaceAll,
-		ls)
+		options)
 
 	hc.cmInformer = cache.NewSharedIndexInformer(
 		source,
@@ -221,13 +225,18 @@ func (hc *HabitatController) cacheConfigMap() {
 }
 
 func (hc *HabitatController) watchPods(ctx context.Context) {
-	ls := labels.SelectorFromSet(labels.Set(map[string]string{habv1.HabitatLabel: "true"}))
+	ls := labels.SelectorFromSet(labels.Set(map[string]string{
+		habv1.HabitatLabel: "true",
+	}))
 
+	options := metav1.ListOptions{
+		LabelSelector: ls.String(),
+	}
 	source := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
 		"pods",
 		apiv1.NamespaceAll,
-		ls)
+		options)
 
 	c := cache.NewSharedIndexInformer(
 		source,
@@ -460,7 +469,7 @@ func (hc *HabitatController) getRunningPods(namespace string) ([]apiv1.Pod, erro
 		LabelSelector: ls.String(),
 	}
 
-	pods, err := hc.config.KubernetesClientset.CoreV1Client.Pods(namespace).List(running)
+	pods, err := hc.config.KubernetesClientset.CoreV1().Pods(namespace).List(running)
 	if err != nil {
 		return nil, err
 	}
@@ -496,7 +505,7 @@ func (hc *HabitatController) handleConfigMap(h *habv1.Habitat) error {
 
 			// Delete the IP in the existing ConfigMap, as it must necessarily be invalid,
 			// since there are no running Pods.
-			cm, err = hc.config.KubernetesClientset.CoreV1Client.ConfigMaps(h.Namespace).Get(newCM.Name, metav1.GetOptions{})
+			cm, err = hc.config.KubernetesClientset.CoreV1().ConfigMaps(h.Namespace).Get(newCM.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
@@ -520,7 +529,7 @@ func (hc *HabitatController) handleConfigMap(h *habv1.Habitat) error {
 
 	newCM := newConfigMap(leaderIP)
 
-	cm, err := hc.config.KubernetesClientset.CoreV1Client.ConfigMaps(h.Namespace).Create(newCM)
+	cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(h.Namespace).Create(newCM)
 	if err != nil {
 		// Was the error due to the ConfigMap already existing?
 		if !apierrors.IsAlreadyExists(err) {
@@ -529,7 +538,7 @@ func (hc *HabitatController) handleConfigMap(h *habv1.Habitat) error {
 
 		// The ConfigMap already exists. Is the leader still running?
 		// Was the error due to the ConfigMap already existing?
-		cm, err = hc.config.KubernetesClientset.CoreV1Client.ConfigMaps(h.Namespace).Get(newCM.Name, metav1.GetOptions{})
+		cm, err = hc.config.KubernetesClientset.CoreV1().ConfigMaps(h.Namespace).Get(newCM.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
@@ -565,7 +574,7 @@ func (hc *HabitatController) handleHabitatDeletion(key string) error {
 		return err
 	}
 
-	deploymentsClient := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(deploymentNS)
+	deploymentsClient := hc.config.KubernetesClientset.AppsV1beta1().Deployments(deploymentNS)
 
 	// With this policy, dependent resources will be deleted, but we don't wait
 	// for that to happen.
@@ -845,17 +854,17 @@ func (hc *HabitatController) conform(key string) error {
 	}
 
 	// Create Deployment, if it doesn't already exist.
-	if _, err := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(h.Namespace).Create(deployment); err != nil {
+	if _, err := hc.config.KubernetesClientset.AppsV1beta1().Deployments(h.Namespace).Create(deployment); err != nil {
 		// Was the error due to the Deployment already existing?
 		if apierrors.IsAlreadyExists(err) {
 			// If yes, update the Deployment.
-			if _, err := hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(h.Namespace).Update(deployment); err != nil {
+			if _, err := hc.config.KubernetesClientset.AppsV1beta1().Deployments(h.Namespace).Update(deployment); err != nil {
 				return err
 			}
 		} else {
 			return err
 		}
-		_, err = hc.config.KubernetesClientset.AppsV1beta1Client.Deployments(h.Namespace).Get(deployment.Name, metav1.GetOptions{})
+		_, err = hc.config.KubernetesClientset.AppsV1beta1().Deployments(h.Namespace).Get(deployment.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}

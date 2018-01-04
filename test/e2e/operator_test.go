@@ -25,8 +25,8 @@ import (
 	habv1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1"
 	utils "github.com/kinvolk/habitat-operator/test/e2e/framework"
 
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apiv1 "k8s.io/client-go/pkg/api/v1"
 )
 
 const (

@@ -20,7 +20,6 @@ import (
 	habv1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
@@ -64,23 +63,21 @@ func validateCustomObject(h habv1.Habitat) error {
 
 // newListWatchFromClientWithLabels is a modified newListWatchFromClient function from listWatch.
 // Instead of using fields to filter, we modify the function to use labels.
-func newListWatchFromClientWithLabels(c cache.Getter, resource string, namespace string, labelSelector labels.Selector) *cache.ListWatch {
-	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
+func newListWatchFromClientWithLabels(c cache.Getter, resource string, namespace string, op metav1.ListOptions) *cache.ListWatch {
+	listFunc := func(_ metav1.ListOptions) (runtime.Object, error) {
 		return c.Get().
 			Namespace(namespace).
 			Resource(resource).
-			VersionedParams(&options, metav1.ParameterCodec).
-			LabelsSelectorParam(labelSelector).
+			VersionedParams(&op, metav1.ParameterCodec).
 			Do().
 			Get()
 	}
-	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
-		options.Watch = true
+	watchFunc := func(_ metav1.ListOptions) (watch.Interface, error) {
+		op.Watch = true
 		return c.Get().
 			Namespace(namespace).
 			Resource(resource).
-			VersionedParams(&options, metav1.ParameterCodec).
-			LabelsSelectorParam(labelSelector).
+			VersionedParams(&op, metav1.ParameterCodec).
 			Watch()
 	}
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
