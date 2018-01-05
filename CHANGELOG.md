@@ -1,5 +1,13 @@
 # Habitat operator CHANGELOG
 
+## [v0.4.0](https://github.com/kinvolk/habitat-operator/tree/v0.4.0) (5-1-2018)
+[Full changelog](https://github.com/kinvolk/habitat-operator/compare/v0.3.0...v0.4.0)
+
+### Features & Enhancements
+
+- Update to client-go v6.0.0. to make operator work with Kubernetes 1.9.x [#146](https://github.com/kinvolk/habitat-operator/pull/146)
+- Conform to upstream controllers directory structure [#147](https://github.com/kinvolk/habitat-operator/pull/147)
+
 ## [v0.3.0](https://github.com/kinvolk/habitat-operator/tree/v0.3.0) (19-12-2017)
 [Full changelog](https://github.com/kinvolk/habitat-operator/compare/v0.2.0...v0.3.0)
 
