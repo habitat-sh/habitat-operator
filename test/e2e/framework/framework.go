@@ -17,7 +17,6 @@
 package framework
 
 import (
-	habv1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1"
 	habclient "github.com/kinvolk/habitat-operator/pkg/client"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -101,8 +100,7 @@ func (f *Framework) setupOperator() error {
 		return err
 	}
 
-	// Wait until the operator is ready.
-	f.WaitForResources(name, 1)
+	f.WaitForResources("name", d.ObjectMeta.Name, 1)
 
 	return nil
 }

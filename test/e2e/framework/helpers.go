@@ -69,14 +69,14 @@ func (f *Framework) CreateHabitat(habitat *habv1.Habitat) error {
 // WaitForResources waits until numPods are in the "Running" state.
 // We wait for pods, because those take the longest to create.
 // Waiting for anything else would be already testing.
-func (f *Framework) WaitForResources(habitatName string, numPods int) error {
+func (f *Framework) WaitForResources(labelName, habitatName string, numPods int) error {
 	return wait.Poll(2*time.Second, 5*time.Minute, func() (bool, error) {
 		fs := fields.SelectorFromSet(fields.Set{
 			"status.phase": "Running",
 		})
 
 		ls := labels.SelectorFromSet(labels.Set{
-			habv1.HabitatNameLabel: habitatName,
+			labelName: habitatName,
 		})
 
 		pods, err := f.KubeClient.CoreV1().Pods(TestNs).List(metav1.ListOptions{FieldSelector: fs.String(), LabelSelector: ls.String()})
