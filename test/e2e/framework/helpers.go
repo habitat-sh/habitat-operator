@@ -15,14 +15,21 @@
 package framework
 
 import (
+	"os"
+	"path/filepath"
 	"time"
 
 	habv1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1"
 
+	appsv1beta1 "k8s.io/api/apps/v1beta1"
+	"k8s.io/api/core/v1"
+	apiv1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 // CreateHabitat creates a Habitat.
@@ -86,6 +93,153 @@ func (f *Framework) DeleteHabitat(habitatName string) error {
 		Error()
 }
 
+// DeleteService delete a Kubernetes service provided.
 func (f *Framework) DeleteService(service string) error {
 	return f.KubeClient.CoreV1().Services(TestNs).Delete(service, &metav1.DeleteOptions{})
+}
+
+func (f *Framework) createRBAC() error {
+	// Create Service account.
+	sa, err := convertServiceAccount("resources/operator/service-account.yml")
+	if err != nil {
+		return err
+	}
+	_, err = f.KubeClient.CoreV1().ServiceAccounts(TestNs).Create(sa)
+	if err != nil {
+		return err
+	}
+
+	// Create cluster role.
+	cr, err := convertClusterRole("resources/operator/cluster-role.yml")
+	if err != nil {
+		return err
+	}
+	_, err = f.KubeClient.RbacV1().ClusterRoles().Create(cr)
+	if err != nil {
+		return err
+	}
+
+	// Create cluster role bindings.
+	crb, err := convertClusterRoleBinding("resources/operator/cluster-role-binding.yml")
+	if err != nil {
+		return err
+	}
+	_, err = f.KubeClient.RbacV1().ClusterRoleBindings().Create(crb)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// convertServiceAccount takes in a path to the YAML file containing the manifest
+// It converts it from that file to the ServiceAccount object.
+func convertServiceAccount(pathToYaml string) (*apiv1.ServiceAccount, error) {
+	sa := apiv1.ServiceAccount{}
+
+	if err := convertToK8sResource(pathToYaml, &sa); err != nil {
+		return nil, err
+	}
+
+	return &sa, nil
+}
+
+// convertClusterRole takes in a path to the YAML file containing the manifest.
+// It converts the file to the ClusterRole object.
+func convertClusterRole(pathToYaml string) (*rbacv1.ClusterRole, error) {
+	cr := rbacv1.ClusterRole{}
+
+	if err := convertToK8sResource(pathToYaml, &cr); err != nil {
+		return nil, err
+	}
+
+	return &cr, nil
+}
+
+// convertClusterRoleBinding takes in a path to the YAML file containing the manifest.
+// It converts the file to the ClusterRoleBinding object.
+func convertClusterRoleBinding(pathToYaml string) (*rbacv1.ClusterRoleBinding, error) {
+	crb := rbacv1.ClusterRoleBinding{}
+
+	if err := convertToK8sResource(pathToYaml, &crb); err != nil {
+		return nil, err
+	}
+
+	return &crb, nil
+}
+
+// ConvertDeployment takes in a path to the YAML file containing the manifest.
+// It converts the file to the Deployment object.
+func ConvertDeployment(pathToYaml string) (*appsv1beta1.Deployment, error) {
+	d := appsv1beta1.Deployment{}
+
+	if err := convertToK8sResource(pathToYaml, &d); err != nil {
+		return nil, err
+	}
+
+	return &d, nil
+}
+
+// ConvertHabitat takes in a path to the YAML file containing the manifest.
+// It converts the file to the Habitat object.
+func ConvertHabitat(pathToYaml string) (*habv1.Habitat, error) {
+	hab := habv1.Habitat{}
+
+	if err := convertToK8sResource(pathToYaml, &hab); err != nil {
+		return nil, err
+	}
+
+	return &hab, nil
+}
+
+// ConvertService takes in a path to the YAML file containing the manifest.
+// It converts the file to the Service object.
+func ConvertService(pathToYaml string) (*v1.Service, error) {
+	s := v1.Service{}
+
+	if err := convertToK8sResource(pathToYaml, &s); err != nil {
+		return nil, err
+	}
+
+	return &s, nil
+}
+
+// ConvertSecret takes in a path to the YAML file containing the manifest.
+// It converts the file to the Secret object.
+func ConvertSecret(pathToYaml string) (*v1.Secret, error) {
+	s := v1.Secret{}
+
+	if err := convertToK8sResource(pathToYaml, &s); err != nil {
+		return nil, err
+	}
+
+	return &s, nil
+}
+
+func convertToK8sResource(pathToYaml string, into interface{}) error {
+	manifest, err := pathToOSFile(pathToYaml)
+	if err != nil {
+		return err
+	}
+
+	if err := yaml.NewYAMLToJSONDecoder(manifest).Decode(into); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// pathToOSFile takes in a path and converts it to a File.
+func pathToOSFile(relativePath string) (*os.File, error) {
+	path, err := filepath.Abs(relativePath)
+	if err != nil {
+		return nil, err
+	}
+
+	manifest, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return manifest, nil
 }
