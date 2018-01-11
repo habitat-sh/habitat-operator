@@ -25,37 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-// NewStandaloneHabitat returns a new Standalone Habitat.
-func NewStandaloneHabitat(habitatName, group, image string) *habv1.Habitat {
-	return &habv1.Habitat{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: habitatName,
-		},
-		Spec: habv1.HabitatSpec{
-			Image: image,
-			Count: 1,
-			Service: habv1.Service{
-				Group:    group,
-				Topology: habv1.TopologyStandalone,
-			},
-		},
-	}
-}
-
-// AddConfigToHabitat adds a ConfigSecretName field to the Habitat.
-func AddConfigToHabitat(habitat *habv1.Habitat) {
-	habitat.Spec.Service.ConfigSecretName = habitat.ObjectMeta.Name
-}
-
-// AddBindToHabitat appends bind fields to the Habitat.
-func AddBindToHabitat(habitat *habv1.Habitat, bindName, bindService string) {
-	habitat.Spec.Service.Bind = append(habitat.Spec.Service.Bind, habv1.Bind{
-		Name:    bindName,
-		Service: bindService,
-		Group:   habitat.Spec.Service.Group,
-	})
-}
-
 // CreateHabitat creates a Habitat.
 func (f *Framework) CreateHabitat(habitat *habv1.Habitat) error {
 	return f.Client.Post().
