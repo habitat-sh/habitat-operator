@@ -25,7 +25,6 @@ import (
 	habv1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1"
 	utils "github.com/kinvolk/habitat-operator/test/e2e/framework"
 
-	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -36,77 +35,32 @@ const (
 	nodejsImage = "kinvolk/nodejs-hab:test"
 )
 
-// TestHabitatCreate tests Habitat creation.
-func TestHabitatCreate(t *testing.T) {
-	habitatName := "test-standalone"
-	habitat := utils.NewStandaloneHabitat(habitatName, "foobar", nodejsImage)
-
-	if err := framework.CreateHabitat(habitat); err != nil {
-		t.Fatal(err)
-	}
-
-	// Wait for resources to be ready.
-	if err := framework.WaitForResources(habitatName, 1); err != nil {
-		t.Fatal(err)
-	}
-
-	_, err := framework.KubeClient.CoreV1().ConfigMaps(utils.TestNs).Get(configMapName, metav1.GetOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-// TestHabitatInitialConfig tests initial configuration.
-func TestHabitatInitialConfig(t *testing.T) {
-	habitatName := "mytutorialapp"
-	msg := "Hello from Tests!"
-	configMsg := fmt.Sprintf("message = '%s'", msg)
-
-	// Create Secret as a user would.
-	secret := &apiv1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: habitatName,
-		},
-		Data: map[string][]byte{
-			"user.toml": []byte(configMsg),
-		},
-	}
-
-	_, err := framework.KubeClient.CoreV1().Secrets(utils.TestNs).Create(secret)
+// TestFunction tests that the operator correctly created two Habitat Services and bound them together.
+func TestFunction(t *testing.T) {
+	// Get Habitat object from Habitat go example.
+	habitatGo, err := utils.ConvertHabitat("resources/bind-config/habitat-go.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	habitat := utils.NewStandaloneHabitat(habitatName, "foobar", nodejsImage)
-	utils.AddConfigToHabitat(habitat)
-
-	if err := framework.CreateHabitat(habitat); err != nil {
+	if err := framework.CreateHabitat(habitatGo); err != nil {
 		t.Fatal(err)
 	}
 
-	// Wait for resources to be ready.
-	if err := framework.WaitForResources(habitatName, 1); err != nil {
+	// Get Habitat object from Habitat db example.
+	habitatDB, err := utils.ConvertHabitat("resources/bind-config/habitat-postgresql.yml")
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Create Kubernetes Service to expose port.
-	service := &apiv1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: habitatName,
-		},
-		Spec: apiv1.ServiceSpec{
-			Selector: map[string]string{
-				habv1.HabitatNameLabel: habitatName,
-			},
-			Type: "NodePort",
-			Ports: []apiv1.ServicePort{
-				apiv1.ServicePort{
-					Name:     "web",
-					NodePort: 30003,
-					Port:     5555,
-				},
-			},
-		},
+	if err := framework.CreateHabitat(habitatDB); err != nil {
+		t.Fatal(err)
+	}
+
+	// Get Service object from example file.
+	service, err := utils.ConvertService("resources/bind-config/service.yml")
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	// Create Service.
@@ -115,215 +69,35 @@ func TestHabitatInitialConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Wait until endpoints are ready.
-	if err := framework.WaitForEndpoints(habitatName); err != nil {
-		t.Fatal(err)
-	}
-	time.Sleep(waitForPorts)
-
-	// Get response from Habitat Service.
-	url := fmt.Sprintf("http://%s:30003/", framework.ExternalIP)
-	resp, err := http.Get(url)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatal("We did not get a 200 OK from the deployed Habitat Service.")
-	}
-
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	// Get Secret object from example file.
+	secret, err := utils.ConvertSecret("resources/bind-config/secret.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Check if the msg we supplied was picked up by the Habitat Service.
-	actualMsg := string(bodyBytes)
-	if msg != actualMsg {
-		t.Fatalf("Initial Configuration failed. Msg did not match the one expected. Expected: %s got: %s", msg, actualMsg)
-	}
-
-	// Delete Service so it doesn't interfere with other tests.
-	if err := framework.DeleteService(habitatName); err != nil {
-		t.Fatal(err)
-	}
-}
-
-// TestHabitatFunctioning tests that operator deploys a Habitat service and that it has started.
-func TestHabitatFunctioning(t *testing.T) {
-	habitatName := "test-habitat"
-	habitat := utils.NewStandaloneHabitat(habitatName, "foobar", nodejsImage)
-
-	if err := framework.CreateHabitat(habitat); err != nil {
+	// Create Secret.
+	_, err = framework.KubeClient.CoreV1().Secrets(utils.TestNs).Create(secret)
+	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(habitatName, 1); err != nil {
+	if err := framework.WaitForResources(habv1.HabitatNameLabel, habitatGo.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
-
-	// Create Kubernetes Service to expose port.
-	service := &apiv1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: habitatName,
-		},
-		Spec: apiv1.ServiceSpec{
-			Selector: map[string]string{
-				habv1.HabitatNameLabel: habitatName,
-			},
-			Type: "NodePort",
-			Ports: []apiv1.ServicePort{
-				apiv1.ServicePort{
-					Name:     "web",
-					NodePort: 30002,
-					Port:     5555,
-				},
-			},
-		},
-	}
-	// Create Service.
-	_, err := framework.KubeClient.CoreV1().Services(utils.TestNs).Create(service)
-	if err != nil {
+	if err := framework.WaitForResources(habv1.HabitatNameLabel, habitatDB.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait until endpoints are ready.
-	if err := framework.WaitForEndpoints(habitatName); err != nil {
+	if err := framework.WaitForEndpoints(service.ObjectMeta.Name); err != nil {
 		t.Fatal(err)
 	}
+
 	time.Sleep(waitForPorts)
 
 	// Get response from Habitat Service.
-	url := fmt.Sprintf("http://%s:30002/", framework.ExternalIP)
-	resp, err := http.Get(url)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatal("Habitat Service did not start correctly.")
-	}
-
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// This msg is set in the default.toml in kinvolk/nodejs-hab Habitat Service.
-	expectedMsg := "Hello, World!"
-	actualMsg := string(bodyBytes)
-	if expectedMsg != actualMsg {
-		t.Fatalf("Habitat Service msg does not match one in default.toml. Expected: %s got: %s", expectedMsg, actualMsg)
-	}
-
-	// Delete Service so it doesn't interfere with other tests.
-	if err := framework.DeleteService(habitatName); err != nil {
-		t.Fatal(err)
-	}
-}
-
-// TestHabitatDelete tests Habitat deletion.
-func TestHabitatDelete(t *testing.T) {
-	habitatName := "test-deletion"
-	habitat := utils.NewStandaloneHabitat(habitatName, "foobar", nodejsImage)
-
-	if err := framework.CreateHabitat(habitat); err != nil {
-		t.Fatal(err)
-	}
-
-	// Wait for resources to be ready.
-	if err := framework.WaitForResources(habitatName, 1); err != nil {
-		t.Fatal(err)
-	}
-
-	// Delete Habitat.
-	if err := framework.DeleteHabitat(habitatName); err != nil {
-		t.Fatal(err)
-	}
-
-	// Wait for resources to be deleted.
-	if err := framework.WaitForResources(habitatName, 0); err != nil {
-		t.Fatal(err)
-	}
-
-	// Check if all the resources the operator creates are deleted.
-	// We do not care about secrets being deleted, as the user needs to delete those manually.
-	d, err := framework.KubeClient.AppsV1beta1().Deployments(utils.TestNs).Get(habitatName, metav1.GetOptions{})
-	if err == nil && d != nil {
-		t.Fatal("Deployment was not deleted.")
-	}
-
-	// The CM with the peer IP should still be alive, despite the Habitat being deleted as it was created outside of the scope of a Habitat.
-	_, err = framework.KubeClient.CoreV1().ConfigMaps(utils.TestNs).Get(configMapName, metav1.GetOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-// TestBind tests that the operator correctly created two Habitat Services and bound them together.
-func TestBind(t *testing.T) {
-	// Create two Habitat to test binding between them.
-	habitatGoName := "test-bind-go"
-	bindName := "db"
-	habitatGo := utils.NewStandaloneHabitat(habitatGoName, "foobar", "kinvolk/bindgo-hab:test")
-	utils.AddBindToHabitat(habitatGo, bindName, "postgresql")
-
-	if err := framework.CreateHabitat(habitatGo); err != nil {
-		t.Fatal(err)
-	}
-
-	habitatDBName := "test-bind-db"
-	habitatDB := utils.NewStandaloneHabitat(habitatDBName, "foobar", "kinvolk/postgresql-hab:test")
-
-	if err := framework.CreateHabitat(habitatDB); err != nil {
-		t.Fatal(err)
-	}
-
-	// Wait for resources to be ready.
-	if err := framework.WaitForResources(habitatGoName, 1); err != nil {
-		t.Fatal(err)
-	}
-	if err := framework.WaitForResources(habitatDBName, 1); err != nil {
-		t.Fatal(err)
-	}
-
-	// Create Kubernetes Service to expose port.
-	service := &apiv1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: habitatGoName,
-		},
-		Spec: apiv1.ServiceSpec{
-			Selector: map[string]string{
-				habv1.HabitatNameLabel: habitatGoName,
-			},
-			Type: "NodePort",
-			Ports: []apiv1.ServicePort{
-				apiv1.ServicePort{
-					Name:     "go",
-					NodePort: 30005,
-					Port:     5555,
-				},
-			},
-		},
-	}
-
-	// Create Service.
-	_, err := framework.KubeClient.CoreV1().Services(utils.TestNs).Create(service)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Wait until endpoints are ready.
-	if err := framework.WaitForEndpoints(habitatGoName); err != nil {
-		t.Fatal(err)
-	}
-	time.Sleep(waitForPorts)
-
-	// Get response from Habitat Service.
-	url := fmt.Sprintf("http://%s:30005/", framework.ExternalIP)
+	url := fmt.Sprintf("http://%s:30001/", framework.ExternalIP)
 	resp, err := http.Get(url)
 	if err != nil {
 		t.Fatal(err)
@@ -340,7 +114,7 @@ func TestBind(t *testing.T) {
 	}
 
 	// This msg is set in the config of the kinvolk/bindgo-hab Go Habitat Service.
-	expectedMsg := "hello from port: 5432"
+	expectedMsg := "hello from port: 4444"
 	actualMsg := string(bodyBytes)
 	// actualMsg can contain whitespace and newlines or different formatting,
 	// the only thing we need to check is it contains the expectedMsg.
@@ -349,7 +123,48 @@ func TestBind(t *testing.T) {
 	}
 
 	// Delete Service so it doesn't interfere with other tests.
-	if err := framework.DeleteService(habitatGoName); err != nil {
+	if err := framework.DeleteService(service.ObjectMeta.Name); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestHabitatDelete tests Habitat deletion.
+func TestHabitatDelete(t *testing.T) {
+	// Get Habitat object from Habitat go example.
+	habitat, err := utils.ConvertHabitat("resources/standalone/habitat.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := framework.CreateHabitat(habitat); err != nil {
+		t.Fatal(err)
+	}
+
+	// Wait for resources to be ready.
+	if err := framework.WaitForResources(habv1.HabitatNameLabel, habitat.ObjectMeta.Name, 1); err != nil {
+		t.Fatal(err)
+	}
+
+	// Delete Habitat.
+	if err := framework.DeleteHabitat(habitat.ObjectMeta.Name); err != nil {
+		t.Fatal(err)
+	}
+
+	// Wait for resources to be deleted.
+	if err := framework.WaitForResources(habv1.HabitatNameLabel, habitat.ObjectMeta.Name, 0); err != nil {
+		t.Fatal(err)
+	}
+
+	// Check if all the resources the operator creates are deleted.
+	// We do not care about secrets being deleted, as the user needs to delete those manually.
+	d, err := framework.KubeClient.AppsV1beta1().Deployments(utils.TestNs).Get(habitat.ObjectMeta.Name, metav1.GetOptions{})
+	if err == nil && d != nil {
+		t.Fatal("Deployment was not deleted.")
+	}
+
+	// The CM with the peer IP should still be alive, despite the Habitat being deleted as it was created outside of the scope of a Habitat.
+	_, err = framework.KubeClient.CoreV1().ConfigMaps(utils.TestNs).Get(configMapName, metav1.GetOptions{})
+	if err != nil {
 		t.Fatal(err)
 	}
 }
