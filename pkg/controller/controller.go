@@ -497,6 +497,7 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 	if len(runningPods) == 0 {
 		// No running Pods, create an empty ConfigMap.
 		newCM := newConfigMap("")
+
 		cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(h.Namespace).Create(newCM)
 		if err != nil {
 			// Was the error due to the ConfigMap already existing?
@@ -504,12 +505,23 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 				return err
 			}
 
-			// Delete the IP in the existing ConfigMap, as it must necessarily be invalid,
-			// since there are no running Pods.
-			cm, err = hc.config.KubernetesClientset.CoreV1().ConfigMaps(h.Namespace).Get(newCM.Name, metav1.GetOptions{})
+			// Find and delete the IP in the existing ConfigMap:
+			// it must necessarily be invalid, since there are no running Pods.
+			k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(newCM)
+			if err != nil {
+				level.Error(hc.logger).Log("msg", "ConfigMap key could not be retrieved", "name", newCM)
+				return err
+			}
+
+			obj, exists, err := hc.cmInformer.GetStore().GetByKey(k)
 			if err != nil {
 				return err
 			}
+			if !exists {
+				return nil
+			}
+
+			cm = obj.(*apiv1.ConfigMap)
 
 			if err := hc.writeLeaderIP(cm, ""); err != nil {
 				return err
@@ -539,11 +551,21 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 
 		// The ConfigMap already exists. Is the leader still running?
 		// Was the error due to the ConfigMap already existing?
-		cm, err = hc.config.KubernetesClientset.CoreV1().ConfigMaps(h.Namespace).Get(newCM.Name, metav1.GetOptions{})
+		k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(newCM)
 		if err != nil {
+			level.Error(hc.logger).Log("msg", "ConfigMap key could not be retrieved", "name", newCM)
 			return err
 		}
 
+		obj, exists, err := hc.cmInformer.GetStore().GetByKey(k)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return nil
+		}
+
+		cm = obj.(*apiv1.ConfigMap)
 		curLeader := cm.Data[peerFile]
 
 		for _, p := range runningPods {
