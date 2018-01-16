@@ -57,6 +57,8 @@ const (
 	// Keys are saved to disk with the format `<name>-<revision>.<extension>`.
 	// This regexp captures the name part.
 	ringKeyRegexp = `^([\w_-]+)-\d{14}$`
+
+	initialConfigFilename = "initialconfig"
 )
 
 var ringRegexp *regexp.Regexp = regexp.MustCompile(ringKeyRegexp)
@@ -695,7 +697,7 @@ func (hc *HabitatController) newDeployment(h *habv1.Habitat) (*appsv1beta1.Deplo
 		}
 
 		secretVolume := &apiv1.Volume{
-			Name: "initialconfig",
+			Name: initialConfigFilename,
 			VolumeSource: apiv1.VolumeSource{
 				Secret: &apiv1.SecretVolumeSource{
 					SecretName: secret.Name,
@@ -710,7 +712,7 @@ func (hc *HabitatController) newDeployment(h *habv1.Habitat) (*appsv1beta1.Deplo
 		}
 
 		secretVolumeMount := &apiv1.VolumeMount{
-			Name: "initialconfig",
+			Name: initialConfigFilename,
 			// Our user.toml file must be in a directory with the same name as the service.
 			MountPath: fmt.Sprintf("/hab/svc/%s/%s", h.Name, userTomlFile),
 			SubPath:   userTomlFile,
