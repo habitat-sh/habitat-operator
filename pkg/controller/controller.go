@@ -713,7 +713,8 @@ func (hc *HabitatController) newDeployment(h *habv1.Habitat) (*appsv1beta1.Deplo
 
 		secretVolumeMount := &apiv1.VolumeMount{
 			Name: initialConfigFilename,
-			// Our user.toml file must be in a directory with the same name as the service.
+			// The Habitat supervisor creates a directory for each service under /hab/svc/<servicename>.
+			// We need to place the user.toml file in there in order for it to be detected.
 			MountPath: fmt.Sprintf("/hab/svc/%s/%s", h.Name, userTomlFile),
 			SubPath:   userTomlFile,
 			ReadOnly:  false,
