@@ -43,7 +43,7 @@ import (
 const (
 	resyncPeriod = 1 * time.Minute
 
-	userTomlFile = "user.toml"
+	userTOMLFile = "user.toml"
 	configMapDir = "/habitat-operator"
 
 	peerFilename  = "peer-ip"
@@ -703,8 +703,8 @@ func (hc *HabitatController) newDeployment(h *habv1.Habitat) (*appsv1beta1.Deplo
 					SecretName: secret.Name,
 					Items: []apiv1.KeyToPath{
 						{
-							Key:  userTomlFile,
-							Path: userTomlFile,
+							Key:  userTOMLFile,
+							Path: userTOMLFile,
 						},
 					},
 				},
@@ -715,8 +715,8 @@ func (hc *HabitatController) newDeployment(h *habv1.Habitat) (*appsv1beta1.Deplo
 			Name: initialConfigFilename,
 			// The Habitat supervisor creates a directory for each service under /hab/svc/<servicename>.
 			// We need to place the user.toml file in there in order for it to be detected.
-			MountPath: fmt.Sprintf("/hab/svc/%s/%s", h.Name, userTomlFile),
-			SubPath:   userTomlFile,
+			MountPath: fmt.Sprintf("/hab/svc/%s/%s", h.Name, userTOMLFile),
+			SubPath:   userTOMLFile,
 			ReadOnly:  false,
 		}
 
