@@ -12,7 +12,7 @@ data:
 apiVersion: habitat.sh/v1
 kind: Habitat
 metadata:
-  name: mytutorialapp
+  name: example-configured-habitat
 spec:
   image: kinvolk/nodejs-hab
   count: 1
@@ -29,7 +29,7 @@ metadata:
   name: mytutorialapp
 spec:
   selector:
-    habitat-name: mytutorialapp
+    habitat-name: example-configured-habitat
   type: NodePort
   ports:
   # This endpoint displays the message from the secret

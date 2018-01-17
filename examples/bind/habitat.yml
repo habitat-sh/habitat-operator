@@ -12,7 +12,7 @@ spec:
 apiVersion: habitat.sh/v1
 kind: Habitat
 metadata:
-  name: go
+  name: web-app
 spec:
   image: kinvolk/bindgo-hab
   count: 1

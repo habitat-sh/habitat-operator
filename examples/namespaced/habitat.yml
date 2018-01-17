@@ -6,7 +6,7 @@ metadata:
 apiVersion: habitat.sh/v1
 kind: Habitat
 metadata:
-  name: example-standalone-habitat
+  name: example-namespaced-habitat
   namespace: example-namespace
 spec:
   # the core/nginx habitat service packaged as a Docker image
