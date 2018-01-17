@@ -810,7 +810,7 @@ func (hc *HabitatController) processNextItem() bool {
 
 	err := hc.conform(k)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", "Habitat could not be synced, requeueing", "msg", err)
+		level.Error(hc.logger).Log("msg", "Habitat could not be synced, requeueing", "err", err, "obj", k)
 
 		hc.queue.AddRateLimited(k)
 
