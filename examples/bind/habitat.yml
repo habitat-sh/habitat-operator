@@ -6,6 +6,7 @@ spec:
   image: kinvolk/postgresql-hab
   count: 1
   service:
+    name: postgresql
     topology: standalone
 ---
 apiVersion: habitat.sh/v1
@@ -16,6 +17,7 @@ spec:
   image: kinvolk/bindgo-hab
   count: 1
   service:
+    name: hab-server-go
     topology: standalone
     bind:
       # Name is the name of the bind specified in the Habitat configuration files.
