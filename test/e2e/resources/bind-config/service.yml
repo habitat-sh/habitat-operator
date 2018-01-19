@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-service
+spec:
+  selector:
+    habitat-name: go
+  type: NodePort
+  ports:
+  - name: web
+    nodePort: 30001
+    port: 5555
+    protocol: TCP
