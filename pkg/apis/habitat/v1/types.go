@@ -72,7 +72,7 @@ type Service struct {
 	// Optional.
 	Bind []Bind `json:"bind,omitempty"`
 	// Name is the name of the Habitat service that this Habitat object represents.
-	// This field is used, among other things, to know where in the /hab/svc/ hierarchy to place a user.toml file.
+	// This field is used to mount the user.toml file in the correct directory under /hab/svc/ in the Pod.
 	Name string `json:"name"`
 }
 
