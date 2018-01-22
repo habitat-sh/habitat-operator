@@ -86,7 +86,7 @@ func (f *Framework) setupOperator() error {
 	}
 
 	// Get Habitat operator deployment from examples.
-	d, err := ConvertDeployment("resources/operator/habitat.yml")
+	d, err := ConvertDeployment("resources/operator/deployment.yml")
 	if err != nil {
 		return err
 	}
