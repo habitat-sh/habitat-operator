@@ -119,7 +119,7 @@ func TestFunction(t *testing.T) {
 	// actualMsg can contain whitespace and newlines or different formatting,
 	// the only thing we need to check is it contains the expectedMsg.
 	if !strings.Contains(actualMsg, expectedMsg) {
-		t.Fatalf("Habitat Service msg does not match one in default.toml. Expected: *%s* got: *%s*", expectedMsg, actualMsg)
+		t.Fatalf("Habitat Service msg does not match one in default.toml. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
 	}
 
 	// Delete Service so it doesn't interfere with other tests.
