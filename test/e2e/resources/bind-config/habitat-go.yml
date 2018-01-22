@@ -1,0 +1,13 @@
+apiVersion: habitat.sh/v1
+kind: Habitat
+metadata:
+  name: go
+spec:
+  image: kinvolk/bindgo-hab
+  count: 1
+  service:
+    topology: standalone
+    bind:
+      - name: db
+        service: postgresql
+        group: default

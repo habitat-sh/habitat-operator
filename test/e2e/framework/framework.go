@@ -17,7 +17,6 @@
 package framework
 
 import (
-	habv1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1"
 	habclient "github.com/kinvolk/habitat-operator/pkg/client"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -80,32 +79,28 @@ func Setup(image, kubeconfig, externalIP string) (*Framework, error) {
 }
 
 func (f *Framework) setupOperator() error {
-	name := "habitat-operator"
-	pod := &apiv1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-			Labels: map[string]string{
-				habv1.HabitatNameLabel: name,
-			},
-		},
-		Spec: apiv1.PodSpec{
-			Containers: []apiv1.Container{
-				{
-					Name:  name,
-					Image: f.Image,
-				},
-			},
-		},
-	}
-
-	// Create pod with the Habitat operator image.
-	_, err := f.KubeClient.CoreV1().Pods(TestNs).Create(pod)
+	// Setup RBAC for operator.
+	err := f.createRBAC()
 	if err != nil {
 		return err
 	}
 
-	// Wait until the operator is ready.
-	f.WaitForResources(name, 1)
+	// Get Habitat operator deployment from examples.
+	d, err := ConvertDeployment("resources/operator/habitat.yml")
+	if err != nil {
+		return err
+	}
+
+	// Override image with the one passed to the tests.
+	d.Spec.Template.Spec.Containers[0].Image = f.Image
+
+	// Create deployment for the Habitat operator.
+	_, err = f.KubeClient.AppsV1beta1().Deployments(TestNs).Create(d)
+	if err != nil {
+		return err
+	}
+
+	f.WaitForResources("name", d.ObjectMeta.Name, 1)
 
 	return nil
 }
