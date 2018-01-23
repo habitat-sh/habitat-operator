@@ -218,18 +218,11 @@ func (hc *HabitatController) cacheConfigMaps() {
 }
 
 func (hc *HabitatController) watchPods(ctx context.Context) {
-	ls := labels.SelectorFromSet(labels.Set(map[string]string{
-		habv1beta1.HabitatLabel: "true",
-	}))
-
-	options := metav1.ListOptions{
-		LabelSelector: ls.String(),
-	}
 	source := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
 		"pods",
 		apiv1.NamespaceAll,
-		options)
+		labelListOptions())
 
 	c := cache.NewSharedIndexInformer(
 		source,
