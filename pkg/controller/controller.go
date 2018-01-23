@@ -417,7 +417,7 @@ func (hc *HabitatController) handlePodUpdate(oldObj, newObj interface{}) {
 	h, err := hc.getHabitatFromLabeledResource(newPod)
 	if err != nil {
 		if hErr, ok := err.(keyNotFoundError); !ok {
-			level.Error(hc.logger).Log("msg", hErr)
+			level.Error(hc.logger).Log("msg", hErr, "key", hErr.key)
 			return
 		}
 
@@ -444,7 +444,7 @@ func (hc *HabitatController) handlePodDelete(obj interface{}) {
 	h, err := hc.getHabitatFromLabeledResource(pod)
 	if err != nil {
 		if hErr, ok := err.(keyNotFoundError); !ok {
-			level.Error(hc.logger).Log("msg", hErr)
+			level.Error(hc.logger).Log("msg", hErr, "key", hErr.key)
 			return
 		}
 
