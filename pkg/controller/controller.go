@@ -195,19 +195,11 @@ func (hc *HabitatController) cacheDeployments() {
 }
 
 func (hc *HabitatController) cacheConfigMaps() {
-	ls := labels.SelectorFromSet(labels.Set(map[string]string{
-		habv1beta1.HabitatLabel: "true",
-	}))
-
-	options := metav1.ListOptions{
-		LabelSelector: ls.String(),
-	}
-
 	source := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
 		"configmaps",
 		apiv1.NamespaceAll,
-		options)
+		labelListOptions())
 
 	hc.cmInformer = cache.NewSharedIndexInformer(
 		source,

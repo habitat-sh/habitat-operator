@@ -20,6 +20,7 @@ import (
 	habv1beta1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1beta1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
@@ -81,4 +82,14 @@ func newListWatchFromClientWithLabels(c cache.Getter, resource string, namespace
 			Watch()
 	}
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
+}
+
+func labelListOptions() metav1.ListOptions {
+	ls := labels.SelectorFromSet(labels.Set(map[string]string{
+		habv1beta1.HabitatLabel: "true",
+	}))
+
+	return metav1.ListOptions{
+		LabelSelector: ls.String(),
+	}
 }
