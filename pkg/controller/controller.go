@@ -172,11 +172,11 @@ func (hc *HabitatController) cacheHabitats() {
 }
 
 func (hc *HabitatController) cacheDeployments() {
-	source := cache.NewListWatchFromClient(
+	source := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.AppsV1beta1().RESTClient(),
 		"deployments",
 		apiv1.NamespaceAll,
-		fields.Everything())
+		labelListOptions())
 
 	hc.deployInformer = cache.NewSharedIndexInformer(
 		source,
