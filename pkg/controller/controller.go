@@ -285,15 +285,13 @@ func (hc *HabitatController) handleDeployAdd(obj interface{}) {
 		return
 	}
 
-	if isHabitatObject(&d.ObjectMeta) {
-		h, err := hc.getHabitatFromLabeledResource(d)
-		if err != nil {
-			level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
-			return
-		}
-
-		hc.enqueue(h)
+	h, err := hc.getHabitatFromLabeledResource(d)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+		return
 	}
+
+	hc.enqueue(h)
 }
 
 func (hc *HabitatController) handleDeployUpdate(oldObj, newObj interface{}) {
@@ -303,15 +301,13 @@ func (hc *HabitatController) handleDeployUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	if isHabitatObject(&d.ObjectMeta) {
-		h, err := hc.getHabitatFromLabeledResource(d)
-		if err != nil {
-			level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
-			return
-		}
-
-		hc.enqueue(h)
+	h, err := hc.getHabitatFromLabeledResource(d)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+		return
 	}
+
+	hc.enqueue(h)
 }
 
 func (hc *HabitatController) handleDeployDelete(obj interface{}) {
@@ -321,16 +317,14 @@ func (hc *HabitatController) handleDeployDelete(obj interface{}) {
 		return
 	}
 
-	if isHabitatObject(&d.ObjectMeta) {
-		h, err := hc.getHabitatFromLabeledResource(d)
-		if err != nil {
-			// Could not find Habitat, it must have already been removed.
-			level.Debug(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
-			return
-		}
-
-		hc.enqueue(h)
+	h, err := hc.getHabitatFromLabeledResource(d)
+	if err != nil {
+		// Could not find Habitat, it must have already been removed.
+		level.Debug(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+		return
 	}
+
+	hc.enqueue(h)
 }
 
 func (hc *HabitatController) enqueueCM(obj interface{}) {
@@ -340,18 +334,16 @@ func (hc *HabitatController) enqueueCM(obj interface{}) {
 		return
 	}
 
-	if isHabitatObject(&cm.ObjectMeta) {
-		cache.ListAll(hc.habInformer.GetStore(), labels.Everything(), func(obj interface{}) {
-			h, ok := obj.(*habv1beta1.Habitat)
-			if !ok {
-				level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
-				return
-			}
-			if h.Namespace == cm.GetNamespace() {
-				hc.enqueue(h)
-			}
-		})
-	}
+	cache.ListAll(hc.habInformer.GetStore(), labels.Everything(), func(obj interface{}) {
+		h, ok := obj.(*habv1beta1.Habitat)
+		if !ok {
+			level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
+			return
+		}
+		if h.Namespace == cm.GetNamespace() {
+			hc.enqueue(h)
+		}
+	})
 }
 
 func (hc *HabitatController) handleCMAdd(obj interface{}) {
