@@ -117,9 +117,9 @@ func (hc *HabitatController) Run(workers int, ctx context.Context) error {
 
 	level.Info(hc.logger).Log("msg", "Watching Habitat objects")
 
-	hc.cacheHab()
-	hc.cacheDeployment()
-	hc.cacheConfigMap()
+	hc.cacheHabitats()
+	hc.cacheDeployments()
+	hc.cacheConfigMaps()
 	hc.watchPods(ctx)
 
 	go hc.habInformer.Run(ctx.Done())
@@ -146,7 +146,7 @@ func (hc *HabitatController) Run(workers int, ctx context.Context) error {
 	return ctx.Err()
 }
 
-func (hc *HabitatController) cacheHab() {
+func (hc *HabitatController) cacheHabitats() {
 	source := cache.NewListWatchFromClient(
 		hc.config.HabitatClient,
 		habv1beta1.HabitatResourcePlural,
@@ -171,7 +171,7 @@ func (hc *HabitatController) cacheHab() {
 	hc.habInformerSynced = hc.habInformer.HasSynced
 }
 
-func (hc *HabitatController) cacheDeployment() {
+func (hc *HabitatController) cacheDeployments() {
 	source := cache.NewListWatchFromClient(
 		hc.config.KubernetesClientset.AppsV1beta1().RESTClient(),
 		"deployments",
@@ -194,7 +194,7 @@ func (hc *HabitatController) cacheDeployment() {
 	hc.deployInformerSynced = hc.deployInformer.HasSynced
 }
 
-func (hc *HabitatController) cacheConfigMap() {
+func (hc *HabitatController) cacheConfigMaps() {
 	ls := labels.SelectorFromSet(labels.Set(map[string]string{
 		habv1beta1.HabitatLabel: "true",
 	}))
