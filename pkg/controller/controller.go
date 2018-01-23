@@ -866,10 +866,6 @@ func (hc *HabitatController) conform(key string) error {
 		} else {
 			return err
 		}
-		_, err = hc.config.KubernetesClientset.AppsV1beta1().Deployments(h.Namespace).Get(deployment.Name, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
 
 		level.Debug(hc.logger).Log("msg", "deployment already existed", "name", deployment.Name)
 	} else {
