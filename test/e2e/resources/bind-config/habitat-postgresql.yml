@@ -7,6 +7,7 @@ spec:
   image: kinvolk/postgresql-hab
   count: 1
   service:
+    name: postgresql
     # Name of the secret.
     # This is mounted inside of the pod as a user.toml file.
     configSecretName: user-toml-secret

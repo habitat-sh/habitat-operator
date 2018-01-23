@@ -6,6 +6,7 @@ spec:
   image: kinvolk/bindgo-hab
   count: 1
   service:
+    name: hab-server-go
     topology: standalone
     bind:
       - name: db

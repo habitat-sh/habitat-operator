@@ -12,12 +12,12 @@ data:
 apiVersion: habitat.sh/v1
 kind: Habitat
 metadata:
-  # Name must be the same as your service name in Habitat.
-  name: mytutorialapp
+  name: example-configured-habitat
 spec:
   image: kinvolk/nodejs-hab
   count: 1
   service:
+    name: mytutorialapp
     topology: standalone
     group: nodejs
     # Create Secret with the initial configuration you want.
@@ -29,7 +29,7 @@ metadata:
   name: mytutorialapp
 spec:
   selector:
-    habitat-name: mytutorialapp
+    habitat-name: example-configured-habitat
   type: NodePort
   ports:
   # This endpoint displays the message from the secret

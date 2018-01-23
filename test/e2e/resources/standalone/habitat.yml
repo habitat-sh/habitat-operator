@@ -7,6 +7,7 @@ spec:
   image: kinvolk/nginx-hab
   count: 1
   service:
+    name: nginx
     topology: standalone
     # if not present, defaults to "default"
     group: foobar

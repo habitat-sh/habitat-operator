@@ -43,7 +43,7 @@ import (
 const (
 	resyncPeriod = 1 * time.Minute
 
-	userTomlFile = "user.toml"
+	userTOMLFile = "user.toml"
 	configMapDir = "/habitat-operator"
 
 	peerFilename  = "peer-ip"
@@ -57,6 +57,8 @@ const (
 	// Keys are saved to disk with the format `<name>-<revision>.<extension>`.
 	// This regexp captures the name part.
 	ringKeyRegexp = `^([\w_-]+)-\d{14}$`
+
+	initialConfigFilename = "initialconfig"
 )
 
 var ringRegexp *regexp.Regexp = regexp.MustCompile(ringKeyRegexp)
@@ -695,14 +697,14 @@ func (hc *HabitatController) newDeployment(h *habv1.Habitat) (*appsv1beta1.Deplo
 		}
 
 		secretVolume := &apiv1.Volume{
-			Name: "initialconfig",
+			Name: initialConfigFilename,
 			VolumeSource: apiv1.VolumeSource{
 				Secret: &apiv1.SecretVolumeSource{
 					SecretName: secret.Name,
 					Items: []apiv1.KeyToPath{
 						{
-							Key:  userTomlFile,
-							Path: userTomlFile,
+							Key:  userTOMLFile,
+							Path: userTOMLFile,
 						},
 					},
 				},
@@ -710,10 +712,11 @@ func (hc *HabitatController) newDeployment(h *habv1.Habitat) (*appsv1beta1.Deplo
 		}
 
 		secretVolumeMount := &apiv1.VolumeMount{
-			Name: "initialconfig",
-			// Our user.toml file must be in a directory with the same name as the service.
-			MountPath: fmt.Sprintf("/hab/svc/%s/%s", h.Name, userTomlFile),
-			SubPath:   userTomlFile,
+			Name: initialConfigFilename,
+			// The Habitat supervisor creates a directory for each service under /hab/svc/<servicename>.
+			// We need to place the user.toml file in there in order for it to be detected.
+			MountPath: fmt.Sprintf("/hab/svc/%s/%s", h.Name, userTOMLFile),
+			SubPath:   userTOMLFile,
 			ReadOnly:  false,
 		}
 
@@ -807,7 +810,7 @@ func (hc *HabitatController) processNextItem() bool {
 
 	err := hc.conform(k)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", "Habitat could not be synced, requeueing", "msg", err)
+		level.Error(hc.logger).Log("msg", "Habitat could not be synced, requeueing", "err", err, "obj", k)
 
 		hc.queue.AddRateLimited(k)
 
