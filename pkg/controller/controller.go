@@ -507,21 +507,10 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 
 			// Find and delete the IP in the existing ConfigMap:
 			// it must necessarily be invalid, since there are no running Pods.
-			k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(newCM)
-			if err != nil {
-				level.Error(hc.logger).Log("msg", "ConfigMap key could not be retrieved", "name", newCM)
-				return err
-			}
-
-			obj, exists, err := hc.cmInformer.GetStore().GetByKey(k)
+			cm, err = hc.findConfigMapInCache(newCM)
 			if err != nil {
 				return err
 			}
-			if !exists {
-				return nil
-			}
-
-			cm = obj.(*apiv1.ConfigMap)
 
 			if err := hc.writeLeaderIP(cm, ""); err != nil {
 				return err
@@ -532,7 +521,7 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 			return nil
 		}
 
-		level.Info(hc.logger).Log("msg", "created peer IP ConfigMap", "name", newCM.Name)
+		level.Info(hc.logger).Log("msg", "created peer IP ConfigMap", "name", cm.Name)
 
 		return nil
 	}
@@ -549,23 +538,13 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 			return err
 		}
 
-		// The ConfigMap already exists. Is the leader still running?
-		// Was the error due to the ConfigMap already existing?
-		k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(newCM)
-		if err != nil {
-			level.Error(hc.logger).Log("msg", "ConfigMap key could not be retrieved", "name", newCM)
-			return err
-		}
-
-		obj, exists, err := hc.cmInformer.GetStore().GetByKey(k)
+		// The ConfigMap already exists. Retrieve it and find out if the the leader
+		// is still running.
+		cm, err := hc.findConfigMapInCache(newCM)
 		if err != nil {
 			return err
 		}
-		if !exists {
-			return nil
-		}
 
-		cm = obj.(*apiv1.ConfigMap)
 		curLeader := cm.Data[peerFile]
 
 		for _, p := range runningPods {
@@ -880,7 +859,7 @@ func (hc *HabitatController) conform(key string) error {
 	if _, err := hc.config.KubernetesClientset.AppsV1beta1().Deployments(h.Namespace).Create(deployment); err != nil {
 		// Was the error due to the Deployment already existing?
 		if apierrors.IsAlreadyExists(err) {
-			// If yes, update the Deployment.
+			// If yes, update it.
 			if _, err := hc.config.KubernetesClientset.AppsV1beta1().Deployments(h.Namespace).Update(deployment); err != nil {
 				return err
 			}
@@ -982,4 +961,22 @@ func newConfigMap(ip string) *apiv1.ConfigMap {
 
 func isHabitatObject(objMeta *metav1.ObjectMeta) bool {
 	return objMeta.Labels[habv1beta1.HabitatLabel] == "true"
+}
+
+func (hc *HabitatController) findConfigMapInCache(cm *apiv1.ConfigMap) (*apiv1.ConfigMap, error) {
+	k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(cm)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", "ConfigMap key could not be retrieved", "name", cm)
+		return nil, err
+	}
+
+	obj, exists, err := hc.cmInformer.GetStore().GetByKey(k)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, fmt.Errorf("Could not find ConfigMap with key %s", k)
+	}
+
+	return obj.(*apiv1.ConfigMap), nil
 }
