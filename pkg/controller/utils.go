@@ -27,12 +27,12 @@ import (
 
 const leaderFollowerTopologyMinCount = 3
 
-type habitatNotFoundError struct {
+type keyNotFoundError struct {
 	key string
 }
 
-func (err habitatNotFoundError) Error() string {
-	return fmt.Sprintf("could not find Habitat with key %s", err.key)
+func (err keyNotFoundError) Error() string {
+	return fmt.Sprintf("could not find Object with key %s in the cache", err.key)
 }
 
 func validateCustomObject(h habv1beta1.Habitat) error {

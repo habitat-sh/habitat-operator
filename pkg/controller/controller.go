@@ -416,7 +416,7 @@ func (hc *HabitatController) handlePodUpdate(oldObj, newObj interface{}) {
 
 	h, err := hc.getHabitatFromLabeledResource(newPod)
 	if err != nil {
-		if hErr, ok := err.(habitatNotFoundError); !ok {
+		if hErr, ok := err.(keyNotFoundError); !ok {
 			level.Error(hc.logger).Log("msg", hErr)
 			return
 		}
@@ -443,7 +443,7 @@ func (hc *HabitatController) handlePodDelete(obj interface{}) {
 
 	h, err := hc.getHabitatFromLabeledResource(pod)
 	if err != nil {
-		if hErr, ok := err.(habitatNotFoundError); !ok {
+		if hErr, ok := err.(keyNotFoundError); !ok {
 			level.Error(hc.logger).Log("msg", hErr)
 			return
 		}
@@ -921,7 +921,7 @@ func (hc *HabitatController) getHabitatFromLabeledResource(r metav1.Object) (*ha
 		return nil, err
 	}
 	if !exists {
-		return nil, habitatNotFoundError{key: key}
+		return nil, keyNotFoundError{key: key}
 	}
 
 	h, ok := obj.(*habv1beta1.Habitat)
@@ -975,7 +975,7 @@ func (hc *HabitatController) findConfigMapInCache(cm *apiv1.ConfigMap) (*apiv1.C
 		return nil, err
 	}
 	if !exists {
-		return nil, fmt.Errorf("Could not find ConfigMap with key %s", k)
+		return nil, keyNotFoundError{key: k}
 	}
 
 	return obj.(*apiv1.ConfigMap), nil
