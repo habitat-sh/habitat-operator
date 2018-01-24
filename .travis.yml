@@ -2,6 +2,7 @@ language: go
 
 dist: trusty
 sudo: required
+group: deprecated-2017Q4
 
 # This moves Kubernetes specific config files.
 env:
