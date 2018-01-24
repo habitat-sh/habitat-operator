@@ -1,0 +1,25 @@
+## Habitat-operator image
+##
+image:
+  repository: docker.io/kinvolk/habitat-operator
+  tag: v0.4.0
+  pullPolicy: IfNotPresent
+
+## Node labels for habitat-operator pod assignment
+##
+nodeSelector: {}
+
+## If true, create & use RBAC resources
+##
+rbacEnable: true
+
+## Habitat-operator resource limits & requests
+## Ref: https://kubernetes.io/docs/user-guide/compute-resources/
+##
+resources: {}
+  # limits:
+  #   cpu: 200m
+  #   memory: 100Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 50Mi
