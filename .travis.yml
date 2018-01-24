@@ -1,5 +1,6 @@
 language: go
 
+dist: trusty
 sudo: required
 
 # This moves Kubernetes specific config files.
