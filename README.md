@@ -82,7 +82,7 @@ More examples are located in the [example directory](https://github.com/kinvolk/
 
 ### Dependency management
 
-This project uses [go dep](https://github.com/golang/dep/) for dependency management.
+This project uses [go dep](https://github.com/golang/dep/) `>= v0.4.1` for dependency management.
 
 If you add, remove or change an import, run:
 
