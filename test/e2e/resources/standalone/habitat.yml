@@ -1,13 +1,11 @@
 apiVersion: habitat.sh/v1
 kind: Habitat
 metadata:
-  name: example-standalone-habitat
+  name: standalone-test-123
 spec:
-  # the core/nginx habitat service packaged as a Docker image
   image: kinvolk/nginx-hab
   count: 1
   service:
     name: nginx
     topology: standalone
-    # if not present, defaults to "default"
     group: foobar

@@ -1,14 +1,11 @@
 apiVersion: habitat.sh/v1
 kind: Habitat 
 metadata:
-  # Name must match the Habitat service name.
-  name: postgresql
+  name: postgresql-test-123
 spec:
   image: kinvolk/postgresql-hab
   count: 1
   service:
     name: postgresql
-    # Name of the secret.
-    # This is mounted inside of the pod as a user.toml file.
     configSecretName: user-toml-secret
     topology: standalone
