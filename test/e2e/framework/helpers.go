@@ -75,7 +75,11 @@ func (f *Framework) WaitForEndpoints(habitatName string) error {
 			return false, err
 		}
 
-		if len(ep.Subsets) == 0 && len(ep.Subsets[0].Addresses) == 0 {
+		if len(ep.Subsets) == 0 {
+			return false, nil
+		}
+
+		if len(ep.Subsets[0].Addresses) == 0 {
 			return false, nil
 		}
 
