@@ -473,7 +473,7 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 
 	if len(runningPods) == 0 {
 		// No running Pods, create an empty ConfigMap.
-		newCM := newConfigMap("")
+		newCM := newConfigMap("", h)
 
 		cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(h.Namespace).Create(newCM)
 		if err != nil {
@@ -506,7 +506,7 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 	// There are running Pods, add the IP of one of them to the ConfigMap.
 	leaderIP := runningPods[0].Status.PodIP
 
-	newCM := newConfigMap(leaderIP)
+	newCM := newConfigMap(leaderIP, h)
 
 	cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(h.Namespace).Create(newCM)
 	if err != nil {
@@ -918,10 +918,11 @@ func habitatKeyFromLabeledResource(r metav1.Object) (string, error) {
 	return key, nil
 }
 
-func newConfigMap(ip string) *apiv1.ConfigMap {
+func newConfigMap(ip string, h *habv1beta1.Habitat) *apiv1.ConfigMap {
 	return &apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: configMapName,
+			Name:      configMapName,
+			Namespace: h.Namespace,
 			Labels: map[string]string{
 				habv1beta1.HabitatLabel: "true",
 			},
