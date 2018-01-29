@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: go-service
+  name: go-test-123
 spec:
   selector:
-    habitat-name: go
+    habitat-name: go-test-123
   type: NodePort
   ports:
   - name: web
