@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	habv1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1"
+	habv1beta1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1beta1"
 	utils "github.com/kinvolk/habitat-operator/test/e2e/framework"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -82,10 +82,10 @@ func TestFunction(t *testing.T) {
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(habv1.HabitatNameLabel, habitatGo.ObjectMeta.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, habitatGo.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
-	if err := framework.WaitForResources(habv1.HabitatNameLabel, habitatDB.ObjectMeta.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, habitatDB.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
 
@@ -141,7 +141,7 @@ func TestHabitatDelete(t *testing.T) {
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(habv1.HabitatNameLabel, habitat.ObjectMeta.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, habitat.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
 
@@ -151,7 +151,7 @@ func TestHabitatDelete(t *testing.T) {
 	}
 
 	// Wait for resources to be deleted.
-	if err := framework.WaitForResources(habv1.HabitatNameLabel, habitat.ObjectMeta.Name, 0); err != nil {
+	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, habitat.ObjectMeta.Name, 0); err != nil {
 		t.Fatal(err)
 	}
 
