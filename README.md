@@ -65,6 +65,16 @@ Habitat operator images are located [here](https://hub.docker.com/r/kinvolk/habi
 
 #### Deploying Habitat operator
 
+##### Cluster with RBAC enabled
+
+Make sure to give Habitat operator the correct permissions, so it's able to create and monitor certain resources. To do it, use the manifest files located under the examples directory:
+
+    kubectl create -f examples/rbac
+
+For more information see [the README file in RBAC example](examples/rbac/README.md)
+
+##### Cluster with RBAC disabled
+
 To deploy the operator inside the Kubernetes cluster use the Deployment manifest file located under the examples directory:
 
     kubectl create -f examples/habitat-operator-deployment.yml

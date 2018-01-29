@@ -10,5 +10,5 @@ Before deploying the Habitat operator inside your cluster the following roles mu
 
 Once those roles were successfully created the Habitat operator can be deployed in the cluster:
 
-    kubectl apply -f examples/rbac/habitat.yml
+    kubectl apply -f examples/rbac/habitat-operator.yml
 
