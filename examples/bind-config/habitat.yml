@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: user-toml-secret
+  name: user-toml
 type: Opaque
 data:
   # Each item needs to be encoded in base64, as Kubernetes expects that encoding.
@@ -11,7 +11,7 @@ data:
 ---
 apiVersion: habitat.sh/v1beta1
 metadata:
-  name: example-bind-configured-db-service
+  name: example-bind-configured-db
 spec:
   image: kinvolk/redis-hab
   count: 1
@@ -19,13 +19,13 @@ spec:
     name: redis
     # Name of the secret.
     # This is mounted inside of the pod as a user.toml file.
-    configSecretName: user-toml-secret
+    configSecretName: user-toml
     topology: standalone
 ---
 apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
-  name: example-bind-configured-web-app-service
+  name: example-bind-configured-web-app
 spec:
   image: kinvolk/bindgo-hab
   count: 1
@@ -40,10 +40,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: web-app-service
+  name: web-app
 spec:
   selector:
-    habitat-name: example-bind-configured-web-app-service
+    habitat-name: example-bind-configured-web-app
   type: NodePort
   ports:
   - name: web

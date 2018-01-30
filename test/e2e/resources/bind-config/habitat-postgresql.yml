@@ -7,5 +7,5 @@ spec:
   count: 1
   service:
     name: postgresql
-    configSecretName: user-toml-secret
+    configSecretName: user-toml
     topology: standalone

@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: user-toml-secret
+  name: user-toml
 type: Opaque
 data:
   # Each item needs to be encoded in base64, as Kubernetes
@@ -21,7 +21,7 @@ spec:
     topology: standalone
     group: redisdb
     # Create Secret with the initial configuration you want.
-    configSecretName: user-toml-secret
+    configSecretName: user-toml
 ---
 apiVersion: v1
 kind: Service
