@@ -10,6 +10,12 @@ After the Habitat operator is up and running, execute the following command from
 kubectl create -f examples/bind-config/habitat.yml
 ```
 
-This will deploy two `Habitat`s, a simple HTTP server written in Go that will be bound to a Redis database. The Go server will display the database port number that was overriden by the initial configuration.
+This will deploy two `Habitat`s, a simple HTTP server written in Go that will be
+bound to a Redis instance. By default, the Redis database instance would [listen
+on port
+6379](https://github.com/habitat-sh/core-plans/blob/7bc934c31e92c959aea0444671900c57c23d5265/redis/default.toml#L3),
+but we change this with the configuration stored in the `user-toml`.
+
+The Go web app displays the overridden database port number.
 
 When running on minikube, it can be accessed under port `30001` of the minikube VM. `minikube ip` can be used to retrieve the IP.
