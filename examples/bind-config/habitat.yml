@@ -4,9 +4,9 @@ metadata:
   name: user-toml
 type: Opaque
 data:
-  # Each item needs to be encoded in base64, as Kubernetes expects that encoding.
-  # Plain text content of the secret: "port = 4444"
+  # Each item needs to be base64-encoded.
   # This overrides the port set in the Redis Habitat service.
+  # Plain text content of the secret: "port = 4444"
   user.toml: cG9ydCA9IDQ0NDQ=
 ---
 apiVersion: habitat.sh/v1beta1

@@ -4,7 +4,7 @@ metadata:
   name: user-toml
 type: Opaque
 data:
-  # Each item needs to be base64-encoded in base64.
+  # Each item needs to be base64-encoded.
   # Plain text content: port = 6999
   user.toml: cG9ydCA9IDY5OTkK
 ---

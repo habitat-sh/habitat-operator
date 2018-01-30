@@ -16,6 +16,6 @@ on port
 6379](https://github.com/habitat-sh/core-plans/blob/7bc934c31e92c959aea0444671900c57c23d5265/redis/default.toml#L3),
 but we change this with the configuration stored in the `user-toml`.
 
-The Go web app displays the overridden database port number.
-
-When running on minikube, it can be accessed under port `30001` of the minikube VM. `minikube ip` can be used to retrieve the IP.
+The Go web app displays the overridden database port number, and it can be
+accessed under port `30001`. When running on minikube, its IP can be retrieved
+with `minikube ip`.
