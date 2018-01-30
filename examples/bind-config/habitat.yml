@@ -6,18 +6,17 @@ type: Opaque
 data:
   # Each item needs to be encoded in base64, as Kubernetes expects that encoding.
   # Plain text content of the secret: "port = 4444"
-  # This overrides the port set in the postgresql Habitat service.
+  # This overrides the port set in the Redis Habitat service.
   user.toml: cG9ydCA9IDQ0NDQ=
 ---
 apiVersion: habitat.sh/v1beta1
-kind: Habitat 
 metadata:
   name: example-bind-configured-db-service
 spec:
-  image: kinvolk/postgresql-hab
+  image: kinvolk/redis-hab
   count: 1
   service:
-    name: postgresql
+    name: redis
     # Name of the secret.
     # This is mounted inside of the pod as a user.toml file.
     configSecretName: user-toml-secret

@@ -6,27 +6,27 @@ type: Opaque
 data:
   # Each item needs to be encoded in base64, as Kubernetes
   # expects that encoding.
-  # Plain text content: "message = 'Hello from our Habitat-Operator!'"
-  user.toml: bWVzc2FnZSA9ICdIZWxsbyBmcm9tIG91ciBIYWJpdGF0LU9wZXJhdG9yISc=
+  # Plain text content: protected-mode = "no"
+  user.toml: cHJvdGVjdGVkLW1vZGUgPSAibm8i
 ---
 apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: example-configured-habitat
 spec:
-  image: kinvolk/nodejs-hab
+  image: kinvolk/redis-hab
   count: 1
   service:
-    name: mytutorialapp
+    name: db
     topology: standalone
-    group: nodejs
+    group: redisdb
     # Create Secret with the initial configuration you want.
     configSecretName: user-toml-secret
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: mytutorialapp
+  name: db
 spec:
   selector:
     habitat-name: example-configured-habitat
@@ -35,7 +35,8 @@ spec:
   # This endpoint displays the message from the secret
   - name: web
     nodePort: 30001
-    port: 5555
+    # This is the default port as set in default.toml
+    port: 6379
     protocol: TCP
   # This endpoint exposes the Habitat supervisor API
   - name: http-gateway

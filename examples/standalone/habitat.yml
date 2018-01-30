@@ -3,11 +3,11 @@ kind: Habitat
 metadata:
   name: example-standalone-habitat
 spec:
-  # the core/nginx habitat service packaged as a Docker image
-  image: kinvolk/nginx-hab
+  # the core/redis habitat service packaged as a Docker image
+  image: kinvolk/redis-hab
   count: 1
   service:
-    name: nginx
+    name: redis
     topology: standalone
     # if not present, defaults to "default"
     group: foobar
