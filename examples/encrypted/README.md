@@ -34,9 +34,3 @@ kubectl create -f examples/encrypted/habitat.yml
 The Habitat operator does not delete the Secret on Habitat deletion. This is
 because the user might want to re-use the secret across multiple
 `Habitat`s and `Habitat` lifecycles.
-
-To delete the Secret simply run:
-
-```
-  kubectl delete secret your-secret-name
-```
