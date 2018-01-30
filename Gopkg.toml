@@ -26,8 +26,8 @@
   unused-packages = true
 
 [[constraint]]
-name = "k8s.io/client-go"
-version = "v6.0.0"
+  name = "k8s.io/client-go"
+  version = "v6.0.0"
 
 [[constraint]]
   name = "k8s.io/api"
