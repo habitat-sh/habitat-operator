@@ -38,7 +38,7 @@ const (
 // TestFunction tests that the operator correctly created two Habitat Services and bound them together.
 func TestFunction(t *testing.T) {
 	// Get Habitat object from Habitat go example.
-	habitatGo, err := utils.ConvertHabitat("resources/bind-config/habitat-go.yml")
+	habitatGo, err := utils.ConvertHabitat("resources/bind-config/webapp.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +48,7 @@ func TestFunction(t *testing.T) {
 	}
 
 	// Get Habitat object from Habitat db example.
-	habitatDB, err := utils.ConvertHabitat("resources/bind-config/habitat-postgresql.yml")
+	habitatDB, err := utils.ConvertHabitat("resources/bind-config/db.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
