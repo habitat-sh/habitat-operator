@@ -1,6 +1,6 @@
 # Runtime binding + initial configuration
 
-This demonstrates how to run two Habitat Services with a [binding](https://www.habitat.sh/docs/run-packages-binding/) between them, with initial configuration used to override the port of the redis Habitat service. It also displays how different fields in the manifest file can be combined.
+This demonstrates how to run two Habitat Services with a [binding](https://www.habitat.sh/docs/run-packages-binding/) between them, with initial configuration used to override the port of the Redis Habitat service. It also displays how different fields in the manifest file can be combined.
 
 ## Workflow
 
