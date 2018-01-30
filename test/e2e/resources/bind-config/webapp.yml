@@ -10,5 +10,5 @@ spec:
     topology: standalone
     bind:
       - name: db
-        service: postgresql
+        service: redis
         group: default
