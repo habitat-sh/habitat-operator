@@ -4,10 +4,9 @@ metadata:
   name: user-toml
 type: Opaque
 data:
-  # Each item needs to be encoded in base64, as Kubernetes
-  # expects that encoding.
-  # Plain text content: protected-mode = "no"
-  user.toml: cHJvdGVjdGVkLW1vZGUgPSAibm8i
+  # Each item needs to be base64-encoded in base64.
+  # Plain text content: port = 6999
+  user.toml: cG9ydCA9IDY5OTkK
 ---
 apiVersion: habitat.sh/v1beta1
 kind: Habitat
@@ -35,8 +34,8 @@ spec:
   # This endpoint displays the message from the secret
   - name: web
     nodePort: 30001
-    # This is the default port as set in default.toml
-    port: 6379
+    # This is the custom port set in the user.toml
+    port: 6999
     protocol: TCP
   # This endpoint exposes the Habitat supervisor API
   - name: http-gateway
