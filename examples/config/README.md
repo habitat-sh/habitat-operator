@@ -10,7 +10,6 @@ After the Habitat operator is up and running, execute the following command from
 `kubectl create -f examples/config/habitat.yml`
 
 This will create a [Kubernetes Secret](https://kubernetes.io/docs/concepts/configuration/secret/) with the configurations and a Redis database.
-Initially the Redis database is configured to be in protected mode. Because we override this with the Secret we just created, our db will not be in this mode anymore.
 
 By default, Redis listens on port 6379, but we change this to 6999 by mounting a
 Secret as a file under `/hab/user/redis/config/user.toml` inside the Pod.
