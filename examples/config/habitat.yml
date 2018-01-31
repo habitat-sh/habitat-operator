@@ -9,7 +9,7 @@ data:
   # Plain text content: "message = 'Hello from our Habitat-Operator!'"
   user.toml: bWVzc2FnZSA9ICdIZWxsbyBmcm9tIG91ciBIYWJpdGF0LU9wZXJhdG9yISc=
 ---
-apiVersion: habitat.sh/v1
+apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: example-configured-habitat

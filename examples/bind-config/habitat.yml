@@ -9,7 +9,7 @@ data:
   # This overrides the port set in the postgresql Habitat service.
   user.toml: cG9ydCA9IDQ0NDQ=
 ---
-apiVersion: habitat.sh/v1
+apiVersion: habitat.sh/v1beta1
 kind: Habitat 
 metadata:
   name: example-bind-configured-db-service
@@ -23,7 +23,7 @@ spec:
     configSecretName: user-toml-secret
     topology: standalone
 ---
-apiVersion: habitat.sh/v1
+apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: example-bind-configured-web-app-service

@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"time"
 
-	habv1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1"
+	habv1beta1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1beta1"
 
 	appsv1beta1 "k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
@@ -33,10 +33,10 @@ import (
 )
 
 // CreateHabitat creates a Habitat.
-func (f *Framework) CreateHabitat(habitat *habv1.Habitat) error {
+func (f *Framework) CreateHabitat(habitat *habv1beta1.Habitat) error {
 	return f.Client.Post().
 		Namespace(TestNs).
-		Resource(habv1.HabitatResourcePlural).
+		Resource(habv1beta1.HabitatResourcePlural).
 		Body(habitat).
 		Do().
 		Error()
@@ -91,7 +91,7 @@ func (f *Framework) WaitForEndpoints(habitatName string) error {
 func (f *Framework) DeleteHabitat(habitatName string) error {
 	return f.Client.Delete().
 		Namespace(TestNs).
-		Resource(habv1.HabitatResourcePlural).
+		Resource(habv1beta1.HabitatResourcePlural).
 		Name(habitatName).
 		Do().
 		Error()
@@ -186,8 +186,8 @@ func ConvertDeployment(pathToYaml string) (*appsv1beta1.Deployment, error) {
 
 // ConvertHabitat takes in a path to the YAML file containing the manifest.
 // It converts the file to the Habitat object.
-func ConvertHabitat(pathToYaml string) (*habv1.Habitat, error) {
-	hab := habv1.Habitat{}
+func ConvertHabitat(pathToYaml string) (*habv1beta1.Habitat, error) {
+	hab := habv1beta1.Habitat{}
 
 	if err := convertToK8sResource(pathToYaml, &hab); err != nil {
 		return nil, err
