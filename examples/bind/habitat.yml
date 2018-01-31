@@ -3,10 +3,10 @@ kind: Habitat
 metadata:
   name: db
 spec:
-  image: kinvolk/postgresql-hab
+  image: kinvolk/redis-hab
   count: 1
   service:
-    name: postgresql
+    name: redis
     topology: standalone
 ---
 apiVersion: habitat.sh/v1beta1
@@ -23,7 +23,7 @@ spec:
       # Name is the name of the bind specified in the Habitat configuration files.
       - name: db
         # Service is the name of the service this bind refers to.
-        service: postgresql
+        service: redis
         # Group is the group of the service this bind refers to.
         group: default
 ---
@@ -33,7 +33,7 @@ metadata:
   name: go-service
 spec:
   selector:
-    habitat-name: go
+    habitat-name: web-app
   type: NodePort
   ports:
   - name: web

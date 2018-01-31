@@ -16,11 +16,11 @@ kind: Habitat
 metadata:
   name: example-encrypted-habitat
 spec:
-  # the core/nginx habitat service packaged as a Docker image
-  image: kinvolk/consul-hab
+  # the core/redis habitat service packaged as a Docker image
+  image: kinvolk/redis-hab
   count: 3
   service:
-    name: consul
+    name: redis
     topology: leader
     # the name of the secret containing the ring key
     ringSecretName: example-encrypted-ring-20170829113029

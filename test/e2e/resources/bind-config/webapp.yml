@@ -1,7 +1,7 @@
 apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
-  name: go-test-123
+  name: test-go
 spec:
   image: kinvolk/bindgo-hab
   count: 1
@@ -10,5 +10,5 @@ spec:
     topology: standalone
     bind:
       - name: db
-        service: postgresql
+        service: redis
         group: default
