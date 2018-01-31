@@ -715,7 +715,6 @@ func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.
 			// The Habitat supervisor creates a directory for each service under /hab/svc/<servicename>.
 			// We need to place the user.toml file in there in order for it to be detected.
 			MountPath: fmt.Sprintf("/hab/user/%s/config/%s", h.Spec.Service.Name, userTOMLFile),
-			SubPath:   userTOMLFile,
 			ReadOnly:  false,
 		}
 
