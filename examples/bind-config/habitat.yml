@@ -10,6 +10,7 @@ data:
   user.toml: cG9ydCA9IDQ0NDQ=
 ---
 apiVersion: habitat.sh/v1beta1
+kind: Habitat
 metadata:
   name: example-bind-configured-db
 spec:
