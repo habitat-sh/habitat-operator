@@ -1,0 +1,4 @@
+The Habitat Operator has been installed. Check its status by running:
+  kubectl --namespace {{ .Release.Namespace }} get pods -l "app={{ template "habitat-operator.name" . }},release={{ .Release.Name }}"
+
+You can now deploy Habitat services in the cluster.
