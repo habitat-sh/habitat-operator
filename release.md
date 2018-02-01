@@ -27,6 +27,10 @@ In the root directory of the repository generate the Docker image and push it to
     docker tag kinvolk/habitat-operator:vx.y.z kinvolk/habitat-operator:latest
     docker push kinvolk/habitat-operator:latest
 
+## Generate the Helm chart
+
+Switch to `gh-pages` branch and follow the steps in the `helm/charts/README.md` file.
+
 ## Do the release
 
-Head over to GitHub and edit the release notes with the notes that were included in the `CHANGELOG.md` file. Also include the generated Docker image in the release notes.
+Head over to GitHub and edit the release notes with the notes that were included in the `CHANGELOG.md` file. Also include the generated Docker image and Helm chart in the release notes.
