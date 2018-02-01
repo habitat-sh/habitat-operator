@@ -2,7 +2,7 @@
 ##
 image:
   repository: docker.io/kinvolk/habitat-operator
-  tag: v0.4.0
+  tag: v0.5.0
   pullPolicy: IfNotPresent
 
 ## Node labels for habitat-operator pod assignment
