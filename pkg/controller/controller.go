@@ -117,9 +117,9 @@ func (hc *HabitatController) Run(workers int, ctx context.Context) error {
 
 	level.Info(hc.logger).Log("msg", "Watching Habitat objects")
 
-	hc.cacheHab()
-	hc.cacheDeployment()
-	hc.cacheConfigMap()
+	hc.cacheHabitats()
+	hc.cacheDeployments()
+	hc.cacheConfigMaps()
 	hc.watchPods(ctx)
 
 	go hc.habInformer.Run(ctx.Done())
@@ -146,7 +146,7 @@ func (hc *HabitatController) Run(workers int, ctx context.Context) error {
 	return ctx.Err()
 }
 
-func (hc *HabitatController) cacheHab() {
+func (hc *HabitatController) cacheHabitats() {
 	source := cache.NewListWatchFromClient(
 		hc.config.HabitatClient,
 		habv1beta1.HabitatResourcePlural,
@@ -171,12 +171,12 @@ func (hc *HabitatController) cacheHab() {
 	hc.habInformerSynced = hc.habInformer.HasSynced
 }
 
-func (hc *HabitatController) cacheDeployment() {
-	source := cache.NewListWatchFromClient(
+func (hc *HabitatController) cacheDeployments() {
+	source := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.AppsV1beta1().RESTClient(),
 		"deployments",
 		apiv1.NamespaceAll,
-		fields.Everything())
+		labelListOptions())
 
 	hc.deployInformer = cache.NewSharedIndexInformer(
 		source,
@@ -194,20 +194,12 @@ func (hc *HabitatController) cacheDeployment() {
 	hc.deployInformerSynced = hc.deployInformer.HasSynced
 }
 
-func (hc *HabitatController) cacheConfigMap() {
-	ls := labels.SelectorFromSet(labels.Set(map[string]string{
-		habv1beta1.HabitatLabel: "true",
-	}))
-
-	options := metav1.ListOptions{
-		LabelSelector: ls.String(),
-	}
-
+func (hc *HabitatController) cacheConfigMaps() {
 	source := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
 		"configmaps",
 		apiv1.NamespaceAll,
-		options)
+		labelListOptions())
 
 	hc.cmInformer = cache.NewSharedIndexInformer(
 		source,
@@ -226,18 +218,11 @@ func (hc *HabitatController) cacheConfigMap() {
 }
 
 func (hc *HabitatController) watchPods(ctx context.Context) {
-	ls := labels.SelectorFromSet(labels.Set(map[string]string{
-		habv1beta1.HabitatLabel: "true",
-	}))
-
-	options := metav1.ListOptions{
-		LabelSelector: ls.String(),
-	}
 	source := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
 		"pods",
 		apiv1.NamespaceAll,
-		options)
+		labelListOptions())
 
 	c := cache.NewSharedIndexInformer(
 		source,
@@ -300,15 +285,13 @@ func (hc *HabitatController) handleDeployAdd(obj interface{}) {
 		return
 	}
 
-	if isHabitatObject(&d.ObjectMeta) {
-		h, err := hc.getHabitatFromLabeledResource(d)
-		if err != nil {
-			level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
-			return
-		}
-
-		hc.enqueue(h)
+	h, err := hc.getHabitatFromLabeledResource(d)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+		return
 	}
+
+	hc.enqueue(h)
 }
 
 func (hc *HabitatController) handleDeployUpdate(oldObj, newObj interface{}) {
@@ -318,15 +301,13 @@ func (hc *HabitatController) handleDeployUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	if isHabitatObject(&d.ObjectMeta) {
-		h, err := hc.getHabitatFromLabeledResource(d)
-		if err != nil {
-			level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
-			return
-		}
-
-		hc.enqueue(h)
+	h, err := hc.getHabitatFromLabeledResource(d)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+		return
 	}
+
+	hc.enqueue(h)
 }
 
 func (hc *HabitatController) handleDeployDelete(obj interface{}) {
@@ -336,16 +317,14 @@ func (hc *HabitatController) handleDeployDelete(obj interface{}) {
 		return
 	}
 
-	if isHabitatObject(&d.ObjectMeta) {
-		h, err := hc.getHabitatFromLabeledResource(d)
-		if err != nil {
-			// Could not find Habitat, it must have already been removed.
-			level.Debug(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
-			return
-		}
-
-		hc.enqueue(h)
+	h, err := hc.getHabitatFromLabeledResource(d)
+	if err != nil {
+		// Could not find Habitat, it must have already been removed.
+		level.Debug(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+		return
 	}
+
+	hc.enqueue(h)
 }
 
 func (hc *HabitatController) enqueueCM(obj interface{}) {
@@ -355,18 +334,16 @@ func (hc *HabitatController) enqueueCM(obj interface{}) {
 		return
 	}
 
-	if isHabitatObject(&cm.ObjectMeta) {
-		cache.ListAll(hc.habInformer.GetStore(), labels.Everything(), func(obj interface{}) {
-			h, ok := obj.(*habv1beta1.Habitat)
-			if !ok {
-				level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
-				return
-			}
-			if h.Namespace == cm.GetNamespace() {
-				hc.enqueue(h)
-			}
-		})
-	}
+	cache.ListAll(hc.habInformer.GetStore(), labels.Everything(), func(obj interface{}) {
+		h, ok := obj.(*habv1beta1.Habitat)
+		if !ok {
+			level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
+			return
+		}
+		if h.Namespace == cm.GetNamespace() {
+			hc.enqueue(h)
+		}
+	})
 }
 
 func (hc *HabitatController) handleCMAdd(obj interface{}) {
@@ -416,8 +393,8 @@ func (hc *HabitatController) handlePodUpdate(oldObj, newObj interface{}) {
 
 	h, err := hc.getHabitatFromLabeledResource(newPod)
 	if err != nil {
-		if hErr, ok := err.(habitatNotFoundError); !ok {
-			level.Error(hc.logger).Log("msg", hErr)
+		if hErr, ok := err.(keyNotFoundError); !ok {
+			level.Error(hc.logger).Log("msg", hErr, "key", hErr.key)
 			return
 		}
 
@@ -443,8 +420,8 @@ func (hc *HabitatController) handlePodDelete(obj interface{}) {
 
 	h, err := hc.getHabitatFromLabeledResource(pod)
 	if err != nil {
-		if hErr, ok := err.(habitatNotFoundError); !ok {
-			level.Error(hc.logger).Log("msg", hErr)
+		if hErr, ok := err.(keyNotFoundError); !ok {
+			level.Error(hc.logger).Log("msg", hErr, "key", hErr.key)
 			return
 		}
 
@@ -496,7 +473,8 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 
 	if len(runningPods) == 0 {
 		// No running Pods, create an empty ConfigMap.
-		newCM := newConfigMap("")
+		newCM := newConfigMap("", h)
+
 		cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(h.Namespace).Create(newCM)
 		if err != nil {
 			// Was the error due to the ConfigMap already existing?
@@ -504,9 +482,9 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 				return err
 			}
 
-			// Delete the IP in the existing ConfigMap, as it must necessarily be invalid,
-			// since there are no running Pods.
-			cm, err = hc.config.KubernetesClientset.CoreV1().ConfigMaps(h.Namespace).Get(newCM.Name, metav1.GetOptions{})
+			// Find and delete the IP in the existing ConfigMap:
+			// it must necessarily be invalid, since there are no running Pods.
+			cm, err = hc.findConfigMapInCache(newCM)
 			if err != nil {
 				return err
 			}
@@ -520,7 +498,7 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 			return nil
 		}
 
-		level.Info(hc.logger).Log("msg", "created peer IP ConfigMap", "name", newCM.Name)
+		level.Info(hc.logger).Log("msg", "created peer IP ConfigMap", "name", cm.Name)
 
 		return nil
 	}
@@ -528,7 +506,7 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 	// There are running Pods, add the IP of one of them to the ConfigMap.
 	leaderIP := runningPods[0].Status.PodIP
 
-	newCM := newConfigMap(leaderIP)
+	newCM := newConfigMap(leaderIP, h)
 
 	cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(h.Namespace).Create(newCM)
 	if err != nil {
@@ -537,9 +515,9 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 			return err
 		}
 
-		// The ConfigMap already exists. Is the leader still running?
-		// Was the error due to the ConfigMap already existing?
-		cm, err = hc.config.KubernetesClientset.CoreV1().ConfigMaps(h.Namespace).Get(newCM.Name, metav1.GetOptions{})
+		// The ConfigMap already exists. Retrieve it and find out if the the leader
+		// is still running.
+		cm, err := hc.findConfigMapInCache(newCM)
 		if err != nil {
 			return err
 		}
@@ -858,15 +836,11 @@ func (hc *HabitatController) conform(key string) error {
 	if _, err := hc.config.KubernetesClientset.AppsV1beta1().Deployments(h.Namespace).Create(deployment); err != nil {
 		// Was the error due to the Deployment already existing?
 		if apierrors.IsAlreadyExists(err) {
-			// If yes, update the Deployment.
+			// If yes, update it.
 			if _, err := hc.config.KubernetesClientset.AppsV1beta1().Deployments(h.Namespace).Update(deployment); err != nil {
 				return err
 			}
 		} else {
-			return err
-		}
-		_, err = hc.config.KubernetesClientset.AppsV1beta1().Deployments(h.Namespace).Get(deployment.Name, metav1.GetOptions{})
-		if err != nil {
 			return err
 		}
 
@@ -920,7 +894,7 @@ func (hc *HabitatController) getHabitatFromLabeledResource(r metav1.Object) (*ha
 		return nil, err
 	}
 	if !exists {
-		return nil, habitatNotFoundError{key: key}
+		return nil, keyNotFoundError{key: key}
 	}
 
 	h, ok := obj.(*habv1beta1.Habitat)
@@ -944,10 +918,11 @@ func habitatKeyFromLabeledResource(r metav1.Object) (string, error) {
 	return key, nil
 }
 
-func newConfigMap(ip string) *apiv1.ConfigMap {
+func newConfigMap(ip string, h *habv1beta1.Habitat) *apiv1.ConfigMap {
 	return &apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: configMapName,
+			Name:      configMapName,
+			Namespace: h.Namespace,
 			Labels: map[string]string{
 				habv1beta1.HabitatLabel: "true",
 			},
@@ -960,4 +935,22 @@ func newConfigMap(ip string) *apiv1.ConfigMap {
 
 func isHabitatObject(objMeta *metav1.ObjectMeta) bool {
 	return objMeta.Labels[habv1beta1.HabitatLabel] == "true"
+}
+
+func (hc *HabitatController) findConfigMapInCache(cm *apiv1.ConfigMap) (*apiv1.ConfigMap, error) {
+	k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(cm)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", "ConfigMap key could not be retrieved", "name", cm)
+		return nil, err
+	}
+
+	obj, exists, err := hc.cmInformer.GetStore().GetByKey(k)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, keyNotFoundError{key: k}
+	}
+
+	return obj.(*apiv1.ConfigMap), nil
 }
