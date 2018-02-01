@@ -5,6 +5,7 @@ This directory hosts all the helm charts related to the habitat-operator.
 To add chart for a new release of habitat-operator run the following from the `helm/chart` directory:
 
 ```console
+$ git merge master
 $ ./chart-for-latest.sh
 $ git push origin gh-pages
 ```
