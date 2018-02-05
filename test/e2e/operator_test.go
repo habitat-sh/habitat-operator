@@ -35,8 +35,8 @@ const (
 	nodejsImage = "kinvolk/nodejs-hab:test"
 )
 
-// TestFunction tests that the operator correctly created two Habitat Services and bound them together.
-func TestFunction(t *testing.T) {
+// TestBind tests that the operator correctly created two Habitat Services and bound them together.
+func TestBind(t *testing.T) {
 	// Get Habitat object from Habitat go example.
 	habitatGo, err := utils.ConvertHabitat("resources/bind-config/webapp.yml")
 	if err != nil {
