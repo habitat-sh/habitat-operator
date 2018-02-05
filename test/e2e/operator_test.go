@@ -38,59 +38,59 @@ const (
 // TestBind tests that the operator correctly created two Habitat Services and bound them together.
 func TestBind(t *testing.T) {
 	// Get Habitat object from Habitat go example.
-	habitatGo, err := utils.ConvertHabitat("resources/bind-config/webapp.yml")
+	wapp, err := utils.ConvertHabitat("resources/bind-config/webapp.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := framework.CreateHabitat(habitatGo); err != nil {
+	if err := framework.CreateHabitat(wapp); err != nil {
 		t.Fatal(err)
 	}
 
 	// Get Habitat object from Habitat db example.
-	habitatDB, err := utils.ConvertHabitat("resources/bind-config/db.yml")
+	db, err := utils.ConvertHabitat("resources/bind-config/db.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := framework.CreateHabitat(habitatDB); err != nil {
+	if err := framework.CreateHabitat(db); err != nil {
 		t.Fatal(err)
 	}
 
 	// Get Service object from example file.
-	service, err := utils.ConvertService("resources/bind-config/service.yml")
+	svc, err := utils.ConvertService("resources/bind-config/service.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Create Service.
-	_, err = framework.KubeClient.CoreV1().Services(utils.TestNs).Create(service)
+	_, err = framework.KubeClient.CoreV1().Services(utils.TestNs).Create(svc)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Get Secret object from example file.
-	secret, err := utils.ConvertSecret("resources/bind-config/secret.yml")
+	sec, err := utils.ConvertSecret("resources/bind-config/secret.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Create Secret.
-	_, err = framework.KubeClient.CoreV1().Secrets(utils.TestNs).Create(secret)
+	_, err = framework.KubeClient.CoreV1().Secrets(utils.TestNs).Create(sec)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, habitatGo.ObjectMeta.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, wapp.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, habitatDB.ObjectMeta.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, db.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait until endpoints are ready.
-	if err := framework.WaitForEndpoints(service.ObjectMeta.Name); err != nil {
+	if err := framework.WaitForEndpoints(svc.ObjectMeta.Name); err != nil {
 		t.Fatal(err)
 	}
 
@@ -123,7 +123,7 @@ func TestBind(t *testing.T) {
 	}
 
 	// Delete Service so it doesn't interfere with other tests.
-	if err := framework.DeleteService(service.ObjectMeta.Name); err != nil {
+	if err := framework.DeleteService(svc.ObjectMeta.Name); err != nil {
 		t.Fatal(err)
 	}
 }
