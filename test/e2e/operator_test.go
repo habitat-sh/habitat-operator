@@ -76,7 +76,7 @@ func TestBind(t *testing.T) {
 	}
 
 	// Create Secret.
-	_, err = framework.KubeClient.CoreV1().Secrets(utils.TestNs).Create(sec)
+	sec, err = framework.KubeClient.CoreV1().Secrets(utils.TestNs).Create(sec)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,6 +120,38 @@ func TestBind(t *testing.T) {
 	// the only thing we need to check is it contains the expectedMsg.
 	if !strings.Contains(actualMsg, expectedMsg) {
 		t.Fatalf("Habitat Service msg does not match one in default.toml. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
+	}
+
+	// Update secret.
+	newPort := "port = 6333"
+
+	sec.Data["user.toml"] = []byte(newPort)
+	if _, err = framework.KubeClient.CoreV1().Secrets(utils.TestNs).Update(sec); err != nil {
+		t.Fatalf("Could not update Secret: \"%s\"", err)
+	}
+
+	// Check that the port differs after the update.
+	resp, err = http.Get(url)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Habitat Service did not start correctly.")
+	}
+
+	bodyBytes, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Update the message set in the config of the kinvolk/bindgo-hab Go Habitat Service.
+	expectedMsg = fmt.Sprintf("hello from port: %v", 6333)
+	actualMsg = string(bodyBytes)
+	// actualMsg can contain whitespace and newlines or different formatting,
+	// the only thing we need to check is it contains the expectedMsg.
+	if !strings.Contains(actualMsg, expectedMsg) {
+		t.Fatalf("Configuration update did not go through. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
 	}
 
 	// Delete Service so it doesn't interfere with other tests.
