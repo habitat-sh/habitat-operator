@@ -14,8 +14,8 @@ This will create a [Kubernetes Secret](https://kubernetes.io/docs/concepts/confi
 By default, Redis listens on port 6379, but we change this to 6999 by mounting a
 Secret as a file under `/hab/user/redis/config/user.toml` inside the Pod.
 
-The web app is listening on port `30001`. When running on minikube, its IP can
-be retrieved with `minikube ip`.
+You can see this is the case by accessing the web app on port `30001`. When
+running on minikube, its IP can be retrieved with `minikube ip`.
 
 ## Deletion
 
