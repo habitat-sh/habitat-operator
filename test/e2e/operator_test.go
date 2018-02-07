@@ -29,8 +29,8 @@ import (
 )
 
 const (
-	waitForPorts  = 1 * time.Minute
-	configMapName = "peer-watch-file"
+	defaultWaitTime = 1 * time.Minute
+	configMapName   = "peer-watch-file"
 
 	nodejsImage = "kinvolk/nodejs-hab:test"
 )
@@ -94,7 +94,7 @@ func TestBind(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	time.Sleep(waitForPorts)
+	time.Sleep(defaultWaitTime)
 
 	// Get response from Habitat Service.
 	url := fmt.Sprintf("http://%s:30001/", framework.ExternalIP)
@@ -129,6 +129,9 @@ func TestBind(t *testing.T) {
 	if _, err = framework.KubeClient.CoreV1().Secrets(utils.TestNs).Update(sec); err != nil {
 		t.Fatalf("Could not update Secret: \"%s\"", err)
 	}
+
+	// Wait for SecretVolume to be updated.
+	time.Sleep(defaultWaitTime)
 
 	// Check that the port differs after the update.
 	resp, err = http.Get(url)
