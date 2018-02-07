@@ -639,6 +639,7 @@ func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.
 									ReadOnly:  true,
 								},
 							},
+							Env: h.Spec.Env,
 						},
 					},
 					// Define the volume for the ConfigMap.
