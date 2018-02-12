@@ -251,6 +251,7 @@ func pathToOSFile(relativePath string) (*os.File, error) {
 	return manifest, nil
 }
 
+// QueryService makes an HTTP GET request to `url` and returns the body.
 func QueryService(url string) (string, error) {
 	resp, err := http.Get(url)
 	if err != nil {

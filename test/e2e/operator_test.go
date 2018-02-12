@@ -36,12 +36,12 @@ const (
 // TestBind tests that the operator correctly created two Habitat Services and bound them together.
 func TestBind(t *testing.T) {
 	// Get Habitat object from Habitat go example.
-	wapp, err := utils.ConvertHabitat("resources/bind-config/webapp.yml")
+	wApp, err := utils.ConvertHabitat("resources/bind-config/webapp.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := framework.CreateHabitat(wapp); err != nil {
+	if err := framework.CreateHabitat(wApp); err != nil {
 		t.Fatal(err)
 	}
 
@@ -80,7 +80,7 @@ func TestBind(t *testing.T) {
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, wapp.ObjectMeta.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, wApp.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
 	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, db.ObjectMeta.Name, 1); err != nil {
