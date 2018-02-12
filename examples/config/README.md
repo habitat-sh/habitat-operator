@@ -23,6 +23,23 @@ Secret as a file under `/hab/user/redis/config/user.toml` inside the Pod.
 You can see this is the case by accessing the web app on port `30001`. When
 running on minikube, its IP can be retrieved with `minikube ip`.
 
+## Configuration updates
+
+In Kubernetes, a file backed by a Secret is kept in sync with the Secret: when
+the Secret changes, the file does as well (after a short delay).
+
+You can try this yourself by editing the Secret:
+
+    echo "port = 6160" | base64
+    kubectl edit secret user-toml
+
+As you type the last command, your default editor will be invoked. You should
+then paste the new base64-encoded string under `data.user-toml`, and exit the
+editor.
+
+After a short delay, you should be able to see port 6160 being used by the Redis
+service.
+
 ## Deletion
 
 The Habitat operator does not delete the Secret on Habitat deletion, as it is not managed by the Habitat operator.
