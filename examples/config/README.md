@@ -1,4 +1,4 @@
-# Initial configuration
+# User configuration
 
 This examples demonstrates how to leverage the `user.toml` configuration
 mechanism for Habitat Services within the operator.
