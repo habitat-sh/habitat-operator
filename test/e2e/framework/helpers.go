@@ -15,6 +15,9 @@
 package framework
 
 import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -246,4 +249,24 @@ func pathToOSFile(relativePath string) (*os.File, error) {
 	}
 
 	return manifest, nil
+}
+
+// QueryService makes an HTTP GET request to `url` and returns the body.
+func QueryService(url string) (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("Habitat Service did not start correctly.")
+	}
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(bodyBytes), nil
 }
