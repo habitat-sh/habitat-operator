@@ -1,6 +1,12 @@
 # Initial configuration
 
-This example demonstrates how initial configuration works with the Habitat operator. With the manifest file we deploy a Redis Habitat service.
+This examples demonstrates how to leverage the `user.toml` configuration
+mechanism for Habitat Services within the operator.
+
+When a `user.toml` file is located at `/hab/user/$servicename/config/`, it is
+automatically loaded by the supervisor. We leverage Kubernetes Secrets to mount
+a file in that path.
+
 NOTE: Adding secret configuration to the `default.toml` is discouraged, as it will be uploaded as a docker image. Instead use the initial configuration `user.toml` file.
 
 ## Workflow
