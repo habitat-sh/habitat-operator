@@ -13,7 +13,7 @@ NOTE: Adding secret configuration to the `default.toml` is discouraged, as it wi
 
 After the Habitat operator is up and running, execute the following command from the root of this repository:
 
-`kubectl create -f examples/config/habitat.yml`
+    kubectl create -f examples/config/habitat.yml
 
 This will create a [Kubernetes Secret](https://kubernetes.io/docs/concepts/configuration/secret/) with the configurations and a Redis database.
 
@@ -45,6 +45,4 @@ service.
 The Habitat operator does not delete the Secret on Habitat deletion, as it is not managed by the Habitat operator.
 To manually delete the Secret simply run:
 
-```
-kubectl delete service user-toml-secret
-```
+    kubectl delete service user-toml-secret
