@@ -16,8 +16,6 @@ package e2e
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -98,24 +96,15 @@ func TestBind(t *testing.T) {
 
 	// Get response from Habitat Service.
 	url := fmt.Sprintf("http://%s:30001/", framework.ExternalIP)
-	resp, err := http.Get(url)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatal("Habitat Service did not start correctly.")
-	}
-
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	body, err := utils.QueryService(url)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// This msg is set in the config of the kinvolk/bindgo-hab Go Habitat Service.
 	expectedMsg := "hello from port: 4444"
-	actualMsg := string(bodyBytes)
+	actualMsg := body
 	// actualMsg can contain whitespace and newlines or different formatting,
 	// the only thing we need to check is it contains the expectedMsg.
 	if !strings.Contains(actualMsg, expectedMsg) {
@@ -134,23 +123,14 @@ func TestBind(t *testing.T) {
 	time.Sleep(defaultWaitTime)
 
 	// Check that the port differs after the update.
-	resp, err = http.Get(url)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatal("Habitat Service did not start correctly.")
-	}
-
-	bodyBytes, err = ioutil.ReadAll(resp.Body)
+	body, err = utils.QueryService(url)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Update the message set in the config of the kinvolk/bindgo-hab Go Habitat Service.
 	expectedMsg = fmt.Sprintf("hello from port: %v", 6333)
-	actualMsg = string(bodyBytes)
+	actualMsg = body
 	// actualMsg can contain whitespace and newlines or different formatting,
 	// the only thing we need to check is it contains the expectedMsg.
 	if !strings.Contains(actualMsg, expectedMsg) {
