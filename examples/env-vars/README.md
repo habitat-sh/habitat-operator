@@ -9,7 +9,9 @@ After the Habitat operator is up and running, execute the following command from
     kubectl create -f examples/env-vars/habitat.yml
 
 By default, Redis listens on port 6379, but we change this to 6999 by passing
-the `HAB_REDIS` environment variable to the supervisor.
+the `HAB_REDIS` environment variable to the supervisor (the supervisor
+automatically loads environment variables named `HAB_PACKAGENAME`, as explained
+[here](https://www.habitat.sh/docs/using-habitat/#config-updates)).
 
 When you inspect the logs of the pod that was just created (with `kubectl logs
 $podname`) you should see something like:
