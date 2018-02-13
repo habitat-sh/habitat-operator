@@ -12,9 +12,7 @@ Please refer to examples for how to adapt existing manifests.
 
 ### Features & Enhancements
 
-- Switch to e2e testing against RBAC enabled cluster and refactor tests [#151](https://github.com/kinvolk/habitat-operator/pull/151)
 - Updated mount path of user.toml config file as per [Habitat change](https://github.com/habitat-sh/habitat/pull/3814)
-- E2E test for user.toml update [#183](https://github.com/kinvolk/habitat-operator/pull/183)
 - Update user.toml path and example images [#172](https://github.com/kinvolk/habitat-operator/pull/172)
 - Use cache for ConfigMaps [#157](https://github.com/kinvolk/habitat-operator/pull/157)
 - Add helm chart for the operator [#161](https://github.com/kinvolk/habitat-operator/pull/161)
