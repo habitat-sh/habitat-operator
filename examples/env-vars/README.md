@@ -1,6 +1,6 @@
 # Configuration via environment variables
 
-This example demonstrates how environment variables can be used for service configuration.
+This example demonstrates how environment variables can be used for initial service configuration.
 
 ## Workflow
 
