@@ -12,8 +12,8 @@ Please refer to examples for how to adapt existing manifests.
 
 ### Features & Enhancements
 
-- Updated mount path of user.toml config file as per [Habitat change](https://github.com/habitat-sh/habitat/pull/3814)
-- Update user.toml path and example images [#172](https://github.com/kinvolk/habitat-operator/pull/172)
+- Updated mount path of `user.toml` config file as per [Habitat change](https://github.com/habitat-sh/habitat/pull/3814)
+- Update `user.toml` path and example images [#172](https://github.com/kinvolk/habitat-operator/pull/172)
 - Use cache for ConfigMaps [#157](https://github.com/kinvolk/habitat-operator/pull/157)
 - Add helm chart for the operator [#161](https://github.com/kinvolk/habitat-operator/pull/161)
 
