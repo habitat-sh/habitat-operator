@@ -2,10 +2,10 @@ apiVersion: v1
 entries:
   habitat-operator:
   - apiVersion: v1
-    created: 2018-01-31T14:59:34.547440558+01:00
+    created: 2018-02-13T17:33:50.935910081+01:00
     description: A Kubernetes controller that manages Habitat services in a Kubernetes
       cluster.
-    digest: 683f8fa6f265b095a9928b77579fe9430f868ceb01dbf096088fdca4a1410782
+    digest: ea687f08cdb6f0326ba658cbc9801264fb7250a1aedbf6d2beb727b5e4b60094
     engine: gotpl
     maintainers:
     - email: zeeshan@kinvolk.io
@@ -16,4 +16,4 @@ entries:
     urls:
     - https://kinvolk.github.io/habitat-operator/helm/charts/stable/habitat-operator-0.4.0.tgz
     version: 0.4.0
-generated: 2018-01-31T14:59:34.546924311+01:00
+generated: 2018-02-13T17:33:50.935053414+01:00
