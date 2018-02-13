@@ -15,11 +15,14 @@
 package framework
 
 import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
-	habv1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1"
+	habv1beta1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1beta1"
 
 	appsv1beta1 "k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
@@ -33,10 +36,10 @@ import (
 )
 
 // CreateHabitat creates a Habitat.
-func (f *Framework) CreateHabitat(habitat *habv1.Habitat) error {
+func (f *Framework) CreateHabitat(habitat *habv1beta1.Habitat) error {
 	return f.Client.Post().
 		Namespace(TestNs).
-		Resource(habv1.HabitatResourcePlural).
+		Resource(habv1beta1.HabitatResourcePlural).
 		Body(habitat).
 		Do().
 		Error()
@@ -75,7 +78,11 @@ func (f *Framework) WaitForEndpoints(habitatName string) error {
 			return false, err
 		}
 
-		if len(ep.Subsets) == 0 && len(ep.Subsets[0].Addresses) == 0 {
+		if len(ep.Subsets) == 0 {
+			return false, nil
+		}
+
+		if len(ep.Subsets[0].Addresses) == 0 {
 			return false, nil
 		}
 
@@ -87,7 +94,7 @@ func (f *Framework) WaitForEndpoints(habitatName string) error {
 func (f *Framework) DeleteHabitat(habitatName string) error {
 	return f.Client.Delete().
 		Namespace(TestNs).
-		Resource(habv1.HabitatResourcePlural).
+		Resource(habv1beta1.HabitatResourcePlural).
 		Name(habitatName).
 		Do().
 		Error()
@@ -182,8 +189,8 @@ func ConvertDeployment(pathToYaml string) (*appsv1beta1.Deployment, error) {
 
 // ConvertHabitat takes in a path to the YAML file containing the manifest.
 // It converts the file to the Habitat object.
-func ConvertHabitat(pathToYaml string) (*habv1.Habitat, error) {
-	hab := habv1.Habitat{}
+func ConvertHabitat(pathToYaml string) (*habv1beta1.Habitat, error) {
+	hab := habv1beta1.Habitat{}
 
 	if err := convertToK8sResource(pathToYaml, &hab); err != nil {
 		return nil, err
@@ -242,4 +249,24 @@ func pathToOSFile(relativePath string) (*os.File, error) {
 	}
 
 	return manifest, nil
+}
+
+// QueryService makes an HTTP GET request to `url` and returns the body.
+func QueryService(url string) (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("Habitat Service did not start correctly.")
+	}
+
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(bodyBytes), nil
 }

@@ -20,18 +20,23 @@
 #  name = "github.com/x/y"
 #  version = "2.4.0"
 
+[prune]
+  go-tests = true
+  non-go = true
+  unused-packages = true
+
 [[constraint]]
-name = "k8s.io/client-go"
-revision = "78700dec6369ba22221b72770783300f143df150"
+  name = "k8s.io/client-go"
+  version = "v6.0.0"
 
 [[constraint]]
   name = "k8s.io/api"
-  revision = "af4bc157c3a209798fc897f6d4aaaaeb6c2e0d6a"
+  version = "kubernetes-1.9.0"
 
 [[constraint]]
   name = "k8s.io/apiextensions-apiserver"
-  revision = "98ecf7bbd60f9f11a72000e4f05203f542136219"
+  version = "kubernetes-1.9.0"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  revision = "180eddb345a5be3a157cea1c624700ad5bd27b8f"
+  version = "kubernetes-1.9.0"

@@ -17,9 +17,10 @@ package controller
 import (
 	"fmt"
 
-	habv1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1"
+	habv1beta1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1beta1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
@@ -27,20 +28,20 @@ import (
 
 const leaderFollowerTopologyMinCount = 3
 
-type habitatNotFoundError struct {
+type keyNotFoundError struct {
 	key string
 }
 
-func (err habitatNotFoundError) Error() string {
-	return fmt.Sprintf("could not find Habitat with key %s", err.key)
+func (err keyNotFoundError) Error() string {
+	return fmt.Sprintf("could not find Object with key %s in the cache", err.key)
 }
 
-func validateCustomObject(h habv1.Habitat) error {
+func validateCustomObject(h habv1beta1.Habitat) error {
 	spec := h.Spec
 
 	switch spec.Service.Topology {
-	case habv1.TopologyStandalone:
-	case habv1.TopologyLeader:
+	case habv1beta1.TopologyStandalone:
+	case habv1beta1.TopologyLeader:
 		if spec.Count < leaderFollowerTopologyMinCount {
 			return fmt.Errorf("too few instances: %d, leader-follower topology requires at least %d", spec.Count, leaderFollowerTopologyMinCount)
 		}
@@ -81,4 +82,14 @@ func newListWatchFromClientWithLabels(c cache.Getter, resource string, namespace
 			Watch()
 	}
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
+}
+
+func labelListOptions() metav1.ListOptions {
+	ls := labels.SelectorFromSet(labels.Set(map[string]string{
+		habv1beta1.HabitatLabel: "true",
+	}))
+
+	return metav1.ListOptions{
+		LabelSelector: ls.String(),
+	}
 }

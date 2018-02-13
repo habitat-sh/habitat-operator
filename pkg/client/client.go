@@ -16,7 +16,7 @@
 package client
 
 import (
-	habv1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1"
+	habv1beta1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1beta1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -26,12 +26,12 @@ import (
 // NewClient returns a client configured to be used for Habitat Service Groups.
 func NewClient(cfg *rest.Config) (*rest.RESTClient, *runtime.Scheme, error) {
 	scheme := runtime.NewScheme()
-	if err := habv1.AddToScheme(scheme); err != nil {
+	if err := habv1beta1.AddToScheme(scheme); err != nil {
 		return nil, nil, err
 	}
 
 	config := *cfg
-	config.GroupVersion = &habv1.SchemeGroupVersion
+	config.GroupVersion = &habv1beta1.SchemeGroupVersion
 	config.APIPath = "/apis"
 	config.ContentType = runtime.ContentTypeJSON
 	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}

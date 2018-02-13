@@ -16,114 +16,129 @@ package e2e
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"strings"
 	"testing"
 	"time"
 
-	habv1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1"
+	habv1beta1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1beta1"
 	utils "github.com/kinvolk/habitat-operator/test/e2e/framework"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
-	waitForPorts  = 1 * time.Minute
-	configMapName = "peer-watch-file"
+	defaultWaitTime = 1 * time.Minute
+	configMapName   = "peer-watch-file"
 
 	nodejsImage = "kinvolk/nodejs-hab:test"
 )
 
-// TestFunction tests that the operator correctly created two Habitat Services and bound them together.
-func TestFunction(t *testing.T) {
+// TestBind tests that the operator correctly created two Habitat Services and bound them together.
+func TestBind(t *testing.T) {
 	// Get Habitat object from Habitat go example.
-	habitatGo, err := utils.ConvertHabitat("resources/bind-config/habitat-go.yml")
+	wApp, err := utils.ConvertHabitat("resources/bind-config/webapp.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := framework.CreateHabitat(habitatGo); err != nil {
+	if err := framework.CreateHabitat(wApp); err != nil {
 		t.Fatal(err)
 	}
 
 	// Get Habitat object from Habitat db example.
-	habitatDB, err := utils.ConvertHabitat("resources/bind-config/habitat-postgresql.yml")
+	db, err := utils.ConvertHabitat("resources/bind-config/db.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := framework.CreateHabitat(habitatDB); err != nil {
+	if err := framework.CreateHabitat(db); err != nil {
 		t.Fatal(err)
 	}
 
 	// Get Service object from example file.
-	service, err := utils.ConvertService("resources/bind-config/service.yml")
+	svc, err := utils.ConvertService("resources/bind-config/service.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Create Service.
-	_, err = framework.KubeClient.CoreV1().Services(utils.TestNs).Create(service)
+	_, err = framework.KubeClient.CoreV1().Services(utils.TestNs).Create(svc)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Get Secret object from example file.
-	secret, err := utils.ConvertSecret("resources/bind-config/secret.yml")
+	sec, err := utils.ConvertSecret("resources/bind-config/secret.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Create Secret.
-	_, err = framework.KubeClient.CoreV1().Secrets(utils.TestNs).Create(secret)
+	sec, err = framework.KubeClient.CoreV1().Secrets(utils.TestNs).Create(sec)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(habv1.HabitatNameLabel, habitatGo.ObjectMeta.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, wApp.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
-	if err := framework.WaitForResources(habv1.HabitatNameLabel, habitatDB.ObjectMeta.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, db.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait until endpoints are ready.
-	if err := framework.WaitForEndpoints(service.ObjectMeta.Name); err != nil {
+	if err := framework.WaitForEndpoints(svc.ObjectMeta.Name); err != nil {
 		t.Fatal(err)
 	}
 
-	time.Sleep(waitForPorts)
+	time.Sleep(defaultWaitTime)
 
 	// Get response from Habitat Service.
 	url := fmt.Sprintf("http://%s:30001/", framework.ExternalIP)
-	resp, err := http.Get(url)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		t.Fatal("Habitat Service did not start correctly.")
-	}
-
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	body, err := utils.QueryService(url)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// This msg is set in the config of the kinvolk/bindgo-hab Go Habitat Service.
 	expectedMsg := "hello from port: 4444"
-	actualMsg := string(bodyBytes)
+	actualMsg := body
 	// actualMsg can contain whitespace and newlines or different formatting,
 	// the only thing we need to check is it contains the expectedMsg.
 	if !strings.Contains(actualMsg, expectedMsg) {
 		t.Fatalf("Habitat Service msg does not match one in default.toml. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
 	}
 
+	// Update secret.
+	newPort := "port = 6333"
+
+	sec.Data["user.toml"] = []byte(newPort)
+	if _, err = framework.KubeClient.CoreV1().Secrets(utils.TestNs).Update(sec); err != nil {
+		t.Fatalf("Could not update Secret: \"%s\"", err)
+	}
+
+	// Wait for SecretVolume to be updated.
+	time.Sleep(defaultWaitTime)
+
+	// Check that the port differs after the update.
+	body, err = utils.QueryService(url)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Update the message set in the config of the kinvolk/bindgo-hab Go Habitat Service.
+	expectedMsg = fmt.Sprintf("hello from port: %v", 6333)
+	actualMsg = body
+	// actualMsg can contain whitespace and newlines or different formatting,
+	// the only thing we need to check is it contains the expectedMsg.
+	if !strings.Contains(actualMsg, expectedMsg) {
+		t.Fatalf("Configuration update did not go through. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
+	}
+
 	// Delete Service so it doesn't interfere with other tests.
-	if err := framework.DeleteService(service.ObjectMeta.Name); err != nil {
+	if err := framework.DeleteService(svc.ObjectMeta.Name); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -141,7 +156,7 @@ func TestHabitatDelete(t *testing.T) {
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(habv1.HabitatNameLabel, habitat.ObjectMeta.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, habitat.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
 
@@ -151,7 +166,7 @@ func TestHabitatDelete(t *testing.T) {
 	}
 
 	// Wait for resources to be deleted.
-	if err := framework.WaitForResources(habv1.HabitatNameLabel, habitat.ObjectMeta.Name, 0); err != nil {
+	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, habitat.ObjectMeta.Name, 0); err != nil {
 		t.Fatal(err)
 	}
 

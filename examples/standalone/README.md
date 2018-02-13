@@ -9,4 +9,4 @@ Simply run:
 
   `kubectl create -f examples/standalone/habitat.yml`.
 
-This will deploy an instance of an nginx Habitat service.
+This will deploy an instance of a redis Habitat service.

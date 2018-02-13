@@ -103,3 +103,7 @@ $ helm install --name my-release habitat/habitat-operator -f values.yaml
 ```
 
 > **Tip**: You can use the default [values.yaml](values.yaml)
+
+## Hosting
+
+The Helm chart repository is managed on the [`gh-pages` branch](https://github.com/kinvolk/habitat-operator/tree/gh-pages) and instructions for repository management can be found [here](https://github.com/kinvolk/habitat-operator/tree/gh-pages/helm/charts).
