@@ -12,6 +12,8 @@ Please refer to examples for how to adapt existing manifests.
 
 ### Features & Enhancements
 
+- Add support for passing environment variables to the supervisor
+[#184](https://github.com/kinvolk/habitat-operator/pull/184)
 - Update mount path of `user.toml` config file as per [Habitat change](https://github.com/habitat-sh/habitat/pull/3814)
 - Update `user.toml` path and example images [#172](https://github.com/kinvolk/habitat-operator/pull/172)
 - Use cache for ConfigMaps [#157](https://github.com/kinvolk/habitat-operator/pull/157)
