@@ -2,7 +2,7 @@
 
 This directory hosts all the helm charts related to the habitat-operator.
 
-To add chart for a new release of habitat-operator run the following from the `helm/chart` directory:
+To add chart for a new release of habitat-operator run the following from the `helm/charts` directory:
 
 ```console
 $ git merge master
