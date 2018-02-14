@@ -2,13 +2,6 @@
 
 Installs [habitat-operator](https://github.com/kinvolk/habitat-operator) to manage Habitat services in a Kubernetes cluster.
 
-## TL;DR;
-
-```console
-$ helm repo add habitat https://kinvolk.github.io/habitat-operator/helm/charts/stable/
-$ helm install habitat/habitat-operator
-```
-
 ## Introduction
 
 This chart bootstraps a [habitat-operator](https://github.com/kinvolk/habitat-operator) deployment in a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
@@ -42,6 +35,7 @@ $ helm init --service-account tiller
 To install the chart with the release name `my-release`:
 
 ```console
+$ helm repo add habitat https://kinvolk.github.io/habitat-operator/helm/charts/stable/
 $ helm install --name my-release habitat/habitat-operator
 ```
 
