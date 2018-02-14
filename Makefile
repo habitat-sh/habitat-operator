@@ -28,13 +28,16 @@ clean-test:
 	kubectl delete clusterrole habitat-operator
 
 update-version:
-	find examples helm -name "*.yml" -o -name "*.yaml" -type f \
+	find examples -name "*.yml" -type f \
 		-exec sed -i.bak \
 		-e "s/habitat-operator:.*/habitat-operator:v$$(cat VERSION)/g" \
+		'{}' \;
+	find helm -name "*.yaml" -type f \
+		-exec sed -i.bak \
 		-e "s/tag:.*/tag: v$$(cat VERSION)/g" \
 		-e "s/version:.*/version: $$(cat VERSION)/g" \
 		'{}' \;
-	find examples helm -name "*.yml.bak" -o -name "*.yaml.bak" -type f \
+	find examples helm -regex '.*\.ya?ml$$.bak' -type f \
 		-exec rm '{}' \;
 
 .PHONY: build test linux image e2e clean-test update-version
