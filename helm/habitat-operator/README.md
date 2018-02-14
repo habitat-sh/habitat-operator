@@ -27,27 +27,6 @@ $ kubectl -n kube-system create sa tiller
 
 2. Create a ClusterRoleBinding for Tiller
 
-#### kubectl v1.5.x
-
-```console
-$ cat <<EOF | kubectl create -f -
-apiVersion: rbac.authorization.k8s.io/v1alpha1
-kind: ClusterRoleBinding
-metadata:
-  name: tiller
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-  - kind: ServiceAccount
-    name: tiller
-    namespace: kube-system
-EOF
-```
-
-#### kubectl >= v1.6.x
-
 ```console
 $ kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
 ```
