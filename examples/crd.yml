@@ -7,7 +7,7 @@ spec:
   # group name to use for REST API: /apis/<group>/<version>
   group: habitat.sh
   # version name to use for REST API: /apis/<group>/<version>
-  version: v1
+  version: v1beta1
   # either Namespaced or Cluster
   scope: Namespaced
   names:

@@ -1,5 +1,10 @@
 # Habitat operator CHANGELOG
 
+## [v0.5.1](https://github.com/kinvolk/habitat-operator/tree/v0.5.1) (14-2-2018)
+[Full changelog](https://github.com/kinvolk/habitat-operator/compare/v0.5.0...v0.5.1)
+
+- Fix versions in example files [#188](https://github.com/kinvolk/habitat-operator/pull/188)
+
 ## [v0.5.0](https://github.com/kinvolk/habitat-operator/tree/v0.5.0) (13-2-2018)
 [Full changelog](https://github.com/kinvolk/habitat-operator/compare/v0.4.0...v0.5.0)
 
