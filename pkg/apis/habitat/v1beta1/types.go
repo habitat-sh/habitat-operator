@@ -15,6 +15,7 @@
 package v1beta1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -46,6 +47,10 @@ type HabitatSpec struct {
 	// Image is the Docker image of the Habitat Service.
 	Image   string  `json:"image"`
 	Service Service `json:"service"`
+	// Env is a list of environment variables.
+	// The EnvVar type is documented at https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.9/#envvar-v1-core.
+	// Optional.
+	Env []corev1.EnvVar `json:"env,omitempty"`
 }
 
 type HabitatStatus struct {

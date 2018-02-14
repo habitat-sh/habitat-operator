@@ -1,0 +1,16 @@
+apiVersion: habitat.sh/v1beta1
+kind: Habitat
+metadata:
+  name: example-env-vars-habitat
+spec:
+  # the core/redis habitat service packaged as a Docker image
+  image: kinvolk/redis-hab
+  count: 1
+  env:
+    - name: HAB_REDIS
+      value: '{ "port": "6999" }'
+  service:
+    name: redis
+    topology: standalone
+    # if not present, defaults to "default"
+    group: foobar
