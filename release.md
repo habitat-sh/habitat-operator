@@ -29,7 +29,7 @@ In the root directory of the repository generate the Docker image and push it to
 
 ## Generate the Helm chart
 
-Switch to `gh-pages` branch and follow the steps in the `helm/charts/README.md` file.
+Switch to `gh-pages` branch and follow the steps in the `README.md` file.
 
 ## Do the release
 
