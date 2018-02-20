@@ -2,18 +2,13 @@
 
 Installs [habitat-operator](https://github.com/kinvolk/habitat-operator) to manage Habitat services in a Kubernetes cluster.
 
-## TL;DR;
-
-```console
-$ helm repo add habitat https://kinvolk.github.io/habitat-operator/helm/charts/stable/
-$ helm install habitat/habitat-operator
-```
-
 ## Introduction
 
 This chart bootstraps a [habitat-operator](https://github.com/kinvolk/habitat-operator) deployment in a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
 
 ## Prerequisites
+
+Note: If you have Kubernetes and Helm installed, skip to [this section](#Installing the Chart).
 
 See [Habitat Operator's README](https://github.com/kinvolk/habitat-operator/blob/master/README.md).
 
@@ -27,32 +22,12 @@ $ kubectl -n kube-system create sa tiller
 
 2. Create a ClusterRoleBinding for Tiller
 
-#### kubectl v1.5.x
-
-```console
-$ cat <<EOF | kubectl create -f -
-apiVersion: rbac.authorization.k8s.io/v1alpha1
-kind: ClusterRoleBinding
-metadata:
-  name: tiller
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-  - kind: ServiceAccount
-    name: tiller
-    namespace: kube-system
-EOF
-```
-
-#### kubectl >= v1.6.x
-
 ```console
 $ kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
 ```
 
 3. Install Tiller, specifying the new ServiceAccount
+
 ```console
 $ helm init --service-account tiller
 ```
@@ -62,6 +37,7 @@ $ helm init --service-account tiller
 To install the chart with the release name `my-release`:
 
 ```console
+$ helm repo add habitat https://kinvolk.github.io/habitat-operator/helm/charts/stable/
 $ helm install --name my-release habitat/habitat-operator
 ```
 
