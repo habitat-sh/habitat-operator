@@ -8,8 +8,7 @@ This chart bootstraps a [habitat-operator](https://github.com/kinvolk/habitat-op
 
 ## Prerequisites
 
-Note: If you have Kubernetes and Helm installed, skip to [this
-section](#Installing the Chart).
+Note: If you have Kubernetes and Helm installed, skip to [this section](#Installing the Chart).
 
 See [Habitat Operator's README](https://github.com/kinvolk/habitat-operator/blob/master/README.md).
 
