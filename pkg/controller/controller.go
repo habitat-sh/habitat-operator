@@ -28,6 +28,7 @@ import (
 	appsv1beta1 "k8s.io/api/apps/v1beta1"
 	apiv1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -848,6 +849,42 @@ func (hc *HabitatController) conform(key string) error {
 		level.Debug(hc.logger).Log("msg", "deployment already existed", "name", deployment.Name)
 	} else {
 		level.Info(hc.logger).Log("msg", "created deployment", "name", deployment.Name)
+	}
+
+	// Create PVC if the flag is enabled.
+	if h.Spec.Persistence.Enabled {
+		q, err := resource.ParseQuantity(h.Spec.Persistence.Size)
+		if err != nil {
+			return err
+		}
+
+		pvc := &apiv1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      h.Name,
+				Namespace: h.Namespace,
+				Labels: map[string]string{
+					habv1beta1.HabitatLabel: "true",
+				},
+			},
+			Spec: apiv1.PersistentVolumeClaimSpec{
+				AccessModes: []apiv1.PersistentVolumeAccessMode{
+					"ReadWriteOnce",
+				},
+				Resources: apiv1.ResourceRequirements{
+					Requests: apiv1.ResourceList{
+						"storage": q,
+					},
+				},
+			},
+		}
+
+		if _, err = hc.config.KubernetesClientset.CoreV1().PersistentVolumeClaims(h.Namespace).Create(pvc); err != nil {
+			if apierrors.IsAlreadyExists(err) {
+				level.Debug(hc.logger).Log("msg", "PVC already existed", "name", pvc.Name)
+			} else {
+				return err
+			}
+		}
 	}
 
 	// Handle creation/updating of peer IP ConfigMap.
