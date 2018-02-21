@@ -869,6 +869,10 @@ func (hc *HabitatController) conform(key string) error {
 
 	level.Debug(hc.logger).Log("msg", "validated object")
 
+	if err := hc.handlePVC(h); err != nil {
+		return err
+	}
+
 	deployment, err := hc.newDeployment(h)
 	if err != nil {
 		return err
@@ -889,10 +893,6 @@ func (hc *HabitatController) conform(key string) error {
 		level.Debug(hc.logger).Log("msg", "deployment already existed", "name", deployment.Name)
 	} else {
 		level.Info(hc.logger).Log("msg", "created deployment", "name", deployment.Name)
-	}
-
-	if err := hc.handlePVC(h); err != nil {
-		return err
 	}
 
 	// Handle creation/updating of peer IP ConfigMap.
