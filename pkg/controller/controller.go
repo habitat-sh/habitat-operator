@@ -50,6 +50,8 @@ const (
 	peerFile      = "peer-watch-file"
 	configMapName = peerFile
 
+	persistentVolumeName = "persistent"
+
 	// The key under which the ring key is stored in the Kubernetes Secret.
 	ringSecretKey = "ring-key"
 	// The extension of the key file.
@@ -740,6 +742,26 @@ func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.
 
 		base.Spec.Template.Spec.Containers[0].VolumeMounts = append(base.Spec.Template.Spec.Containers[0].VolumeMounts, *secretVolumeMount)
 		base.Spec.Template.Spec.Volumes = append(base.Spec.Template.Spec.Volumes, *secretVolume)
+	}
+
+	// Mount Persistent Volume, if requesed.
+	if h.Spec.Persistence.Enabled {
+		v := &apiv1.Volume{
+			Name: persistentVolumeName,
+			VolumeSource: apiv1.VolumeSource{
+				PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
+					ClaimName: h.Name,
+				},
+			},
+		}
+
+		vm := &apiv1.VolumeMount{
+			Name:      persistentVolumeName,
+			MountPath: h.Spec.Persistence.MountPath,
+		}
+
+		base.Spec.Template.Spec.Containers[0].VolumeMounts = append(base.Spec.Template.Spec.Containers[0].VolumeMounts, *vm)
+		base.Spec.Template.Spec.Volumes = append(base.Spec.Template.Spec.Volumes, *v)
 	}
 
 	// Handle ring key, if one is specified.

@@ -58,6 +58,7 @@ type HabitatSpec struct {
 type Persistence struct {
 	Enabled bool `json:"enabled"`
 	Size string `json:"size"`
+	MountPath string `json:"mountPath"`
 }
 
 type HabitatStatus struct {
