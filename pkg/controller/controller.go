@@ -550,8 +550,8 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 }
 
 func (hc *HabitatController) handlePVC(h *habv1beta1.Habitat) error {
-	// Create PVC if the flag is enabled.
-	if h.Spec.Persistence.Enabled {
+	// Create PVC if the flag is present.
+	if h.Spec.Persistence != nil {
 		q, err := resource.ParseQuantity(h.Spec.Persistence.Size)
 		if err != nil {
 			return err
@@ -744,8 +744,8 @@ func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.
 		base.Spec.Template.Spec.Volumes = append(base.Spec.Template.Spec.Volumes, *secretVolume)
 	}
 
-	// Mount Persistent Volume, if requesed.
-	if h.Spec.Persistence.Enabled {
+	// Mount Persistent Volume, if requested.
+	if h.Spec.Persistence != nil {
 		v := &apiv1.Volume{
 			Name: persistentVolumeName,
 			VolumeSource: apiv1.VolumeSource{
