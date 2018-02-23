@@ -52,12 +52,11 @@ type HabitatSpec struct {
 	// Optional.
 	Env []corev1.EnvVar `json:"env,omitempty"`
 	// Optional.
-	Persistence Persistence `json:"persistence,omitempty"`
+	Persistence *Persistence `json:"persistence,omitempty"`
 }
 
 type Persistence struct {
-	Enabled bool `json:"enabled"`
-	Size string `json:"size"`
+	Size      string `json:"size"`
 	MountPath string `json:"mountPath"`
 }
 
