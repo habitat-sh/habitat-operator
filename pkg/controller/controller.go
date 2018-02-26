@@ -74,14 +74,14 @@ type HabitatController struct {
 	// delay, so that jobs in a crashing loop don't fill the queue.
 	queue workqueue.RateLimitingInterface
 
-	habInformer    cache.SharedIndexInformer
-	deployInformer cache.SharedIndexInformer
-	cmInformer     cache.SharedIndexInformer
+	habInformer cache.SharedIndexInformer
+	stsInformer cache.SharedIndexInformer
+	cmInformer  cache.SharedIndexInformer
 
 	// cache.InformerSynced returns true if the store has been synced at least once.
-	habInformerSynced    cache.InformerSynced
-	deployInformerSynced cache.InformerSynced
-	cmInformerSynced     cache.InformerSynced
+	habInformerSynced cache.InformerSynced
+	stsInformerSynced cache.InformerSynced
+	cmInformerSynced  cache.InformerSynced
 }
 
 type Config struct {
@@ -121,16 +121,16 @@ func (hc *HabitatController) Run(workers int, ctx context.Context) error {
 	level.Info(hc.logger).Log("msg", "Watching Habitat objects")
 
 	hc.cacheHabitats()
-	hc.cacheDeployments()
+	hc.cacheStatefulSets()
 	hc.cacheConfigMaps()
 	hc.watchPods(ctx)
 
 	go hc.habInformer.Run(ctx.Done())
-	go hc.deployInformer.Run(ctx.Done())
+	go hc.stsInformer.Run(ctx.Done())
 	go hc.cmInformer.Run(ctx.Done())
 
 	// Wait for caches to be synced before starting workers.
-	if !cache.WaitForCacheSync(ctx.Done(), hc.habInformerSynced, hc.deployInformerSynced, hc.cmInformerSynced) {
+	if !cache.WaitForCacheSync(ctx.Done(), hc.habInformerSynced, hc.stsInformerSynced, hc.cmInformerSynced) {
 		return nil
 	}
 	level.Debug(hc.logger).Log("msg", "Caches synced")
@@ -174,27 +174,27 @@ func (hc *HabitatController) cacheHabitats() {
 	hc.habInformerSynced = hc.habInformer.HasSynced
 }
 
-func (hc *HabitatController) cacheDeployments() {
+func (hc *HabitatController) cacheStatefulSets() {
 	source := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.AppsV1beta1().RESTClient(),
-		"deployments",
+		"statefulsets",
 		apiv1.NamespaceAll,
 		labelListOptions())
 
-	hc.deployInformer = cache.NewSharedIndexInformer(
+	hc.stsInformer = cache.NewSharedIndexInformer(
 		source,
-		&appsv1beta1.Deployment{},
+		&appsv1beta1.StatefulSet{},
 		resyncPeriod,
 		cache.Indexers{},
 	)
 
-	hc.deployInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    hc.handleDeployAdd,
-		UpdateFunc: hc.handleDeployUpdate,
-		DeleteFunc: hc.handleDeployDelete,
+	hc.stsInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    hc.handleStsAdd,
+		UpdateFunc: hc.handleStsUpdate,
+		DeleteFunc: hc.handleStsDelete,
 	})
 
-	hc.deployInformerSynced = hc.deployInformer.HasSynced
+	hc.stsInformerSynced = hc.stsInformer.HasSynced
 }
 
 func (hc *HabitatController) cacheConfigMaps() {
@@ -281,49 +281,49 @@ func (hc *HabitatController) handleHabDelete(obj interface{}) {
 	hc.enqueue(h)
 }
 
-func (hc *HabitatController) handleDeployAdd(obj interface{}) {
-	d, ok := obj.(*appsv1beta1.Deployment)
+func (hc *HabitatController) handleStsAdd(obj interface{}) {
+	d, ok := obj.(*appsv1beta1.StatefulSet)
 	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to type assert Deployment", "obj", obj)
+		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", obj)
 		return
 	}
 
 	h, err := hc.getHabitatFromLabeledResource(d)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+		level.Error(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", d.Name)
 		return
 	}
 
 	hc.enqueue(h)
 }
 
-func (hc *HabitatController) handleDeployUpdate(oldObj, newObj interface{}) {
-	d, ok := newObj.(*appsv1beta1.Deployment)
+func (hc *HabitatController) handleStsUpdate(oldObj, newObj interface{}) {
+	d, ok := newObj.(*appsv1beta1.StatefulSet)
 	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to type assert deployment", "obj", newObj)
+		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", newObj)
 		return
 	}
 
 	h, err := hc.getHabitatFromLabeledResource(d)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+		level.Error(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", d.Name)
 		return
 	}
 
 	hc.enqueue(h)
 }
 
-func (hc *HabitatController) handleDeployDelete(obj interface{}) {
-	d, ok := obj.(*appsv1beta1.Deployment)
+func (hc *HabitatController) handleStsDelete(obj interface{}) {
+	d, ok := obj.(*appsv1beta1.StatefulSet)
 	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to type assert deployment", "obj", obj)
+		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", obj)
 		return
 	}
 
 	h, err := hc.getHabitatFromLabeledResource(d)
 	if err != nil {
 		// Could not find Habitat, it must have already been removed.
-		level.Debug(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+		level.Debug(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", d.Name)
 		return
 	}
 
@@ -590,13 +590,13 @@ func (hc *HabitatController) handlePVC(h *habv1beta1.Habitat) error {
 }
 
 func (hc *HabitatController) handleHabitatDeletion(key string) error {
-	// Delete deployment.
-	deploymentNS, deploymentName, err := cache.SplitMetaNamespaceKey(key)
+	// Delete StatefulSet.
+	stsNS, stsName, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		return err
 	}
 
-	deploymentsClient := hc.config.KubernetesClientset.AppsV1beta1().Deployments(deploymentNS)
+	stsClient := hc.config.KubernetesClientset.AppsV1beta1().StatefulSets(stsNS)
 
 	// With this policy, dependent resources will be deleted, but we don't wait
 	// for that to happen.
@@ -605,17 +605,17 @@ func (hc *HabitatController) handleHabitatDeletion(key string) error {
 		PropagationPolicy: &deletePolicy,
 	}
 
-	if err := deploymentsClient.Delete(deploymentName, deleteOptions); err != nil {
+	if err := stsClient.Delete(stsName, deleteOptions); err != nil {
 		level.Error(hc.logger).Log("msg", err)
 		return err
 	}
 
-	level.Info(hc.logger).Log("msg", "deleted deployment", "name", deploymentName)
+	level.Info(hc.logger).Log("msg", "deleted StatefulSet", "name", stsName)
 
 	return nil
 }
 
-func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.Deployment, error) {
+func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1.StatefulSet, error) {
 	// This value needs to be passed as a *int32, so we convert it, assign it to a
 	// variable and afterwards pass a pointer to it.
 	count := int32(h.Spec.Count)
@@ -655,11 +655,11 @@ func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.
 			"--bind", bindArg)
 	}
 
-	base := &appsv1beta1.Deployment{
+	base := &appsv1beta1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: h.Name,
 		},
-		Spec: appsv1beta1.DeploymentSpec{
+		Spec: appsv1beta1.StatefulSetSpec{
 			Replicas: &count,
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
@@ -865,7 +865,7 @@ func (hc *HabitatController) processNextItem() bool {
 
 // conform is where the reconciliation takes place.
 // It is invoked when any of the following resources get created, updated or deleted:
-// Habitat, Pod, Deployment, ConfigMap.
+// Habitat, Pod, StatefulSet, ConfigMap.
 func (hc *HabitatController) conform(key string) error {
 	obj, exists, err := hc.habInformer.GetStore().GetByKey(key)
 	if err != nil {
@@ -895,26 +895,26 @@ func (hc *HabitatController) conform(key string) error {
 		return err
 	}
 
-	deployment, err := hc.newDeployment(h)
+	sts, err := hc.newStatefulSet(h)
 	if err != nil {
 		return err
 	}
 
-	// Create Deployment, if it doesn't already exist.
-	if _, err := hc.config.KubernetesClientset.AppsV1beta1().Deployments(h.Namespace).Create(deployment); err != nil {
-		// Was the error due to the Deployment already existing?
+	// Create StatefulSet, if it doesn't already exist.
+	if _, err := hc.config.KubernetesClientset.AppsV1beta1().StatefulSets(h.Namespace).Create(sts); err != nil {
+		// Was the error due to the StatefulSet already existing?
 		if apierrors.IsAlreadyExists(err) {
 			// If yes, update it.
-			if _, err := hc.config.KubernetesClientset.AppsV1beta1().Deployments(h.Namespace).Update(deployment); err != nil {
+			if _, err := hc.config.KubernetesClientset.AppsV1beta1().StatefulSets(h.Namespace).Update(sts); err != nil {
 				return err
 			}
 		} else {
 			return err
 		}
 
-		level.Debug(hc.logger).Log("msg", "deployment already existed", "name", deployment.Name)
+		level.Debug(hc.logger).Log("msg", "StatefulSet already existed", "name", sts.Name)
 	} else {
-		level.Info(hc.logger).Log("msg", "created deployment", "name", deployment.Name)
+		level.Info(hc.logger).Log("msg", "created StatefulSet", "name", sts.Name)
 	}
 
 	// Handle creation/updating of peer IP ConfigMap.
