@@ -973,6 +973,14 @@ func newConfigMap(ip string, h *habv1beta1.Habitat) *apiv1.ConfigMap {
 			Labels: map[string]string{
 				habv1beta1.HabitatLabel: "true",
 			},
+			OwnerReferences: []metav1.OwnerReference{
+				metav1.OwnerReference{
+					APIVersion: "habitat.sh/v1beta1",
+					Kind:       "Habitat",
+					Name:       h.Name,
+					UID:        h.UID,
+				},
+			},
 		},
 		Data: map[string]string{
 			peerFile: ip,
