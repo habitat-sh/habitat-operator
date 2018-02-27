@@ -1002,6 +1002,14 @@ func (hc *HabitatController) newHeadlessService(h *habv1beta1.Habitat) *apiv1.Se
 			Labels: map[string]string{
 				habv1beta1.HabitatNameLabel: h.Name,
 			},
+			OwnerReferences: []metav1.OwnerReference{
+				metav1.OwnerReference{
+					APIVersion: "apps/v1beta1",
+					Kind:       "StatefulSet",
+					Name:       h.Name,
+					UID:        h.UID,
+				},
+			},
 		},
 		Spec: apiv1.ServiceSpec{
 			Ports: []apiv1.ServicePort{
