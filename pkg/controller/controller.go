@@ -874,6 +874,20 @@ func (hc *HabitatController) conform(key string) error {
 
 	level.Debug(hc.logger).Log("msg", "validated object")
 
+	svc := hc.newHeadlessService(h)
+
+	// Create Headless Service, if it doesn't already exist.
+	if _, err := hc.config.KubernetesClientset.CoreV1().Services(h.Namespace).Create(svc); err != nil {
+		// Was the error due to the Service already existing?
+		if !apierrors.IsAlreadyExists(err) {
+			return err
+		}
+
+		level.Debug(hc.logger).Log("msg", "Service already existed", "name", svc.Name)
+	} else {
+		level.Info(hc.logger).Log("msg", "created Service", "name", svc.Name)
+	}
+
 	sts, err := hc.newStatefulSet(h)
 	if err != nil {
 		return err
@@ -976,6 +990,31 @@ func newConfigMap(ip string, h *habv1beta1.Habitat) *apiv1.ConfigMap {
 		},
 		Data: map[string]string{
 			peerFile: ip,
+		},
+	}
+}
+
+func (hc *HabitatController) newHeadlessService(h *habv1beta1.Habitat) *apiv1.Service {
+	return &apiv1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: h.Name,
+			Labels: map[string]string{
+				habv1beta1.HabitatNameLabel: h.Name,
+			},
+		},
+		Spec: apiv1.ServiceSpec{
+			Ports: []apiv1.ServicePort{
+				apiv1.ServicePort{
+					// TODO change this
+					Name: "foo",
+					Port: 9999,
+				},
+			},
+			ClusterIP: "None",
+			Selector: map[string]string{
+				habv1beta1.HabitatLabel:     "true",
+				habv1beta1.HabitatNameLabel: h.Name,
+			},
 		},
 	}
 }
