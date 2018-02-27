@@ -625,7 +625,8 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 					habv1beta1.HabitatNameLabel: h.Name,
 				},
 			},
-			Replicas: &count,
+			ServiceName: h.Name,
+			Replicas:    &count,
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
