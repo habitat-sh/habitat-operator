@@ -620,6 +620,11 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 			Name: h.Name,
 		},
 		Spec: appsv1beta1.StatefulSetSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					habv1beta1.HabitatNameLabel: h.Name,
+				},
+			},
 			Replicas: &count,
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
