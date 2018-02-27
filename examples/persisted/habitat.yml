@@ -20,7 +20,7 @@ metadata:
 spec:
   # the core/redis habitat service packaged as a Docker image
   image: kinvolk/redis-hab
-  count: 1
+  count: 3
   persistence:
     size: 1Gi
     # if not present, defaults to ""
@@ -28,6 +28,6 @@ spec:
     mountPath: /tmp/yeah
   service:
     name: redis
-    topology: standalone
+    topology: leader
     # if not present, defaults to "default"
     group: foobar
