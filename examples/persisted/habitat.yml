@@ -26,6 +26,9 @@ spec:
     # if not present, defaults to ""
     # storageClassName: example-storage
     mountPath: /tmp/yeah
+  env:
+    - name: HAB_REDIS
+      value: '{ "protected-mode": "no" }'
   service:
     name: redis
     topology: leader
