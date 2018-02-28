@@ -725,28 +725,27 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 			return nil, err
 		}
 
-		template := apiv1.PersistentVolumeClaim{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      persistentVolumeName,
-				Namespace: h.Namespace,
-				Labels: map[string]string{
-					habv1beta1.HabitatLabel: "true",
+		base.Spec.VolumeClaimTemplates = []apiv1.PersistentVolumeClaim{
+			apiv1.PersistentVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      persistentVolumeName,
+					Namespace: h.Namespace,
+					Labels: map[string]string{
+						habv1beta1.HabitatLabel: "true",
+					},
 				},
-			},
-			Spec: apiv1.PersistentVolumeClaimSpec{
-				AccessModes: []apiv1.PersistentVolumeAccessMode{
-					apiv1.ReadWriteOnce,
-				},
-				Resources: apiv1.ResourceRequirements{
-					Requests: apiv1.ResourceList{
-						apiv1.ResourceStorage: q,
+				Spec: apiv1.PersistentVolumeClaimSpec{
+					AccessModes: []apiv1.PersistentVolumeAccessMode{
+						apiv1.ReadWriteOnce,
+					},
+					Resources: apiv1.ResourceRequirements{
+						Requests: apiv1.ResourceList{
+							apiv1.ResourceStorage: q,
+						},
 					},
 				},
 			},
 		}
-
-		base.Spec.VolumeClaimTemplates = make([]apiv1.PersistentVolumeClaim, 1)
-		base.Spec.VolumeClaimTemplates[0] = template
 
 		// Stateful services are started/stopped in sequence.
 		base.Spec.PodManagementPolicy = appsv1beta1.OrderedReadyPodManagement
