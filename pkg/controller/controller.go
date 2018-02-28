@@ -626,6 +626,8 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 				},
 			},
 			Replicas: &count,
+			// Stateless Pods are allowed to be started/terminated in parallel
+			PodManagementPolicy: appsv1beta1.ParallelPodManagement,
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
@@ -745,6 +747,9 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 
 		base.Spec.VolumeClaimTemplates = make([]apiv1.PersistentVolumeClaim, 1)
 		base.Spec.VolumeClaimTemplates[0] = template
+
+		// Stateful services are started/stopped in sequence.
+		base.Spec.PodManagementPolicy = appsv1beta1.OrderedReadyPodManagement
 	}
 
 	// Handle ring key, if one is specified.
