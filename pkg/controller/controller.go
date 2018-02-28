@@ -746,9 +746,6 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 				},
 			},
 		}
-
-		// Stateful services are started/stopped in sequence.
-		base.Spec.PodManagementPolicy = appsv1beta1.OrderedReadyPodManagement
 	}
 
 	// Handle ring key, if one is specified.
