@@ -735,11 +735,11 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 			},
 			Spec: apiv1.PersistentVolumeClaimSpec{
 				AccessModes: []apiv1.PersistentVolumeAccessMode{
-					"ReadWriteOnce",
+					apiv1.ReadWriteOnce,
 				},
 				Resources: apiv1.ResourceRequirements{
 					Requests: apiv1.ResourceList{
-						"storage": q,
+						apiv1.ResourceStorage: q,
 					},
 				},
 			},
