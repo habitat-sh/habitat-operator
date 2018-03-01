@@ -17,6 +17,7 @@ The following is a description of the Habitat operator API. To see manifest exam
 | count | Count is the amount of Services that should start in Habitat. | int | true |
 | image | Image is the Docker image of the Habitat Service. | string | true |
 | service |  | [Service](#service) | true |
+| env | A list of environment variables | [][EnvVar](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.9/#envvar-v1-core) | false
 
 ## Service
 
@@ -27,7 +28,7 @@ The following is a description of the Habitat operator API. To see manifest exam
 | configSecretName | configSecretName is the name of the Kubernetes Secret containing the config file - user.toml - that the user has previously created. Habitat will use it for initial configuration of the service. | string | false |
 | ringSecretName | The name of the Kubernetes Secret that contains the ring key, which encrypts the communication between Habitat supervisors. | string | false |
 | bind | When one service connects to another forming a producer/consumer relationship. Able to specify multiple binds. | [][Bind](#bind) | false |
-| env | A list of environment variables | [][EnvVar](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.9/#envvar-v1-core) | false
+| name | A name part of the Habitat package identification (so it is "nginx" for "core/nginx/1.11.10/20171014214153"). This field is used to mount the `user.toml` file in the correct directory under `/hab/user/` in the Pod. | string | true |
 
 ## Bind
 
