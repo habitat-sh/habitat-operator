@@ -1,18 +1,3 @@
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: example-persistence
-  labels:
-    habitat: "true"
-spec:
-  capacity:
-    storage: 5Gi
-  # storageClassName: example-storage
-  accessModes:
-    - ReadWriteOnce
-  hostPath:
-    path: /tmp/k8spv
----
 apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
