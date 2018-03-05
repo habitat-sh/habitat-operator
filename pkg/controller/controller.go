@@ -78,12 +78,14 @@ type HabitatController struct {
 	stsInformer cache.SharedIndexInformer
 	cmInformer  cache.SharedIndexInformer
 	pvInformer  cache.SharedIndexInformer
+	pvcInformer cache.SharedIndexInformer
 
 	// cache.InformerSynced returns true if the store has been synced at least once.
 	habInformerSynced cache.InformerSynced
 	stsInformerSynced cache.InformerSynced
 	cmInformerSynced  cache.InformerSynced
 	pvInformerSynced  cache.InformerSynced
+	pvcInformerSynced cache.InformerSynced
 }
 
 type Config struct {
@@ -126,12 +128,14 @@ func (hc *HabitatController) Run(workers int, ctx context.Context) error {
 	hc.cacheStatefulSets()
 	hc.cacheConfigMaps()
 	hc.cachePersistentVolumes()
+	hc.cachePersistentVolumeClaims()
 	hc.watchPods(ctx)
 
 	go hc.habInformer.Run(ctx.Done())
 	go hc.stsInformer.Run(ctx.Done())
 	go hc.cmInformer.Run(ctx.Done())
 	go hc.pvInformer.Run(ctx.Done())
+	go hc.pvcInformer.Run(ctx.Done())
 
 	// Wait for caches to be synced before starting workers.
 	if !cache.WaitForCacheSync(ctx.Done(), hc.habInformerSynced, hc.stsInformerSynced, hc.cmInformerSynced) {
@@ -243,6 +247,27 @@ func (hc *HabitatController) cachePersistentVolumes() {
 	})
 
 	hc.cmInformerSynced = hc.pvInformer.HasSynced
+}
+func (hc *HabitatController) cachePersistentVolumeClaims() {
+	source := newListWatchFromClientWithLabels(
+		hc.config.KubernetesClientset.CoreV1().RESTClient(),
+		"persistentvolumeclaims",
+		apiv1.NamespaceAll,
+		labelListOptions())
+
+	hc.cmInformer = cache.NewSharedIndexInformer(
+		source,
+		&apiv1.PersistentVolumeClaim{},
+		resyncPeriod,
+		cache.Indexers{},
+	)
+
+	hc.cmInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		UpdateFunc: hc.handlePVCUpdate,
+		DeleteFunc: hc.handlePVCDelete,
+	})
+
+	hc.cmInformerSynced = hc.pvcInformer.HasSynced
 }
 
 func (hc *HabitatController) watchPods(ctx context.Context) {
@@ -411,6 +436,46 @@ func (hc *HabitatController) handlePVDelete(obj interface{}) {
 	} else {
 		level.Error(hc.logger).Log("msg", "A PVC has lost its PersistentVolume", "name", pv.Name)
 	}
+}
+
+func (hc *HabitatController) checkPVC(pvc *apiv1.PersistentVolumeClaim) {
+	// Find out if there's a Habitat object around
+	// If so, we have a problem.
+	// TODO we might use an ownerref to find the STS here
+	key := fmt.Sprintf("%s/%s", pvc.Namespace, pvc.Labels[habv1beta1.HabitatNameLabel])
+
+	_, exists, err := hc.habInformer.GetStore().GetByKey(key)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", "Failed to get key in Store", "obj", key)
+		return
+	} else if !exists {
+		level.Debug(hc.logger).Log("msg", "No matching Habitat found for PVC", "name", pvc.Name)
+		return
+	} else {
+		level.Error(hc.logger).Log("msg", "A PVC has lost its PersistentVolume", "name", pvc.Name)
+	}
+}
+
+func (hc *HabitatController) handlePVCUpdate(oldObj, newObj interface{}) {
+	pvc, ok := newObj.(*apiv1.PersistentVolumeClaim)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert PersistentVolumeClaim", "obj", newObj)
+		return
+	}
+
+	if pvc.Status.Phase == apiv1.ClaimLost {
+		hc.checkPVC(pvc)
+	}
+}
+
+func (hc *HabitatController) handlePVCDelete(obj interface{}) {
+	pvc, ok := obj.(*apiv1.PersistentVolumeClaim)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert PersistentVolumeClaim", "obj", obj)
+		return
+	}
+
+	hc.checkPVC(pvc)
 }
 
 func (hc *HabitatController) handlePodAdd(obj interface{}) {
