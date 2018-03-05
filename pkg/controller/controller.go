@@ -98,7 +98,7 @@ func New(config Config, logger log.Logger) (*HabitatController, error) {
 		return nil, errors.New("invalid controller config: no KubernetesClientset")
 	}
 	if config.Scheme == nil {
-		return nil, errors.New("invalid controller config: no Schema")
+		return nil, errors.New("invalid controller config: no Scheme")
 	}
 	if logger == nil {
 		return nil, errors.New("invalid controller config: no logger")
