@@ -1,0 +1,33 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: example-persistence
+  labels:
+    habitat: "true"
+spec:
+  capacity:
+    storage: 5Gi
+  # storageClassName: example-storage
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /tmp/k8spv
+---
+apiVersion: habitat.sh/v1beta1
+kind: Habitat
+metadata:
+  name: example-persistent-habitat
+spec:
+  # the core/redis habitat service packaged as a Docker image
+  image: kinvolk/redis-hab
+  count: 1
+  persistence:
+    size: 1Gi
+    # if not present, defaults to ""
+    # storageClassName: example-storage
+    mountPath: /tmp/yeah
+  service:
+    name: redis
+    topology: standalone
+    # if not present, defaults to "default"
+    group: foobar

@@ -28,6 +28,7 @@ import (
 	appsv1beta1 "k8s.io/api/apps/v1beta1"
 	apiv1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -48,6 +49,8 @@ const (
 	peerFilename  = "peer-ip"
 	peerFile      = "peer-watch-file"
 	configMapName = peerFile
+
+	persistentVolumeName = "persistent"
 
 	// The key under which the ring key is stored in the Kubernetes Secret.
 	ringSecretKey = "ring-key"
@@ -546,6 +549,46 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 	return nil
 }
 
+func (hc *HabitatController) handlePVC(h *habv1beta1.Habitat) error {
+	// Create PVC if the flag is present.
+	if h.Spec.Persistence != nil {
+		q, err := resource.ParseQuantity(h.Spec.Persistence.Size)
+		if err != nil {
+			return err
+		}
+
+		pvc := &apiv1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      h.Name,
+				Namespace: h.Namespace,
+				Labels: map[string]string{
+					habv1beta1.HabitatLabel: "true",
+				},
+			},
+			Spec: apiv1.PersistentVolumeClaimSpec{
+				AccessModes: []apiv1.PersistentVolumeAccessMode{
+					"ReadWriteOnce",
+				},
+				Resources: apiv1.ResourceRequirements{
+					Requests: apiv1.ResourceList{
+						"storage": q,
+					},
+				},
+			},
+		}
+
+		if _, err = hc.config.KubernetesClientset.CoreV1().PersistentVolumeClaims(h.Namespace).Create(pvc); err != nil {
+			if apierrors.IsAlreadyExists(err) {
+				level.Debug(hc.logger).Log("msg", "PVC already existed", "name", pvc.Name)
+			} else {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func (hc *HabitatController) handleHabitatDeletion(key string) error {
 	// Delete deployment.
 	deploymentNS, deploymentName, err := cache.SplitMetaNamespaceKey(key)
@@ -701,6 +744,26 @@ func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.
 		base.Spec.Template.Spec.Volumes = append(base.Spec.Template.Spec.Volumes, *secretVolume)
 	}
 
+	// Mount Persistent Volume, if requested.
+	if h.Spec.Persistence != nil {
+		v := &apiv1.Volume{
+			Name: persistentVolumeName,
+			VolumeSource: apiv1.VolumeSource{
+				PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{
+					ClaimName: h.Name,
+				},
+			},
+		}
+
+		vm := &apiv1.VolumeMount{
+			Name:      persistentVolumeName,
+			MountPath: h.Spec.Persistence.MountPath,
+		}
+
+		base.Spec.Template.Spec.Containers[0].VolumeMounts = append(base.Spec.Template.Spec.Containers[0].VolumeMounts, *vm)
+		base.Spec.Template.Spec.Volumes = append(base.Spec.Template.Spec.Volumes, *v)
+	}
+
 	// Handle ring key, if one is specified.
 	if ringSecretName := h.Spec.Service.RingSecretName; ringSecretName != "" {
 		s, err := hc.config.KubernetesClientset.CoreV1().Secrets(apiv1.NamespaceDefault).Get(ringSecretName, metav1.GetOptions{})
@@ -827,6 +890,10 @@ func (hc *HabitatController) conform(key string) error {
 	}
 
 	level.Debug(hc.logger).Log("msg", "validated object")
+
+	if err := hc.handlePVC(h); err != nil {
+		return err
+	}
 
 	deployment, err := hc.newDeployment(h)
 	if err != nil {
