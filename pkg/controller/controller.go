@@ -731,7 +731,8 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 					Name:      persistentVolumeName,
 					Namespace: h.Namespace,
 					Labels: map[string]string{
-						habv1beta1.HabitatLabel: "true",
+						habv1beta1.HabitatLabel:     "true",
+						habv1beta1.HabitatNameLabel: h.Name,
 					},
 				},
 				Spec: apiv1.PersistentVolumeClaimSpec{
