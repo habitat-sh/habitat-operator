@@ -56,8 +56,11 @@ type HabitatSpec struct {
 }
 
 type Persistence struct {
-	Size             string `json:"size"`
-	MountPath        string `json:"mountPath"`
+	// Size is the volume's size.
+	// It uses the same format as Kubernetes' size fields, e.g. 10Gi
+	Size string `json:"size"`
+	// MountPath is the path at which the PersistentVolume will be mounted.
+	MountPath string `json:"mountPath"`
 	// StorageClassName is the name of the StorageClass that the StatefulSet will request.
 	StorageClassName string `json:"storageClassName"`
 }
