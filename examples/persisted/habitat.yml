@@ -14,7 +14,7 @@ spec:
     # the cluster administrator
     storageClassName: standard
     # the location under which the volume will be mounted
-    mountPath: /tmp/yeah
+    mountPath: /tmp/foobar
   env:
     - name: HAB_REDIS
       value: '{ "protected-mode": "no" }'
