@@ -77,11 +77,13 @@ type HabitatController struct {
 	habInformer cache.SharedIndexInformer
 	stsInformer cache.SharedIndexInformer
 	cmInformer  cache.SharedIndexInformer
+	pvInformer  cache.SharedIndexInformer
 
 	// cache.InformerSynced returns true if the store has been synced at least once.
 	habInformerSynced cache.InformerSynced
 	stsInformerSynced cache.InformerSynced
 	cmInformerSynced  cache.InformerSynced
+	pvInformerSynced  cache.InformerSynced
 }
 
 type Config struct {
@@ -123,11 +125,13 @@ func (hc *HabitatController) Run(workers int, ctx context.Context) error {
 	hc.cacheHabitats()
 	hc.cacheStatefulSets()
 	hc.cacheConfigMaps()
+	hc.cachePersistentVolumes()
 	hc.watchPods(ctx)
 
 	go hc.habInformer.Run(ctx.Done())
 	go hc.stsInformer.Run(ctx.Done())
 	go hc.cmInformer.Run(ctx.Done())
+	go hc.pvInformer.Run(ctx.Done())
 
 	// Wait for caches to be synced before starting workers.
 	if !cache.WaitForCacheSync(ctx.Done(), hc.habInformerSynced, hc.stsInformerSynced, hc.cmInformerSynced) {
@@ -218,6 +222,27 @@ func (hc *HabitatController) cacheConfigMaps() {
 	})
 
 	hc.cmInformerSynced = hc.cmInformer.HasSynced
+}
+
+func (hc *HabitatController) cachePersistentVolumes() {
+	source := newListWatchFromClientWithLabels(
+		hc.config.KubernetesClientset.CoreV1().RESTClient(),
+		"persistentvolumes",
+		apiv1.NamespaceAll,
+		labelListOptions())
+
+	hc.cmInformer = cache.NewSharedIndexInformer(
+		source,
+		&apiv1.PersistentVolume{},
+		resyncPeriod,
+		cache.Indexers{},
+	)
+
+	hc.cmInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		DeleteFunc: hc.handlePVDelete,
+	})
+
+	hc.cmInformerSynced = hc.pvInformer.HasSynced
 }
 
 func (hc *HabitatController) watchPods(ctx context.Context) {
@@ -359,6 +384,33 @@ func (hc *HabitatController) handleCMUpdate(oldObj, newObj interface{}) {
 
 func (hc *HabitatController) handleCMDelete(obj interface{}) {
 	hc.handleCM(obj)
+}
+
+func (hc *HabitatController) handlePVDelete(obj interface{}) {
+	pv, ok := obj.(*apiv1.PersistentVolume)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert PersistentVolumeClaim", "obj", obj)
+		return
+	}
+
+	// Find out if there's a Habitat object around
+	// If so, we have a problem.
+	key, err := cache.MetaNamespaceKeyFunc(pv.Spec.ClaimRef)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", "Failed to get key", "obj", pv)
+		return
+	}
+
+	_, exists, err := hc.habInformer.GetStore().GetByKey(key)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", "Failed to get key in Store", "obj", key)
+		return
+	} else if !exists {
+		level.Debug(hc.logger).Log("msg", "No matching Habitat found for PVC", "name", pv.Name)
+		return
+	} else {
+		level.Error(hc.logger).Log("msg", "A PVC has lost its PersistentVolume", "name", pv.Name)
+	}
 }
 
 func (hc *HabitatController) handlePodAdd(obj interface{}) {
