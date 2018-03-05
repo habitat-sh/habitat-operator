@@ -330,7 +330,7 @@ func (hc *HabitatController) handleStsDelete(obj interface{}) {
 	hc.enqueue(h)
 }
 
-func (hc *HabitatController) enqueueCM(obj interface{}) {
+func (hc *HabitatController) handleCM(obj interface{}) {
 	cm, ok := obj.(*apiv1.ConfigMap)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert ConfigMap", "obj", obj)
@@ -350,15 +350,15 @@ func (hc *HabitatController) enqueueCM(obj interface{}) {
 }
 
 func (hc *HabitatController) handleCMAdd(obj interface{}) {
-	hc.enqueueCM(obj)
+	hc.handleCM(obj)
 }
 
 func (hc *HabitatController) handleCMUpdate(oldObj, newObj interface{}) {
-	hc.enqueueCM(newObj)
+	hc.handleCM(newObj)
 }
 
 func (hc *HabitatController) handleCMDelete(obj interface{}) {
-	hc.enqueueCM(obj)
+	hc.handleCM(obj)
 }
 
 func (hc *HabitatController) handlePodAdd(obj interface{}) {
