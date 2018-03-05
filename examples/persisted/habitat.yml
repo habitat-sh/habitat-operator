@@ -8,8 +8,9 @@ spec:
   count: 3
   persistence:
     size: 1Gi
-    # if not present, defaults to ""
-    # storageClassName: example-storage
+    # a StorageClass object with name "standard" must be created beforehand by
+    # the cluster administrator
+    storageClassName: standard
     mountPath: /tmp/yeah
   env:
     - name: HAB_REDIS
