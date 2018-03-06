@@ -24,6 +24,7 @@ import (
 	utils "github.com/habitat-sh/habitat-operator/test/e2e/framework"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 const (
@@ -203,6 +204,24 @@ func TestHabitatPersistence(t *testing.T) {
 	if err := framework.CreateHabitat(persisted); err != nil {
 		t.Fatal(err)
 	}
+
+	// Delete all PVCs at the end of the test.
+	// For dynamically provisioned PVs (as is the case on minikube), this will
+	// also delete the PVs.
+	defer (func(name string) {
+		ls := labels.SelectorFromSet(labels.Set(map[string]string{
+			habv1beta1.HabitatNameLabel: name,
+		}))
+
+		lo := metav1.ListOptions{
+			LabelSelector: ls.String(),
+		}
+
+		err := framework.KubeClient.CoreV1().PersistentVolumeClaims(utils.TestNs).DeleteCollection(&metav1.DeleteOptions{}, lo)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})(persisted.Name)
 
 	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, persisted.Name, 1); err != nil {
 		t.Fatal(err)
