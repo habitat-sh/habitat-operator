@@ -27,18 +27,18 @@ func (hc *HabitatController) cachePersistentVolumes() {
 		apiv1.NamespaceAll,
 		labelListOptions())
 
-	hc.cmInformer = cache.NewSharedIndexInformer(
+	hc.pvInformer = cache.NewSharedIndexInformer(
 		source,
 		&apiv1.PersistentVolume{},
 		resyncPeriod,
 		cache.Indexers{},
 	)
 
-	hc.cmInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	hc.pvInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		DeleteFunc: hc.handlePVDelete,
 	})
 
-	hc.cmInformerSynced = hc.pvInformer.HasSynced
+	hc.pvInformerSynced = hc.pvInformer.HasSynced
 }
 
 func (hc *HabitatController) handlePVDelete(obj interface{}) {

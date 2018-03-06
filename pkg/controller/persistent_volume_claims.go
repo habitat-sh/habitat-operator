@@ -30,19 +30,19 @@ func (hc *HabitatController) cachePersistentVolumeClaims() {
 		apiv1.NamespaceAll,
 		labelListOptions())
 
-	hc.cmInformer = cache.NewSharedIndexInformer(
+	hc.pvcInformer = cache.NewSharedIndexInformer(
 		source,
 		&apiv1.PersistentVolumeClaim{},
 		resyncPeriod,
 		cache.Indexers{},
 	)
 
-	hc.cmInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	hc.pvcInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		UpdateFunc: hc.handlePVCUpdate,
 		DeleteFunc: hc.handlePVCDelete,
 	})
 
-	hc.cmInformerSynced = hc.pvcInformer.HasSynced
+	hc.pvcInformerSynced = hc.pvcInformer.HasSynced
 }
 
 // findHabForPVC looks for a matching Habitat object for a PVC.
