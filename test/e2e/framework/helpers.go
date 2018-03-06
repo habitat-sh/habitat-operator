@@ -23,6 +23,7 @@ import (
 	"time"
 
 	habv1beta1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1beta1"
+	"github.com/kinvolk/habitat-operator/test/e2e/framework"
 
 	appsv1beta1 "k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
@@ -116,22 +117,22 @@ func (f *Framework) createRBAC() error {
 		return err
 	}
 
-	// Create cluster role.
-	cr, err := convertClusterRole("resources/operator/cluster-role.yml")
+	// Create role.
+	cr, err := convertRole("resources/operator/role.yml")
 	if err != nil {
 		return err
 	}
-	_, err = f.KubeClient.RbacV1().ClusterRoles().Create(cr)
+	_, err = f.KubeClient.RbacV1().Roles(framework.TestNs).Create(cr)
 	if err != nil {
 		return err
 	}
 
-	// Create cluster role bindings.
-	crb, err := convertClusterRoleBinding("resources/operator/cluster-role-binding.yml")
+	// Create role bindings.
+	crb, err := convertRoleBinding("resources/operator/role-binding.yml")
 	if err != nil {
 		return err
 	}
-	_, err = f.KubeClient.RbacV1().ClusterRoleBindings().Create(crb)
+	_, err = f.KubeClient.RbacV1().RoleBindings(framework.TestNS).Create(crb)
 	if err != nil {
 		return err
 	}
@@ -151,10 +152,10 @@ func convertServiceAccount(pathToYaml string) (*apiv1.ServiceAccount, error) {
 	return &sa, nil
 }
 
-// convertClusterRole takes in a path to the YAML file containing the manifest.
-// It converts the file to the ClusterRole object.
-func convertClusterRole(pathToYaml string) (*rbacv1.ClusterRole, error) {
-	cr := rbacv1.ClusterRole{}
+// convertRole takes in a path to the YAML file containing the manifest.
+// It converts the file to the Role object.
+func convertRole(pathToYaml string) (*rbacv1.Role, error) {
+	cr := rbacv1.Role{}
 
 	if err := convertToK8sResource(pathToYaml, &cr); err != nil {
 		return nil, err
@@ -163,10 +164,10 @@ func convertClusterRole(pathToYaml string) (*rbacv1.ClusterRole, error) {
 	return &cr, nil
 }
 
-// convertClusterRoleBinding takes in a path to the YAML file containing the manifest.
-// It converts the file to the ClusterRoleBinding object.
-func convertClusterRoleBinding(pathToYaml string) (*rbacv1.ClusterRoleBinding, error) {
-	crb := rbacv1.ClusterRoleBinding{}
+// convertRoleBinding takes in a path to the YAML file containing the manifest.
+// It converts the file to the RoleBinding object.
+func convertRoleBinding(pathToYaml string) (*rbacv1.RoleBinding, error) {
+	crb := rbacv1.RoleBinding{}
 
 	if err := convertToK8sResource(pathToYaml, &crb); err != nil {
 		return nil, err
