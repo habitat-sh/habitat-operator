@@ -45,9 +45,10 @@ func (hc *HabitatController) cachePersistentVolumeClaims() {
 	hc.cmInformerSynced = hc.pvcInformer.HasSynced
 }
 
-func (hc *HabitatController) checkPVC(pvc *apiv1.PersistentVolumeClaim) {
-	// Find out if there's a Habitat object around
-	// If so, we have a problem.
+// findHabForPVC looks for a matching Habitat object for a PVC.
+// This method is called when the PVC has been deleted or its status is Lost,
+// so finding a matching Habitat means that this object has lost its storage.
+func (hc *HabitatController) findHabForPVC(pvc *apiv1.PersistentVolumeClaim) {
 	// TODO we might use an ownerref to find the STS here
 	key := fmt.Sprintf("%s/%s", pvc.Namespace, pvc.Labels[habv1beta1.HabitatNameLabel])
 
@@ -71,7 +72,7 @@ func (hc *HabitatController) handlePVCUpdate(oldObj, newObj interface{}) {
 	}
 
 	if pvc.Status.Phase == apiv1.ClaimLost {
-		hc.checkPVC(pvc)
+		hc.findHabForPVC(pvc)
 	}
 }
 
@@ -82,5 +83,5 @@ func (hc *HabitatController) handlePVCDelete(obj interface{}) {
 		return
 	}
 
-	hc.checkPVC(pvc)
+	hc.findHabForPVC(pvc)
 }
