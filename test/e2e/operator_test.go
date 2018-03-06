@@ -115,6 +115,8 @@ func TestBind(t *testing.T) {
 		t.Fatalf("Habitat Service msg does not match one in default.toml. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
 	}
 
+	// Test `user.toml` updates.
+
 	// Update secret.
 	newPort := "port = 6333"
 
