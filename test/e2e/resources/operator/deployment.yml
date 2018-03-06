@@ -2,6 +2,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: habitat-operator
+  namespace: testing
 spec:
   replicas: 1
   template:
