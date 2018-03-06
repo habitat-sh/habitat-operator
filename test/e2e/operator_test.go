@@ -182,3 +182,46 @@ func TestHabitatDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestHabitatPersistence(t *testing.T) {
+	ephemeral, err := utils.ConvertHabitat("resources/standalone/habitat.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	persisted, err := utils.ConvertHabitat("resources/persisted/habitat.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := framework.CreateHabitat(ephemeral); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := framework.CreateHabitat(persisted); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, persisted.Name, 1); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test that persistence is only enabled if requested
+	ephemeralSTS, err := framework.KubeClient.AppsV1beta1().StatefulSets(utils.TestNs).Get(ephemeral.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(ephemeralSTS.Spec.VolumeClaimTemplates) != 0 {
+		t.Fatal("PersistentVolumeClaims created for ephemeral StatefulSet")
+	}
+
+	persistedSTS, err := framework.KubeClient.AppsV1beta1().StatefulSets(utils.TestNs).Get(persisted.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(persistedSTS.Spec.VolumeClaimTemplates) == 0 {
+		t.Fatal("No PersistentVolumeClaims created for persistent StatefulSet")
+	}
+}
