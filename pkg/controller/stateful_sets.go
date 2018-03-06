@@ -28,78 +28,6 @@ import (
 
 const persistentVolumeName = "persistent"
 
-func (hc *HabitatController) cacheStatefulSets() {
-	source := newListWatchFromClientWithLabels(
-		hc.config.KubernetesClientset.AppsV1beta1().RESTClient(),
-		"statefulsets",
-		apiv1.NamespaceAll,
-		labelListOptions())
-
-	hc.stsInformer = cache.NewSharedIndexInformer(
-		source,
-		&appsv1beta1.StatefulSet{},
-		resyncPeriod,
-		cache.Indexers{},
-	)
-
-	hc.stsInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    hc.handleStsAdd,
-		UpdateFunc: hc.handleStsUpdate,
-		DeleteFunc: hc.handleStsDelete,
-	})
-
-	hc.stsInformerSynced = hc.stsInformer.HasSynced
-}
-
-func (hc *HabitatController) handleStsAdd(obj interface{}) {
-	d, ok := obj.(*appsv1beta1.StatefulSet)
-	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", obj)
-		return
-	}
-
-	h, err := hc.getHabitatFromLabeledResource(d)
-	if err != nil {
-		level.Error(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", d.Name)
-		return
-	}
-
-	hc.enqueue(h)
-}
-
-func (hc *HabitatController) handleStsUpdate(oldObj, newObj interface{}) {
-	d, ok := newObj.(*appsv1beta1.StatefulSet)
-	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", newObj)
-		return
-	}
-
-	h, err := hc.getHabitatFromLabeledResource(d)
-	if err != nil {
-		level.Error(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", d.Name)
-		return
-	}
-
-	hc.enqueue(h)
-}
-
-func (hc *HabitatController) handleStsDelete(obj interface{}) {
-	d, ok := obj.(*appsv1beta1.StatefulSet)
-	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", obj)
-		return
-	}
-
-	h, err := hc.getHabitatFromLabeledResource(d)
-	if err != nil {
-		// Could not find Habitat, it must have already been removed.
-		level.Debug(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", d.Name)
-		return
-	}
-
-	hc.enqueue(h)
-}
-
 func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1.StatefulSet, error) {
 	// This value needs to be passed as a *int32, so we convert it, assign it to a
 	// variable and afterwards pass a pointer to it.
@@ -322,4 +250,76 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 	}
 
 	return base, nil
+}
+
+func (hc *HabitatController) cacheStatefulSets() {
+	source := newListWatchFromClientWithLabels(
+		hc.config.KubernetesClientset.AppsV1beta1().RESTClient(),
+		"statefulsets",
+		apiv1.NamespaceAll,
+		labelListOptions())
+
+	hc.stsInformer = cache.NewSharedIndexInformer(
+		source,
+		&appsv1beta1.StatefulSet{},
+		resyncPeriod,
+		cache.Indexers{},
+	)
+
+	hc.stsInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    hc.handleStsAdd,
+		UpdateFunc: hc.handleStsUpdate,
+		DeleteFunc: hc.handleStsDelete,
+	})
+
+	hc.stsInformerSynced = hc.stsInformer.HasSynced
+}
+
+func (hc *HabitatController) handleStsAdd(obj interface{}) {
+	d, ok := obj.(*appsv1beta1.StatefulSet)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", obj)
+		return
+	}
+
+	h, err := hc.getHabitatFromLabeledResource(d)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", d.Name)
+		return
+	}
+
+	hc.enqueue(h)
+}
+
+func (hc *HabitatController) handleStsUpdate(oldObj, newObj interface{}) {
+	d, ok := newObj.(*appsv1beta1.StatefulSet)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", newObj)
+		return
+	}
+
+	h, err := hc.getHabitatFromLabeledResource(d)
+	if err != nil {
+		level.Error(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", d.Name)
+		return
+	}
+
+	hc.enqueue(h)
+}
+
+func (hc *HabitatController) handleStsDelete(obj interface{}) {
+	d, ok := obj.(*appsv1beta1.StatefulSet)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", obj)
+		return
+	}
+
+	h, err := hc.getHabitatFromLabeledResource(d)
+	if err != nil {
+		// Could not find Habitat, it must have already been removed.
+		level.Debug(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", d.Name)
+		return
+	}
+
+	hc.enqueue(h)
 }
