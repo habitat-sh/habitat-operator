@@ -49,7 +49,7 @@ func (hc *HabitatController) cachePersistentVolumeClaims() {
 // This method is called when the PVC has been deleted or its status is Lost,
 // so finding a matching Habitat means that this object has lost its storage.
 func (hc *HabitatController) findHabForPVC(pvc *apiv1.PersistentVolumeClaim) {
-	// TODO we might use an ownerref to find the STS here
+	// TODO(asymmetric) Is there a way to find the Habitat without having to produce the key ourselves?
 	key := fmt.Sprintf("%s/%s", pvc.Namespace, pvc.Labels[habv1beta1.HabitatNameLabel])
 
 	_, exists, err := hc.habInformer.GetStore().GetByKey(key)
