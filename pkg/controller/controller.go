@@ -203,26 +203,6 @@ func (hc *HabitatController) cacheConfigMaps() {
 	hc.cmInformerSynced = hc.cmInformer.HasSynced
 }
 
-func (hc *HabitatController) cachePersistentVolumes() {
-	source := newListWatchFromClientWithLabels(
-		hc.config.KubernetesClientset.CoreV1().RESTClient(),
-		"persistentvolumes",
-		apiv1.NamespaceAll,
-		labelListOptions())
-
-	hc.cmInformer = cache.NewSharedIndexInformer(
-		source,
-		&apiv1.PersistentVolume{},
-		resyncPeriod,
-		cache.Indexers{},
-	)
-
-	hc.cmInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		DeleteFunc: hc.handlePVDelete,
-	})
-
-	hc.cmInformerSynced = hc.pvInformer.HasSynced
-}
 func (hc *HabitatController) cachePersistentVolumeClaims() {
 	source := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
@@ -335,33 +315,6 @@ func (hc *HabitatController) handleCMUpdate(oldObj, newObj interface{}) {
 
 func (hc *HabitatController) handleCMDelete(obj interface{}) {
 	hc.handleCM(obj)
-}
-
-func (hc *HabitatController) handlePVDelete(obj interface{}) {
-	pv, ok := obj.(*apiv1.PersistentVolume)
-	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to type assert PersistentVolumeClaim", "obj", obj)
-		return
-	}
-
-	// Find out if there's a Habitat object around
-	// If so, we have a problem.
-	key, err := cache.MetaNamespaceKeyFunc(pv.Spec.ClaimRef)
-	if err != nil {
-		level.Error(hc.logger).Log("msg", "Failed to get key", "obj", pv)
-		return
-	}
-
-	_, exists, err := hc.habInformer.GetStore().GetByKey(key)
-	if err != nil {
-		level.Error(hc.logger).Log("msg", "Failed to get key in Store", "obj", key)
-		return
-	} else if !exists {
-		level.Debug(hc.logger).Log("msg", "No matching Habitat found for PVC", "name", pv.Name)
-		return
-	} else {
-		level.Error(hc.logger).Log("msg", "A PVC has lost its PersistentVolume", "name", pv.Name)
-	}
 }
 
 func (hc *HabitatController) checkPVC(pvc *apiv1.PersistentVolumeClaim) {
