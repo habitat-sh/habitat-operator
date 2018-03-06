@@ -23,7 +23,6 @@ import (
 	"time"
 
 	habv1beta1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1beta1"
-	"github.com/kinvolk/habitat-operator/test/e2e/framework"
 
 	appsv1beta1 "k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"
@@ -39,7 +38,7 @@ import (
 // CreateHabitat creates a Habitat.
 func (f *Framework) CreateHabitat(habitat *habv1beta1.Habitat) error {
 	return f.Client.Post().
-		Namespace(TestNs).
+		Namespace(TestNS).
 		Resource(habv1beta1.HabitatResourcePlural).
 		Body(habitat).
 		Do().
@@ -59,7 +58,7 @@ func (f *Framework) WaitForResources(labelName, habitatName string, numPods int)
 			labelName: habitatName,
 		})
 
-		pods, err := f.KubeClient.CoreV1().Pods(TestNs).List(metav1.ListOptions{FieldSelector: fs.String(), LabelSelector: ls.String()})
+		pods, err := f.KubeClient.CoreV1().Pods(TestNS).List(metav1.ListOptions{FieldSelector: fs.String(), LabelSelector: ls.String()})
 		if err != nil {
 			return false, err
 		}
@@ -74,7 +73,7 @@ func (f *Framework) WaitForResources(labelName, habitatName string, numPods int)
 
 func (f *Framework) WaitForEndpoints(habitatName string) error {
 	return wait.Poll(time.Second, time.Minute*5, func() (bool, error) {
-		ep, err := f.KubeClient.CoreV1().Endpoints(TestNs).Get(habitatName, metav1.GetOptions{})
+		ep, err := f.KubeClient.CoreV1().Endpoints(TestNS).Get(habitatName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -94,7 +93,7 @@ func (f *Framework) WaitForEndpoints(habitatName string) error {
 // DeleteHabitat deletes a Habitat as a user would.
 func (f *Framework) DeleteHabitat(habitatName string) error {
 	return f.Client.Delete().
-		Namespace(TestNs).
+		Namespace(TestNS).
 		Resource(habv1beta1.HabitatResourcePlural).
 		Name(habitatName).
 		Do().
@@ -103,7 +102,7 @@ func (f *Framework) DeleteHabitat(habitatName string) error {
 
 // DeleteService delete a Kubernetes service provided.
 func (f *Framework) DeleteService(service string) error {
-	return f.KubeClient.CoreV1().Services(TestNs).Delete(service, &metav1.DeleteOptions{})
+	return f.KubeClient.CoreV1().Services(TestNS).Delete(service, &metav1.DeleteOptions{})
 }
 
 func (f *Framework) createRBAC() error {
@@ -112,7 +111,7 @@ func (f *Framework) createRBAC() error {
 	if err != nil {
 		return err
 	}
-	_, err = f.KubeClient.CoreV1().ServiceAccounts(TestNs).Create(sa)
+	_, err = f.KubeClient.CoreV1().ServiceAccounts(TestNS).Create(sa)
 	if err != nil {
 		return err
 	}
@@ -122,7 +121,7 @@ func (f *Framework) createRBAC() error {
 	if err != nil {
 		return err
 	}
-	_, err = f.KubeClient.RbacV1().Roles(framework.TestNs).Create(cr)
+	_, err = f.KubeClient.RbacV1().Roles(TestNS).Create(cr)
 	if err != nil {
 		return err
 	}
@@ -132,7 +131,8 @@ func (f *Framework) createRBAC() error {
 	if err != nil {
 		return err
 	}
-	_, err = f.KubeClient.RbacV1().RoleBindings(framework.TestNS).Create(crb)
+
+	_, err = f.KubeClient.RbacV1().RoleBindings(TestNS).Create(crb)
 	if err != nil {
 		return err
 	}
