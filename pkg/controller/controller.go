@@ -48,8 +48,6 @@ const (
 	peerFile      = "peer-watch-file"
 	configMapName = peerFile
 
-	persistentVolumeName = "persistent"
-
 	// The key under which the ring key is stored in the Kubernetes Secret.
 	ringSecretKey = "ring-key"
 	// The extension of the key file.

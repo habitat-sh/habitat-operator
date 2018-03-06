@@ -26,6 +26,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+const persistentVolumeName = "persistent"
+
 func (hc *HabitatController) cacheStatefulSets() {
 	source := newListWatchFromClientWithLabels(
 		hc.config.KubernetesClientset.AppsV1beta1().RESTClient(),
