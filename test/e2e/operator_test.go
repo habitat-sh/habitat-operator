@@ -64,6 +64,12 @@ func TestBind(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Delete Service so it doesn't interfere with other tests.
+	defer (func(name string) {
+		if err := framework.DeleteService(name); err != nil {
+			t.Fatal(err)
+		}
+	})(svc.Name)
 
 	// Get Secret object from example file.
 	sec, err := utils.ConvertSecret("resources/bind-config/secret.yml")
@@ -133,11 +139,6 @@ func TestBind(t *testing.T) {
 	// the only thing we need to check is it contains the expectedMsg.
 	if !strings.Contains(actualMsg, expectedMsg) {
 		t.Fatalf("Configuration update did not go through. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
-	}
-
-	// Delete Service so it doesn't interfere with other tests.
-	if err := framework.DeleteService(svc.ObjectMeta.Name); err != nil {
-		t.Fatal(err)
 	}
 }
 
