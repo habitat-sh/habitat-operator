@@ -371,7 +371,7 @@ func (hc *HabitatController) handlePodDelete(obj interface{}) {
 
 func (hc *HabitatController) getRunningPods(namespace string) ([]apiv1.Pod, error) {
 	fs := fields.SelectorFromSet(fields.Set{
-		"status.phase": "Running",
+		"status.phase": string(apiv1.PodRunning),
 	})
 	ls := fields.SelectorFromSet(fields.Set(map[string]string{
 		habv1beta1.HabitatLabel: "true",

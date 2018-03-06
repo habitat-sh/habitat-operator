@@ -51,7 +51,7 @@ func (f *Framework) CreateHabitat(habitat *habv1beta1.Habitat) error {
 func (f *Framework) WaitForResources(labelName, habitatName string, numPods int) error {
 	return wait.Poll(2*time.Second, 5*time.Minute, func() (bool, error) {
 		fs := fields.SelectorFromSet(fields.Set{
-			"status.phase": "Running",
+			"status.phase": string(apiv1.PodRunning),
 		})
 
 		ls := labels.SelectorFromSet(labels.Set{
