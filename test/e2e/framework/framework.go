@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	TestNs = "testing"
+	TestNS = "testing"
 )
 
 type Framework struct {
@@ -64,7 +64,7 @@ func Setup(image, kubeconfig, externalIP string) (*Framework, error) {
 	// Create a new Kubernetes namespace for testing purposes.
 	_, err = f.KubeClient.CoreV1().Namespaces().Create(&apiv1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: TestNs,
+			Name: TestNS,
 		},
 	})
 	if err != nil {
@@ -95,7 +95,7 @@ func (f *Framework) setupOperator() error {
 	d.Spec.Template.Spec.Containers[0].Image = f.Image
 
 	// Create deployment for the Habitat operator.
-	_, err = f.KubeClient.AppsV1beta1().Deployments(TestNs).Create(d)
+	_, err = f.KubeClient.AppsV1beta1().Deployments(TestNS).Create(d)
 	if err != nil {
 		return err
 	}

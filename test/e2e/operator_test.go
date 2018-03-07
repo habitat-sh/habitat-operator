@@ -62,7 +62,7 @@ func TestBind(t *testing.T) {
 	}
 
 	// Create Service.
-	_, err = framework.KubeClient.CoreV1().Services(utils.TestNs).Create(svc)
+	_, err = framework.KubeClient.CoreV1().Services(utils.TestNS).Create(svc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +74,7 @@ func TestBind(t *testing.T) {
 	}
 
 	// Create Secret.
-	sec, err = framework.KubeClient.CoreV1().Secrets(utils.TestNs).Create(sec)
+	sec, err = framework.KubeClient.CoreV1().Secrets(utils.TestNS).Create(sec)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +115,7 @@ func TestBind(t *testing.T) {
 	newPort := "port = 6333"
 
 	sec.Data["user.toml"] = []byte(newPort)
-	if _, err = framework.KubeClient.CoreV1().Secrets(utils.TestNs).Update(sec); err != nil {
+	if _, err = framework.KubeClient.CoreV1().Secrets(utils.TestNS).Update(sec); err != nil {
 		t.Fatalf("Could not update Secret: \"%s\"", err)
 	}
 
@@ -172,13 +172,13 @@ func TestHabitatDelete(t *testing.T) {
 
 	// Check if all the resources the operator creates are deleted.
 	// We do not care about secrets being deleted, as the user needs to delete those manually.
-	d, err := framework.KubeClient.AppsV1beta1().Deployments(utils.TestNs).Get(habitat.ObjectMeta.Name, metav1.GetOptions{})
+	d, err := framework.KubeClient.AppsV1beta1().Deployments(utils.TestNS).Get(habitat.ObjectMeta.Name, metav1.GetOptions{})
 	if err == nil && d != nil {
 		t.Fatal("Deployment was not deleted.")
 	}
 
 	// The CM with the peer IP should still be alive, despite the Habitat being deleted as it was created outside of the scope of a Habitat.
-	_, err = framework.KubeClient.CoreV1().ConfigMaps(utils.TestNs).Get(configMapName, metav1.GetOptions{})
+	_, err = framework.KubeClient.CoreV1().ConfigMaps(utils.TestNS).Get(configMapName, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}

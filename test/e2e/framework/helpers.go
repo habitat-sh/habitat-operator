@@ -38,7 +38,7 @@ import (
 // CreateHabitat creates a Habitat.
 func (f *Framework) CreateHabitat(habitat *habv1beta1.Habitat) error {
 	return f.Client.Post().
-		Namespace(TestNs).
+		Namespace(TestNS).
 		Resource(habv1beta1.HabitatResourcePlural).
 		Body(habitat).
 		Do().
@@ -58,7 +58,7 @@ func (f *Framework) WaitForResources(labelName, habitatName string, numPods int)
 			labelName: habitatName,
 		})
 
-		pods, err := f.KubeClient.CoreV1().Pods(TestNs).List(metav1.ListOptions{FieldSelector: fs.String(), LabelSelector: ls.String()})
+		pods, err := f.KubeClient.CoreV1().Pods(TestNS).List(metav1.ListOptions{FieldSelector: fs.String(), LabelSelector: ls.String()})
 		if err != nil {
 			return false, err
 		}
@@ -73,7 +73,7 @@ func (f *Framework) WaitForResources(labelName, habitatName string, numPods int)
 
 func (f *Framework) WaitForEndpoints(habitatName string) error {
 	return wait.Poll(time.Second, time.Minute*5, func() (bool, error) {
-		ep, err := f.KubeClient.CoreV1().Endpoints(TestNs).Get(habitatName, metav1.GetOptions{})
+		ep, err := f.KubeClient.CoreV1().Endpoints(TestNS).Get(habitatName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -93,7 +93,7 @@ func (f *Framework) WaitForEndpoints(habitatName string) error {
 // DeleteHabitat deletes a Habitat as a user would.
 func (f *Framework) DeleteHabitat(habitatName string) error {
 	return f.Client.Delete().
-		Namespace(TestNs).
+		Namespace(TestNS).
 		Resource(habv1beta1.HabitatResourcePlural).
 		Name(habitatName).
 		Do().
@@ -102,7 +102,7 @@ func (f *Framework) DeleteHabitat(habitatName string) error {
 
 // DeleteService delete a Kubernetes service provided.
 func (f *Framework) DeleteService(service string) error {
-	return f.KubeClient.CoreV1().Services(TestNs).Delete(service, &metav1.DeleteOptions{})
+	return f.KubeClient.CoreV1().Services(TestNS).Delete(service, &metav1.DeleteOptions{})
 }
 
 func (f *Framework) createRBAC() error {
@@ -111,27 +111,28 @@ func (f *Framework) createRBAC() error {
 	if err != nil {
 		return err
 	}
-	_, err = f.KubeClient.CoreV1().ServiceAccounts(TestNs).Create(sa)
+	_, err = f.KubeClient.CoreV1().ServiceAccounts(TestNS).Create(sa)
 	if err != nil {
 		return err
 	}
 
-	// Create cluster role.
-	cr, err := convertClusterRole("resources/operator/cluster-role.yml")
+	// Create role.
+	cr, err := convertRole("resources/operator/role.yml")
 	if err != nil {
 		return err
 	}
-	_, err = f.KubeClient.RbacV1().ClusterRoles().Create(cr)
+	_, err = f.KubeClient.RbacV1().Roles(TestNS).Create(cr)
 	if err != nil {
 		return err
 	}
 
-	// Create cluster role bindings.
-	crb, err := convertClusterRoleBinding("resources/operator/cluster-role-binding.yml")
+	// Create role bindings.
+	crb, err := convertRoleBinding("resources/operator/role-binding.yml")
 	if err != nil {
 		return err
 	}
-	_, err = f.KubeClient.RbacV1().ClusterRoleBindings().Create(crb)
+
+	_, err = f.KubeClient.RbacV1().RoleBindings(TestNS).Create(crb)
 	if err != nil {
 		return err
 	}
@@ -151,10 +152,10 @@ func convertServiceAccount(pathToYaml string) (*apiv1.ServiceAccount, error) {
 	return &sa, nil
 }
 
-// convertClusterRole takes in a path to the YAML file containing the manifest.
-// It converts the file to the ClusterRole object.
-func convertClusterRole(pathToYaml string) (*rbacv1.ClusterRole, error) {
-	cr := rbacv1.ClusterRole{}
+// convertRole takes in a path to the YAML file containing the manifest.
+// It converts the file to the Role object.
+func convertRole(pathToYaml string) (*rbacv1.Role, error) {
+	cr := rbacv1.Role{}
 
 	if err := convertToK8sResource(pathToYaml, &cr); err != nil {
 		return nil, err
@@ -163,10 +164,10 @@ func convertClusterRole(pathToYaml string) (*rbacv1.ClusterRole, error) {
 	return &cr, nil
 }
 
-// convertClusterRoleBinding takes in a path to the YAML file containing the manifest.
-// It converts the file to the ClusterRoleBinding object.
-func convertClusterRoleBinding(pathToYaml string) (*rbacv1.ClusterRoleBinding, error) {
-	crb := rbacv1.ClusterRoleBinding{}
+// convertRoleBinding takes in a path to the YAML file containing the manifest.
+// It converts the file to the RoleBinding object.
+func convertRoleBinding(pathToYaml string) (*rbacv1.RoleBinding, error) {
+	crb := rbacv1.RoleBinding{}
 
 	if err := convertToK8sResource(pathToYaml, &crb); err != nil {
 		return nil, err

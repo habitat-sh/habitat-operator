@@ -28,8 +28,10 @@ before_script:
 - make TAG=testing image
 
 script:
-- make test
 - make TESTIMAGE=kinvolk/habitat-operator:testing e2e
 
 after_failure:
 - kubectl logs -lhabitat=true --tail=100
+- kubectl describe po habitat-operator
+- kubectl get serviceaccount,role,rolebinding -o yaml --namespace testing
+- kubectl get crd -o yaml
