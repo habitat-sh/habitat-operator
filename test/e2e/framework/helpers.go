@@ -31,6 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
@@ -223,7 +224,7 @@ func ConvertSecret(pathToYaml string) (*v1.Secret, error) {
 	return &s, nil
 }
 
-func convertToK8sResource(pathToYaml string, into interface{}) error {
+func convertToK8sResource(pathToYaml string, into runtime.Object) error {
 	manifest, err := pathToOSFile(pathToYaml)
 	if err != nil {
 		return err
