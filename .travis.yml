@@ -5,7 +5,7 @@ sudo: required
 # This moves Kubernetes specific config files.
 env:
 - CHANGE_MINIKUBE_NONE_USER=true
-- K8S_VERSION=v1.8.0
+- K8S_VERSION=v1.9.0
 
 # Skip installation of dependencies since they are already in vendor.
 install: true
