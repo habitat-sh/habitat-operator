@@ -16,6 +16,6 @@ version=$(cat "${dir}/VERSION")
 
 helm package "${dir}/helm/habitat-operator"
 mv "habitat-operator-${version}.tgz" "${dir}/${stablesubdir}/"
-helm repo index stable --url "https://kinvolk.github.io/habitat-operator/${stablesubdir}/" --merge "${dir}/${stablesubdir}/index.yaml"
+helm repo index ${stablesubdir} --url "https://kinvolk.github.io/habitat-operator/${stablesubdir}/" --merge "${dir}/${stablesubdir}/index.yaml"
 git -C "${dir}" add "${stablesubdir}/index.yaml" "${stablesubdir}/habitat-operator-${version}.tgz"
 git -C "${dir}" commit -m "Add helm chart for ${version}"
