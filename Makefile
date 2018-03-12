@@ -40,4 +40,7 @@ update-version:
 	find examples helm -regex '.*\.ya?ml$$.bak' -type f \
 		-exec rm '{}' \;
 
+codegen:
+	CODEGEN_PKG=../../../k8s.io/code-generator hack/update-codegen.sh
+
 .PHONY: build test linux image e2e clean-test update-version

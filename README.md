@@ -112,4 +112,10 @@ Clean up after the tests with:
 
     make clean-test
 
+### Code generation
+
+If you change one of the types in `pkg/apis/habitat/v1beta1/types.go`, run the code generation script with:
+
+    make codegen
+
 [crd]: https://kubernetes.io/docs/tasks/access-kubernetes-api/extend-api-custom-resource-definitions/
