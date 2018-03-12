@@ -17,6 +17,9 @@ spec:
     mountPath: /tmp/foobar
   env:
     - name: HAB_REDIS
+      # this is needed to make redis accept connections from other hosts
+      # see https://redis.io/topics/security#protected-mode
+      # NOTE: do not use this setting in a production environment
       value: '{ "protected-mode": "no" }'
   service:
     name: redis
