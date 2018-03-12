@@ -165,15 +165,15 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 	}
 
 	// Mount Persistent Volume, if requested.
-	if h.Spec.Persistence != nil {
+	if h.Spec.PersistentStorage != nil {
 		vm := &apiv1.VolumeMount{
 			Name:      persistentVolumeName,
-			MountPath: h.Spec.Persistence.MountPath,
+			MountPath: h.Spec.PersistentStorage.MountPath,
 		}
 
 		base.Spec.Template.Spec.Containers[0].VolumeMounts = append(base.Spec.Template.Spec.Containers[0].VolumeMounts, *vm)
 
-		q, err := resource.ParseQuantity(h.Spec.Persistence.Size)
+		q, err := resource.ParseQuantity(h.Spec.PersistentStorage.Size)
 		if err != nil {
 			return nil, err
 		}
@@ -192,7 +192,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 					AccessModes: []apiv1.PersistentVolumeAccessMode{
 						apiv1.ReadWriteOnce,
 					},
-					StorageClassName: &h.Spec.Persistence.StorageClassName,
+					StorageClassName: &h.Spec.PersistentStorage.StorageClassName,
 					Resources: apiv1.ResourceRequirements{
 						Requests: apiv1.ResourceList{
 							apiv1.ResourceStorage: q,

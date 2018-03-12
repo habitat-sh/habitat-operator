@@ -186,7 +186,7 @@ func TestHabitatDelete(t *testing.T) {
 	}
 }
 
-func TestHabitatPersistence(t *testing.T) {
+func TestPersistentStorage(t *testing.T) {
 	// We run minikube in a VM on Travis. In that environment, we cannot create PersistentVolumes.
 	t.Skip("This test cannot be run successfully in our current testing setup")
 

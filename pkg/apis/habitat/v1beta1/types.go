@@ -52,10 +52,12 @@ type HabitatSpec struct {
 	// Optional.
 	Env []corev1.EnvVar `json:"env,omitempty"`
 	// Optional.
-	Persistence *Persistence `json:"persistence,omitempty"`
+	PersistentStorage *PersistentStorage `json:"persistentStorage,omitempty"`
 }
 
-type Persistence struct {
+// PersistentStorage is a struct that contains the details of the persistent
+// storage that the cluster should provision.
+type PersistentStorage struct {
 	// Size is the volume's size.
 	// It uses the same format as Kubernetes' size fields, e.g. 10Gi
 	Size string `json:"size"`

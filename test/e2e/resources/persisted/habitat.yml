@@ -5,7 +5,7 @@ metadata:
 spec:
   image: kinvolk/redis-hab
   count: 1
-  persistence:
+  persistentStorage:
     size: 100Mi
     # created by minikube
     storageClassName: standard
