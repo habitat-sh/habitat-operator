@@ -15,12 +15,12 @@
 package e2e
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"testing"
 
 	operatorFramework "github.com/kinvolk/habitat-operator/test/e2e/framework"
+	flag "github.com/spf13/pflag"
 )
 
 var framework *operatorFramework.Framework
