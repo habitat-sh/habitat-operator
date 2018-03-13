@@ -29,8 +29,6 @@ import (
 const (
 	defaultWaitTime = 1 * time.Minute
 	configMapName   = "peer-watch-file"
-
-	nodejsImage = "habitat-sh/nodejs-hab:test"
 )
 
 // TestBind tests that the operator correctly created two Habitat Services and bound them together.
