@@ -103,16 +103,16 @@ type Service struct {
 	// Group is the value of the --group flag for the hab client.
 	// Defaults to `default`.
 	// +optional
-	Group string `json:"group"`
+	Group *string `json:"group"`
 	// Topology is the value of the --topology flag for the hab client.
 	Topology `json:"topology"`
 	// ConfigSecretName is the name of a Secret containing a Habitat service's config in TOML format.
 	// It will be mounted inside the pod as a file, and it will be used by Habitat to configure the service.
 	// +optional
-	ConfigSecretName string `json:"configSecretName,omitempty"`
+	ConfigSecretName *string `json:"configSecretName,omitempty"`
 	// The name of the secret that contains the ring key.
 	// +optional
-	RingSecretName string `json:"ringSecretName,omitempty"`
+	RingSecretName *string `json:"ringSecretName,omitempty"`
 	// Bind is when one service connects to another forming a producer/consumer relationship.
 	// +optional
 	Bind []Bind `json:"bind,omitempty"`

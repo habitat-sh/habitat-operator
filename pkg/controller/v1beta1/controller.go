@@ -576,11 +576,11 @@ func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.
 
 	// Set the service arguments we send to Habitat.
 	var habArgs []string
-	if h.Spec.Service.Group != "" {
+	if h.Spec.Service.Group != nil {
 		// When a service is started without explicitly naming the group,
 		// it's assigned to the default group.
 		habArgs = append(habArgs,
-			"--group", h.Spec.Service.Group)
+			"--group", *h.Spec.Service.Group)
 	}
 
 	// As we want to label our pods with the
@@ -664,9 +664,9 @@ func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.
 	}
 
 	// If we have a secret name present we should mount that secret.
-	if h.Spec.Service.ConfigSecretName != "" {
+	if h.Spec.Service.ConfigSecretName != nil {
 		// Let's make sure our secret is there before mounting it.
-		secret, err := hc.config.KubernetesClientset.CoreV1().Secrets(h.Namespace).Get(h.Spec.Service.ConfigSecretName, metav1.GetOptions{})
+		secret, err := hc.config.KubernetesClientset.CoreV1().Secrets(h.Namespace).Get(*h.Spec.Service.ConfigSecretName, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -699,8 +699,8 @@ func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.
 	}
 
 	// Handle ring key, if one is specified.
-	if ringSecretName := h.Spec.Service.RingSecretName; ringSecretName != "" {
-		s, err := hc.config.KubernetesClientset.CoreV1().Secrets(apiv1.NamespaceDefault).Get(ringSecretName, metav1.GetOptions{})
+	if ringSecretName := h.Spec.Service.RingSecretName; ringSecretName != nil {
+		s, err := hc.config.KubernetesClientset.CoreV1().Secrets(apiv1.NamespaceDefault).Get(*ringSecretName, metav1.GetOptions{})
 		if err != nil {
 			level.Error(hc.logger).Log("msg", "Could not find Secret containing ring key")
 			return nil, err
@@ -711,10 +711,10 @@ func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.
 
 		// Extract the bare ring name, by removing the revision.
 		// Validation has already been performed by this point.
-		ringName := ringRegexp.FindStringSubmatch(ringSecretName)[1]
+		ringName := ringRegexp.FindStringSubmatch(*ringSecretName)[1]
 
 		v := &apiv1.Volume{
-			Name: ringSecretName,
+			Name: *ringSecretName,
 			VolumeSource: apiv1.VolumeSource{
 				Secret: &apiv1.SecretVolumeSource{
 					SecretName: s.Name,
@@ -729,7 +729,7 @@ func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.
 		}
 
 		vm := &apiv1.VolumeMount{
-			Name:      ringSecretName,
+			Name:      *ringSecretName,
 			MountPath: "/hab/cache/keys",
 			// This directory cannot be made read-only, as the supervisor writes to
 			// it during its operation.

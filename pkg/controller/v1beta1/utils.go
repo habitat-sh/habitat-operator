@@ -61,8 +61,8 @@ func validateCustomObject(h habv1beta1.Habitat) error {
 		return fmt.Errorf("unknown topology: %s", spec.Service.Topology)
 	}
 
-	if rsn := spec.Service.RingSecretName; rsn != "" {
-		ringParts := ringRegexp.FindStringSubmatch(rsn)
+	if rsn := spec.Service.RingSecretName; rsn != nil {
+		ringParts := ringRegexp.FindStringSubmatch(*rsn)
 
 		// The ringParts slice should have a second element for the capturing group
 		// in the ringRegexp regular expression, containing the ring's name.
