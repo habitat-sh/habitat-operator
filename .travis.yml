@@ -27,7 +27,6 @@ before_script:
 - sudo minikube start --vm-driver=none --kubernetes-version=${K8S_VERSION} --extra-config=apiserver.Authorization.Mode=RBAC
 # Fix the kubectl context, as it's often stale.
 - minikube update-context
-- make TAG=testing image
 # Clone the code generator repo
 - mkdir -p $GOPATH/src/k8s.io && git clone https://github.com/kubernetes/code-generator.git $GOPATH/src/k8s.io/code-generator
 # Wait for Kubernetes to be up and ready.
@@ -36,7 +35,7 @@ before_script:
 script:
 - CODEGEN_PKG=../../../../src/k8s.io/code-generator hack/verify-codegen.sh
 - make test
-- make TESTIMAGE=habitat/habitat-operator:testing e2e
+- make TAG=testing image && make TESTIMAGE=habitat/habitat-operator:testing e2e
 
 after_failure:
 - kubectl logs -lhabitat=true --tail=100
