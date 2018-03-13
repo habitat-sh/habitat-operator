@@ -29,8 +29,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	habclient "github.com/kinvolk/habitat-operator/pkg/client"
-	habcontroller "github.com/kinvolk/habitat-operator/pkg/controller"
+	habclient "github.com/habitat-sh/habitat-operator/pkg/client"
+	habcontroller "github.com/habitat-sh/habitat-operator/pkg/controller"
 )
 
 type Config struct {

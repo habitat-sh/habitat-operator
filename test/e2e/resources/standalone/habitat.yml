@@ -3,7 +3,7 @@ kind: Habitat
 metadata:
   name: standalone-test-123
 spec:
-  image: kinvolk/nginx-hab
+  image: habitat/nginx-hab
   count: 1
   service:
     name: nginx

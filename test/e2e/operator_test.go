@@ -20,8 +20,8 @@ import (
 	"testing"
 	"time"
 
-	habv1beta1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1beta1"
-	utils "github.com/kinvolk/habitat-operator/test/e2e/framework"
+	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
+	utils "github.com/habitat-sh/habitat-operator/test/e2e/framework"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -30,7 +30,7 @@ const (
 	defaultWaitTime = 1 * time.Minute
 	configMapName   = "peer-watch-file"
 
-	nodejsImage = "kinvolk/nodejs-hab:test"
+	nodejsImage = "habitat-sh/nodejs-hab:test"
 )
 
 // TestBind tests that the operator correctly created two Habitat Services and bound them together.
@@ -102,7 +102,7 @@ func TestBind(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// This msg is set in the config of the kinvolk/bindgo-hab Go Habitat Service.
+	// This msg is set in the config of the habitat/bindgo-hab Go Habitat Service.
 	expectedMsg := "hello from port: 4444"
 	actualMsg := body
 	// actualMsg can contain whitespace and newlines or different formatting,
@@ -128,7 +128,7 @@ func TestBind(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Update the message set in the config of the kinvolk/bindgo-hab Go Habitat Service.
+	// Update the message set in the config of the habitat/bindgo-hab Go Habitat Service.
 	expectedMsg = fmt.Sprintf("hello from port: %v", 6333)
 	actualMsg = body
 	// actualMsg can contain whitespace and newlines or different formatting,

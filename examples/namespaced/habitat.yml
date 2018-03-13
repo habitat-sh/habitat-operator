@@ -10,7 +10,7 @@ metadata:
   namespace: example-namespace
 spec:
   # the core/redis habitat service packaged as a Docker image
-  image: kinvolk/redis-hab
+  image: habitat/redis-hab
   count: 1
   service:
     name: redis

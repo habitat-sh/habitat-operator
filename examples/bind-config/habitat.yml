@@ -14,7 +14,7 @@ kind: Habitat
 metadata:
   name: example-bind-configured-db
 spec:
-  image: kinvolk/redis-hab
+  image: habitat/redis-hab
   count: 1
   service:
     name: redis
@@ -28,7 +28,7 @@ kind: Habitat
 metadata:
   name: example-bind-configured-web-app
 spec:
-  image: kinvolk/bindgo-hab
+  image: habitat/bindgo-hab
   count: 1
   service:
     name: hab-server-go

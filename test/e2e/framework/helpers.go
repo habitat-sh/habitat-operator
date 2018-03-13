@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"time"
 
-	habv1beta1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1beta1"
+	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
 
 	appsv1beta1 "k8s.io/api/apps/v1beta1"
 	"k8s.io/api/core/v1"

@@ -6,5 +6,5 @@ maintainers:
     email: zeeshan@kinvolk.io
 name: habitat-operator
 sources:
-  - https://github.com/kinvolk/habitat-operator
+  - https://github.com/habitat-sh/habitat-operator
 version: 0.5.1

@@ -1,6 +1,6 @@
 # API v1beta1
 
-The following is a description of the Habitat operator API. To see manifest example files, have a look at the [examples directory](https://github.com/kinvolk/habitat-operator/tree/master/examples).
+The following is a description of the Habitat operator API. To see manifest example files, have a look at the [examples directory](https://github.com/habitat-sh/habitat-operator/tree/master/examples).
 
 ## Habitat
 
