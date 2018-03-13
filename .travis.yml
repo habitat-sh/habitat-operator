@@ -26,6 +26,8 @@ before_script:
 # Fix the kubectl context, as it's often stale.
 - minikube update-context
 - make TAG=testing image
+# Clone the code generator repo
+- mkdir -p $GOPATH/src/k8s.io && git clone https://github.com/kubernetes/code-generator.git $GOPATH/src/k8s.io/code-generator
 # Wait for Kubernetes to be up and ready.
 - JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done
 
