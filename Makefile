@@ -1,5 +1,5 @@
 HUB :=
-REPO := kinvolk
+REPO := habitat-sh
 IMAGE := $(if $(HUB),$(HUB)/)$(REPO)/habitat-operator
 TAG := $(shell git describe --tags --always)
 TESTIMAGE :=

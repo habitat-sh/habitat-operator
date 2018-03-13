@@ -20,12 +20,12 @@ After the above mentioned PR was merged, switch to the updated master branch. Ta
 
 ## Generate release image
 
-In the root directory of the repository generate the Docker image and push it to the Kinvolk repo on Docker hub:
+In the root directory of the repository generate the Docker image and push it to Docker hub:
 
     make image
-    docker push kinvolk/habitat-operator:vx.y.z
-    docker tag kinvolk/habitat-operator:vx.y.z kinvolk/habitat-operator:latest
-    docker push kinvolk/habitat-operator:latest
+    docker push habitat/habitat-operator:vx.y.z
+    docker tag habitat/habitat-operator:vx.y.z habitat-sh/habitat-operator:latest
+    docker push habitat/habitat-operator:latest
 
 ## Generate the Helm chart
 

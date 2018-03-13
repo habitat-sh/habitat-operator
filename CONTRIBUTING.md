@@ -80,7 +80,7 @@ Please make pull requests against the `master` branch.
 
 1. Start a new feature branch
 1. Make the desired changes to the code base. Please read the
-   [contributing section](https://github.com/kinvolk/habitat-operator/#contributing) of the README before making any
+   [contributing section](https://github.com/habitat-sh/habitat-operator/#contributing) of the README before making any
    changes.
 1. Sign and commit your change(s)
 1. Push your feature branch to GitHub, and create a Pull Request

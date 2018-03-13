@@ -31,7 +31,7 @@ before_script:
 
 script:
 - make test
-- make TESTIMAGE=kinvolk/habitat-operator:testing e2e
+- make TESTIMAGE=habitat-sh/habitat-operator:testing e2e
 
 after_failure:
 - kubectl logs -lhabitat=true --tail=100

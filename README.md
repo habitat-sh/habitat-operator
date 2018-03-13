@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/kinvolk/habitat-operator.svg?branch=master)](https://travis-ci.org/kinvolk/habitat-operator) 
-[![Go Report Card](https://goreportcard.com/badge/github.com/kinvolk/habitat-operator)](https://goreportcard.com/report/github.com/kinvolk/habitat-operator)
+[![Build Status](https://travis-ci.org/habitat-sh/habitat-operator.svg?branch=master)](https://travis-ci.org/habitat-sh/habitat-operator) 
+[![Go Report Card](https://goreportcard.com/badge/github.com/habitat-sh/habitat-operator)](https://goreportcard.com/report/github.com/habitat-sh/habitat-operator)
 
 # habitat-operator
 
@@ -11,7 +11,7 @@ The Habitat operator is a Kubernetes controller designed to solve running and au
 
 To learn more about Habitat, please visit the [Habitat website](https://www.habitat.sh/).
 
-For a more detailed description of the Habitat operator API have a look at the [API documentation](https://github.com/kinvolk/habitat-operator/blob/master/docs/api.md).
+For a more detailed description of the Habitat operator API have a look at the [API documentation](https://github.com/habitat-sh/habitat-operator/blob/master/docs/api.md).
 
 ## Prerequisites
 
@@ -20,13 +20,13 @@ For a more detailed description of the Habitat operator API have a look at the [
 
 ## Installing
 
-    go get -u github.com/kinvolk/habitat-operator/cmd/habitat-operator
+    go get -u github.com/habitat-sh/habitat-operator/cmd/habitat-operator
 
 ## Building manually from source directory
 
 First clone the operator:
 
-    git clone https://github.com/kinvolk/habitat-operator.git
+    git clone https://github.com/habitat-sh/habitat-operator.git
     cd habitat-operator
 
 Then build it:
@@ -55,13 +55,13 @@ First build the image:
 
     make image
 
-This will produce a `kinvolk/habitat-operator` image, which can then be deployed to your cluster.
+This will produce a `habitat-sh/habitat-operator` image, which can then be deployed to your cluster.
 
 The name of the generated docker image can be changed with an `IMAGE` variable, for example `make image IMAGE=mycorp/my-habitat-operator`. If the `habitat-operator` name is fine, then a `REPO` variable can be used like `make image REPO=mycorp` to generate the `mycorp/habitat-operator` image. Use the `TAG` variable to change the tag to something else (the default value is taken from `git describe --tags --always`) and a `HUB` variable to avoid using the default docker hub.
 
 #### Using release image
 
-Habitat operator images are located [here](https://hub.docker.com/r/kinvolk/habitat-operator/), they are tagged with the release version.
+Habitat operator images are located [here](https://hub.docker.com/r/habitat-sh/habitat-operator/), they are tagged with the release version.
 
 #### Deploying Habitat operator
 
@@ -86,7 +86,7 @@ To create an example service run:
     kubectl create -f examples/standalone/habitat.yml
 
 This will create a single-pod deployment of an `nginx` Habitat service.
-More examples are located in the [example directory](https://github.com/kinvolk/habitat-operator/tree/master/examples/).
+More examples are located in the [example directory](https://github.com/habitat-sh/habitat-operator/tree/master/examples/).
 
 ## Contributing
 

@@ -16,7 +16,7 @@
 package client
 
 import (
-	habv1beta1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1beta1"
+	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"

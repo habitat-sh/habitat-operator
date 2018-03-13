@@ -1,16 +1,16 @@
 # habitat-operator
 
-Installs [habitat-operator](https://github.com/kinvolk/habitat-operator) to manage Habitat services in a Kubernetes cluster.
+Installs [habitat-operator](https://github.com/habitat-sh/habitat-operator) to manage Habitat services in a Kubernetes cluster.
 
 ## Introduction
 
-This chart bootstraps a [habitat-operator](https://github.com/kinvolk/habitat-operator) deployment in a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
+This chart bootstraps a [habitat-operator](https://github.com/habitat-sh/habitat-operator) deployment in a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
 
 ## Prerequisites
 
 Note: If you have Kubernetes and Helm installed, skip to [this section](#Installing the Chart).
 
-See [Habitat Operator's README](https://github.com/kinvolk/habitat-operator/blob/master/README.md).
+See [Habitat Operator's README](https://github.com/habitat-sh/habitat-operator/blob/master/README.md).
 
 ### RBAC
 If role-based access control (RBAC) is enabled in your cluster, you may need to give Tiller (the server-side component of Helm) additional permissions. **If RBAC is not enabled, be sure to set `rbacEnable` to `false` when installing the chart.**
@@ -37,7 +37,7 @@ $ helm init --service-account tiller
 To install the chart with the release name `my-release`:
 
 ```console
-$ helm repo add habitat https://kinvolk.github.io/habitat-operator/helm/charts/stable/
+$ helm repo add habitat https://habitat-sh.github.io/habitat-operator/helm/charts/stable/
 $ helm install --name my-release habitat/habitat-operator
 ```
 
@@ -59,7 +59,7 @@ The following table lists the configurable parameters of the habitat-operator ch
 
 Parameter | Description | Default
 --- | --- | ---
-`image.repository` | Image | `docker.io/kinvolk/habitat-operator`
+`image.repository` | Image | `docker.io/habitat/habitat-operator`
 `image.tag` | Image tag | The latest release tag (e.g `v0.4.0`)
 `image.pullPolicy` | Image pull policy | `IfNotPresent`
 `nodeSelector` | Node labels for pod assignment | `{}`
@@ -82,4 +82,4 @@ $ helm install --name my-release habitat/habitat-operator -f values.yaml
 
 ## Hosting
 
-The Helm chart repository is managed on the [`gh-pages` branch](https://github.com/kinvolk/habitat-operator/tree/gh-pages) and instructions for repository management can be found [here](https://github.com/kinvolk/habitat-operator/tree/gh-pages/helm/charts).
+The Helm chart repository is managed on the [`gh-pages` branch](https://github.com/habitat-sh/habitat-operator/tree/gh-pages) and instructions for repository management can be found [here](https://github.com/habitat-sh/habitat-operator/tree/gh-pages/helm/charts).
