@@ -103,7 +103,7 @@ type Service struct {
 	// Group is the value of the --group flag for the hab client.
 	// Defaults to `default`.
 	// +optional
-	Group *string `json:"group"`
+	Group *string `json:"group,omitempty"`
 	// Topology is the value of the --topology flag for the hab client.
 	Topology `json:"topology"`
 	// ConfigSecretName is the name of a Secret containing a Habitat service's config in TOML format.
