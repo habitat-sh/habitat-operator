@@ -58,7 +58,7 @@ type HabitatSpec struct {
 	Service Service `json:"service"`
 	// Env is a list of environment variables.
 	// The EnvVar type is documented at https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.9/#envvar-v1-core.
-	// Optional.
+	// +optional
 	Env []corev1.EnvVar `json:"env,omitempty"`
 	// V1beta2 are fields for the v1beta2 type.
 	// +optional
@@ -101,19 +101,20 @@ type HabitatState string
 
 type Service struct {
 	// Group is the value of the --group flag for the hab client.
-	// Optional. Defaults to `default`.
+	// Defaults to `default`.
+	// +optional
 	Group string `json:"group"`
 	// Topology is the value of the --topology flag for the hab client.
 	Topology `json:"topology"`
 	// ConfigSecretName is the name of a Secret containing a Habitat service's config in TOML format.
 	// It will be mounted inside the pod as a file, and it will be used by Habitat to configure the service.
-	// Optional.
+	// +optional
 	ConfigSecretName string `json:"configSecretName,omitempty"`
 	// The name of the secret that contains the ring key.
-	// Optional.
+	// +optional
 	RingSecretName string `json:"ringSecretName,omitempty"`
 	// Bind is when one service connects to another forming a producer/consumer relationship.
-	// Optional.
+	// +optional
 	Bind []Bind `json:"bind,omitempty"`
 	// Name is the name of the Habitat service that this Habitat object represents.
 	// This field is used to mount the user.toml file in the correct directory under /hab/user/ in the Pod.
