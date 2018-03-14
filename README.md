@@ -11,7 +11,7 @@ The Habitat operator is a Kubernetes controller designed to solve running and au
 
 To learn more about Habitat, please visit the [Habitat website](https://www.habitat.sh/).
 
-For a more detailed description of the Habitat operator API have a look at the [API documentation](https://github.com/habitat-sh/habitat-operator/blob/master/docs/api.md).
+For a more detailed description of the Habitat type have a look [here](https://github.com/habitat-sh/habitat-operator/blob/master/pkg/apis/habitat/v1beta1/types.go).
 
 ## Prerequisites
 
