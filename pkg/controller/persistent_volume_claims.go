@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"github.com/go-kit/kit/log/level"
-	habv1beta1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1beta1"
+	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
 )
