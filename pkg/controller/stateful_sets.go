@@ -175,7 +175,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 
 		q, err := resource.ParseQuantity(ps.Size)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Could not parse PersistentStorage.Size: %v", err)
 		}
 
 		base.Spec.VolumeClaimTemplates = []apiv1.PersistentVolumeClaim{
