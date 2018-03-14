@@ -55,8 +55,8 @@ type HabitatSpec struct {
 	PersistentStorage *PersistentStorage `json:"persistentStorage,omitempty"`
 }
 
-// PersistentStorage is a struct that contains the details of the persistent
-// storage that the cluster should provision.
+// PersistentStorage contains the details of the persistent storage that the
+// cluster should provision.
 type PersistentStorage struct {
 	// Size is the volume's size.
 	// It uses the same format as Kubernetes' size fields, e.g. 10Gi
