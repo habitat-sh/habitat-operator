@@ -481,32 +481,6 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 	return nil
 }
 
-func (hc *HabitatController) handleHabitatDeletion(key string) error {
-	// Delete StatefulSet.
-	stsNS, stsName, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		return err
-	}
-
-	stsClient := hc.config.KubernetesClientset.AppsV1beta1().StatefulSets(stsNS)
-
-	// With this policy, dependent resources will be deleted, but we don't wait
-	// for that to happen.
-	deletePolicy := metav1.DeletePropagationBackground
-	deleteOptions := &metav1.DeleteOptions{
-		PropagationPolicy: &deletePolicy,
-	}
-
-	if err := stsClient.Delete(stsName, deleteOptions); err != nil {
-		level.Error(hc.logger).Log("msg", err)
-		return err
-	}
-
-	level.Info(hc.logger).Log("msg", "deleted StatefulSet", "name", stsName)
-
-	return nil
-}
-
 func (hc *HabitatController) enqueue(hab *habv1beta1.Habitat) {
 	if hab == nil {
 		level.Error(hc.logger).Log("msg", "Habitat object was nil", "object", hab)
@@ -567,7 +541,8 @@ func (hc *HabitatController) conform(key string) error {
 	}
 	if !exists {
 		// The Habitat was deleted.
-		return hc.handleHabitatDeletion(key)
+		level.Info(hc.logger).Log("msg", "deleted Habitat", "key", key)
+		return nil
 	}
 
 	// The Habitat was either created or updated.
