@@ -13,7 +13,7 @@ kind: Habitat
 metadata:
   name: example-configured-habitat
 spec:
-  image: kinvolk/redis-hab
+  image: habitat/redis-hab
   count: 1
   service:
     name: db

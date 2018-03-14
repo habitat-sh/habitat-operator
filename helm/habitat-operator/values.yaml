@@ -1,7 +1,7 @@
 ## Habitat-operator image
 ##
 image:
-  repository: docker.io/kinvolk/habitat-operator
+  repository: docker.io/habitat/habitat-operator
   tag: v0.5.1
   pullPolicy: IfNotPresent
 

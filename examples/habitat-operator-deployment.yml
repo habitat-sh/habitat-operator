@@ -11,4 +11,4 @@ spec:
     spec:
       containers:
       - name: habitat-operator
-        image: kinvolk/habitat-operator:v0.5.1
+        image: habitat/habitat-operator:v0.5.1

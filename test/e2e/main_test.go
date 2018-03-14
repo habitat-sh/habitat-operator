@@ -20,7 +20,7 @@ import (
 	"os"
 	"testing"
 
-	operatorFramework "github.com/kinvolk/habitat-operator/test/e2e/framework"
+	operatorFramework "github.com/habitat-sh/habitat-operator/test/e2e/framework"
 )
 
 var framework *operatorFramework.Framework
@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 		code int
 	)
 
-	image := flag.String("image", "", "habitat operator image, 'kinvolk/habitat-operator'")
+	image := flag.String("image", "", "habitat operator image, 'habitat-sh/habitat-operator'")
 	kubeconfig := flag.String("kubeconfig", "", "path to kube config file")
 	externalIP := flag.String("ip", "", "external ip, eg. minikube ip")
 	flag.Parse()

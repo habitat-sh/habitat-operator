@@ -17,7 +17,7 @@ package controller
 import (
 	"fmt"
 
-	habv1beta1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1beta1"
+	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
