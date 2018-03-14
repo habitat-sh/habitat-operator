@@ -78,8 +78,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 					habv1beta1.HabitatNameLabel: h.Name,
 				},
 			},
-			Replicas: &count,
-			// Stateless Pods are allowed to be started/terminated in parallel
+			Replicas:            &count,
 			PodManagementPolicy: appsv1beta1.ParallelPodManagement,
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
