@@ -2,6 +2,7 @@ HUB :=
 GITHUB_ORG := habitat-sh
 DOCKER_ORG := habitat
 IMAGE := $(if $(HUB),$(HUB)/)$(DOCKER_ORG)/habitat-operator
+BIN_PATH := habitat-operator
 TAG := $(shell git describe --tags --always)
 TESTIMAGE :=
 
@@ -10,7 +11,7 @@ build:
 
 linux:
 	# Compile statically linked binary for linux.
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s" -o habitat-operator github.com/$(GITHUB_ORG)/habitat-operator/cmd/habitat-operator
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s" -o $(BIN_PATH) github.com/$(GITHUB_ORG)/habitat-operator/cmd/habitat-operator
 
 image: linux
 	docker build -t "$(IMAGE):$(TAG)" .
