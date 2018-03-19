@@ -52,3 +52,8 @@ rules:
   resources:
   - namespaces
   verbs: ["list"]
+- apiGroups: [""]
+  resources:
+  - persistentvolumes
+  - persistentvolumeclaims
+  verbs: ["list", "watch"]
