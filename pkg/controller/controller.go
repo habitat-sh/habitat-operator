@@ -661,8 +661,8 @@ func newConfigMap(ip string, h *habv1beta1.Habitat) *apiv1.ConfigMap {
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				metav1.OwnerReference{
-					APIVersion: h.APIVersion,
-					Kind:       h.Kind,
+					APIVersion: habv1beta1.SchemeGroupVersion.String(),
+					Kind:       habv1beta1.HabitatKind,
 					Name:       h.Name,
 					UID:        h.UID,
 				},

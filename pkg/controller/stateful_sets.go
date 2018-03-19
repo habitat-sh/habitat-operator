@@ -73,8 +73,8 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 			Name: h.Name,
 			OwnerReferences: []metav1.OwnerReference{
 				metav1.OwnerReference{
-					APIVersion: h.APIVersion,
-					Kind:       h.Kind,
+					APIVersion: habv1beta1.SchemeGroupVersion.String(),
+					Kind:       habv1beta1.HabitatKind,
 					Name:       h.Name,
 					UID:        h.UID,
 				},

@@ -116,6 +116,8 @@ const (
 
 	TopologyStandalone Topology = "standalone"
 	TopologyLeader     Topology = "leader"
+
+	HabitatKind = "Habitat"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
