@@ -134,7 +134,7 @@ func (hc *HabitatController) Run(workers int, ctx context.Context) error {
 	go hc.pvcInformer.Run(ctx.Done())
 
 	// Wait for caches to be synced before starting workers.
-	if !cache.WaitForCacheSync(ctx.Done(), hc.habInformerSynced, hc.stsInformerSynced, hc.cmInformerSynced) {
+	if !cache.WaitForCacheSync(ctx.Done(), hc.habInformerSynced, hc.stsInformerSynced, hc.cmInformerSynced, hc.pvInformerSynced, hc.pvcInformerSynced) {
 		return nil
 	}
 	level.Debug(hc.logger).Log("msg", "Caches synced")
