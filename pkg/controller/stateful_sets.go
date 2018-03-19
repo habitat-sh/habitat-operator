@@ -136,6 +136,9 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 		},
 	}
 
+	spec := &base.Spec
+	tSpec := &spec.Template.Spec
+
 	// If we have a secret name present we should mount that secret.
 	if h.Spec.Service.ConfigSecretName != "" {
 		// Let's make sure our secret is there before mounting it.
@@ -167,8 +170,8 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 			ReadOnly:  false,
 		}
 
-		base.Spec.Template.Spec.Containers[0].VolumeMounts = append(base.Spec.Template.Spec.Containers[0].VolumeMounts, *secretVolumeMount)
-		base.Spec.Template.Spec.Volumes = append(base.Spec.Template.Spec.Volumes, *secretVolume)
+		tSpec.Containers[0].VolumeMounts = append(tSpec.Containers[0].VolumeMounts, *secretVolumeMount)
+		tSpec.Volumes = append(tSpec.Volumes, *secretVolume)
 	}
 
 	// Mount Persistent Volume, if requested.
@@ -178,14 +181,14 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 			MountPath: ps.MountPath,
 		}
 
-		base.Spec.Template.Spec.Containers[0].VolumeMounts = append(base.Spec.Template.Spec.Containers[0].VolumeMounts, *vm)
+		tSpec.Containers[0].VolumeMounts = append(tSpec.Containers[0].VolumeMounts, *vm)
 
 		q, err := resource.ParseQuantity(ps.Size)
 		if err != nil {
 			return nil, fmt.Errorf("Could not parse PersistentStorage.Size: %v", err)
 		}
 
-		base.Spec.VolumeClaimTemplates = []apiv1.PersistentVolumeClaim{
+		spec.VolumeClaimTemplates = []apiv1.PersistentVolumeClaim{
 			apiv1.PersistentVolumeClaim{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      persistentVolumeName,
@@ -249,11 +252,11 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 		}
 
 		// Mount ring key file.
-		base.Spec.Template.Spec.Volumes = append(base.Spec.Template.Spec.Volumes, *v)
-		base.Spec.Template.Spec.Containers[0].VolumeMounts = append(base.Spec.Template.Spec.Containers[0].VolumeMounts, *vm)
+		tSpec.Volumes = append(tSpec.Volumes, *v)
+		tSpec.Containers[0].VolumeMounts = append(tSpec.Containers[0].VolumeMounts, *vm)
 
 		// Add --ring argument to supervisor invocation.
-		base.Spec.Template.Spec.Containers[0].Args = append(base.Spec.Template.Spec.Containers[0].Args, "--ring", ringName)
+		tSpec.Containers[0].Args = append(tSpec.Containers[0].Args, "--ring", ringName)
 	}
 
 	return base, nil
