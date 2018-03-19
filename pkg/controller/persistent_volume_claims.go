@@ -45,11 +45,11 @@ func (hc *HabitatController) cachePersistentVolumeClaims() {
 	hc.pvcInformerSynced = hc.pvcInformer.HasSynced
 }
 
-// findHabForPVC looks for a matching Habitat object for a PVC.
+// checkHabForPVC looks for a matching Habitat object for a PVC.
 // Its only function is to print a statement for the user.
 // This method is called when the PVC has been deleted or its status is Lost,
 // so finding a matching Habitat means that this object has lost its storage.
-func (hc *HabitatController) findHabForPVC(pvc *apiv1.PersistentVolumeClaim) {
+func (hc *HabitatController) checkHabForPVC(pvc *apiv1.PersistentVolumeClaim) {
 	// TODO(asymmetric) Is there a way to find the Habitat without having to produce the key ourselves?
 	key := fmt.Sprintf("%s/%s", pvc.Namespace, pvc.Labels[habv1beta1.HabitatNameLabel])
 
@@ -75,7 +75,7 @@ func (hc *HabitatController) handlePVCUpdate(oldObj, newObj interface{}) {
 	}
 
 	if pvc.Status.Phase == apiv1.ClaimLost {
-		hc.findHabForPVC(pvc)
+		hc.checkHabForPVC(pvc)
 	}
 }
 
@@ -86,5 +86,5 @@ func (hc *HabitatController) handlePVCDelete(obj interface{}) {
 		return
 	}
 
-	hc.findHabForPVC(pvc)
+	hc.checkHabForPVC(pvc)
 }
