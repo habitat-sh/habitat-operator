@@ -46,6 +46,7 @@ func (hc *HabitatController) cachePersistentVolumeClaims() {
 }
 
 // findHabForPVC looks for a matching Habitat object for a PVC.
+// Its only function is to print a statement for the user.
 // This method is called when the PVC has been deleted or its status is Lost,
 // so finding a matching Habitat means that this object has lost its storage.
 func (hc *HabitatController) findHabForPVC(pvc *apiv1.PersistentVolumeClaim) {
