@@ -59,10 +59,10 @@ func (hc *HabitatController) findHabForPVC(pvc *apiv1.PersistentVolumeClaim) {
 	} else if !exists {
 		level.Debug(hc.logger).Log("msg", "No matching Habitat found for PVC", "name", pvc.Name)
 		return
-	} else {
-		// TODO(asymmetric) Should we also check the Habitat's status?
-		level.Error(hc.logger).Log("msg", "A PVC has lost its PersistentVolume", "name", pvc.Name)
 	}
+
+	// TODO(asymmetric) Should we also check the Habitat's status?
+	level.Error(hc.logger).Log("msg", "A PVC has lost its PersistentVolume", "name", pvc.Name)
 }
 
 func (hc *HabitatController) handlePVCUpdate(oldObj, newObj interface{}) {
