@@ -63,6 +63,7 @@ func (hc *HabitatController) findHabForPVC(pvc *apiv1.PersistentVolumeClaim) {
 	}
 
 	// TODO(asymmetric) Should we also check the Habitat's status?
+	// If the Habitat is being deleted, the fact that a PVC is lost might not be a problem.
 	level.Error(hc.logger).Log("msg", "A PVC has lost its PersistentVolume", "name", pvc.Name)
 }
 
