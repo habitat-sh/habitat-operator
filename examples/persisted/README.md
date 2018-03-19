@@ -3,13 +3,20 @@
 Habitat objects are translated by the operator into `StatefulSet` objects, which
 provide optional support for persistent storage.
 
-In order to enable persistent storage for your Habitat object, you need to:
+In order to enable persistent storage for your Habitat object, you need to
+configure [persistent
+storage](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) on
+your cluster. Detailed instructions on how to do that are beyond the scope of
+this README, but what you should end up with is:
 
-* create a
-[`StorageClass`](https://kubernetes.io/docs/concepts/storage/storage-classes/) object in your cluster
-* add the `spec.persistence` key to the Habitat object's manifest
-* specify the `name` of the aforementioned `StorageClass` object under
-`spec.persistence.storageClassName` in the Habitat object's manifest
+* a cluster configured for either static or dynamic provisioning,
+* a `StorageClass` object,
+
+Once you've done that, you can proceed to creating the `Habitat` object:
+
+* populate the `spec.persistentStorage` struct in the `Habitat`'s manifest
+* specify the `name` of the previously created `StorageClass` under
+`spec.persistence.storageClassName` in the `Habitat`'s manifest
 
 ## Workflow
 
