@@ -7,7 +7,7 @@ In order to enable persistent storage for your Habitat object, you need to:
 
 * create a
 [`StorageClass`](https://kubernetes.io/docs/concepts/storage/storage-classes/) object in your cluster
-* add the `spec.persistence` key to the Habitat object's manifest
+* add the `spec.persistentStorage` key to the Habitat object's manifest
 * specify the `name` of the aforementioned `StorageClass` object under
 `spec.persistence.storageClassName` in the Habitat object's manifest
 
@@ -19,7 +19,6 @@ type of volume your cluster is able to provision.
 **NOTE**: If you're deploying the example on GKE, a standard
 `StorageClass` for `GCEPersistentDisk` has already been defined, so you can skip
 the above step
-
 
 Once the `StorageClass` has been created, run the example:
 
