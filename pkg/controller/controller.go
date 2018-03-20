@@ -73,15 +73,11 @@ type HabitatController struct {
 	habInformer cache.SharedIndexInformer
 	stsInformer cache.SharedIndexInformer
 	cmInformer  cache.SharedIndexInformer
-	pvInformer  cache.SharedIndexInformer
-	pvcInformer cache.SharedIndexInformer
 
 	// cache.InformerSynced returns true if the store has been synced at least once.
 	habInformerSynced cache.InformerSynced
 	stsInformerSynced cache.InformerSynced
 	cmInformerSynced  cache.InformerSynced
-	pvInformerSynced  cache.InformerSynced
-	pvcInformerSynced cache.InformerSynced
 }
 
 type Config struct {
@@ -123,18 +119,14 @@ func (hc *HabitatController) Run(workers int, ctx context.Context) error {
 	hc.cacheHabitats()
 	hc.cacheStatefulSets()
 	hc.cacheConfigMaps()
-	hc.cachePersistentVolumes()
-	hc.cachePersistentVolumeClaims()
 	hc.watchPods(ctx)
 
 	go hc.habInformer.Run(ctx.Done())
 	go hc.stsInformer.Run(ctx.Done())
 	go hc.cmInformer.Run(ctx.Done())
-	go hc.pvInformer.Run(ctx.Done())
-	go hc.pvcInformer.Run(ctx.Done())
 
 	// Wait for caches to be synced before starting workers.
-	if !cache.WaitForCacheSync(ctx.Done(), hc.habInformerSynced, hc.stsInformerSynced, hc.cmInformerSynced, hc.pvInformerSynced, hc.pvcInformerSynced) {
+	if !cache.WaitForCacheSync(ctx.Done(), hc.habInformerSynced, hc.stsInformerSynced, hc.cmInformerSynced) {
 		return nil
 	}
 	level.Debug(hc.logger).Log("msg", "Caches synced")
