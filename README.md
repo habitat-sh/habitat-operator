@@ -11,6 +11,6 @@ $ git push origin gh-pages
 Then to test if everything works:
 
 ```console
-$ helm repo add habitat https://kinvolk.github.io/habitat-operator/helm/charts/stable/
+$ helm repo add habitat https://habitat-sh.github.io/habitat-operator/helm/charts/stable/
 $ helm install habitat/habitat-operator
 ```
