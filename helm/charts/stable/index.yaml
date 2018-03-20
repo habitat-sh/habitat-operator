@@ -12,9 +12,9 @@ entries:
       name: Zeeshan Ali
     name: habitat-operator
     sources:
-    - https://github.com/kinvolk/habitat-operator
+    - https://github.com/habitat-sh/habitat-operator
     urls:
-    - https://kinvolk.github.io/habitat-operator/helm/charts/stable/habitat-operator-0.5.1.tgz
+    - https://habitat-sh.github.io/habitat-operator/helm/charts/stable/habitat-operator-0.5.1.tgz
     version: 0.5.1
   - apiVersion: v1
     created: 2018-02-14T16:47:48.677744417+01:00
@@ -27,9 +27,9 @@ entries:
       name: Zeeshan Ali
     name: habitat-operator
     sources:
-    - https://github.com/kinvolk/habitat-operator
+    - https://github.com/habitat-sh/habitat-operator
     urls:
-    - https://kinvolk.github.io/habitat-operator/helm/charts/stable/habitat-operator-0.5.0.tgz
+    - https://habitat-sh.github.io/habitat-operator/helm/charts/stable/habitat-operator-0.5.0.tgz
     version: 0.5.0
   - apiVersion: v1
     created: 2018-02-14T16:47:48.677497625+01:00
@@ -42,8 +42,8 @@ entries:
       name: Zeeshan Ali
     name: habitat-operator
     sources:
-    - https://github.com/kinvolk/habitat-operator
+    - https://github.com/habitat-sh/habitat-operator
     urls:
-    - https://kinvolk.github.io/habitat-operator/helm/charts/stable/habitat-operator-0.4.0.tgz
+    - https://habitat-sh.github.io/habitat-operator/helm/charts/stable/habitat-operator-0.4.0.tgz
     version: 0.4.0
 generated: 2018-02-14T16:47:48.677151333+01:00
