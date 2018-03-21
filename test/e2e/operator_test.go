@@ -24,6 +24,7 @@ import (
 	utils "github.com/habitat-sh/habitat-operator/test/e2e/framework"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 const (
@@ -34,12 +35,12 @@ const (
 // TestBind tests that the operator correctly created two Habitat Services and bound them together.
 func TestBind(t *testing.T) {
 	// Get Habitat object from Habitat go example.
-	wApp, err := utils.ConvertHabitat("resources/bind-config/webapp.yml")
+	web, err := utils.ConvertHabitat("resources/bind-config/webapp.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := framework.CreateHabitat(wApp); err != nil {
+	if err := framework.CreateHabitat(web); err != nil {
 		t.Fatal(err)
 	}
 
@@ -64,6 +65,12 @@ func TestBind(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Delete Service so it doesn't interfere with other tests.
+	defer (func(name string) {
+		if err := framework.DeleteService(name); err != nil {
+			t.Fatal(err)
+		}
+	})(svc.Name)
 
 	// Get Secret object from example file.
 	sec, err := utils.ConvertSecret("resources/bind-config/secret.yml")
@@ -78,7 +85,7 @@ func TestBind(t *testing.T) {
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, wApp.ObjectMeta.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, web.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
 	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, db.ObjectMeta.Name, 1); err != nil {
@@ -109,6 +116,8 @@ func TestBind(t *testing.T) {
 		t.Fatalf("Habitat Service msg does not match one in default.toml. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
 	}
 
+	// Test `user.toml` updates.
+
 	// Update secret.
 	newPort := "port = 6333"
 
@@ -133,11 +142,6 @@ func TestBind(t *testing.T) {
 	// the only thing we need to check is it contains the expectedMsg.
 	if !strings.Contains(actualMsg, expectedMsg) {
 		t.Fatalf("Configuration update did not go through. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
-	}
-
-	// Delete Service so it doesn't interfere with other tests.
-	if err := framework.DeleteService(svc.ObjectMeta.Name); err != nil {
-		t.Fatal(err)
 	}
 }
 
@@ -179,5 +183,69 @@ func TestHabitatDelete(t *testing.T) {
 	_, err = framework.KubeClient.CoreV1().ConfigMaps(utils.TestNs).Get(configMapName, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestPersistentStorage(t *testing.T) {
+	// We run minikube in a VM on Travis. In that environment, we cannot create PersistentVolumes.
+	t.Skip("This test cannot be run successfully in our current testing setup")
+
+	ephemeral, err := utils.ConvertHabitat("resources/standalone/habitat.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	persisted, err := utils.ConvertHabitat("resources/persisted/habitat.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := framework.CreateHabitat(ephemeral); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := framework.CreateHabitat(persisted); err != nil {
+		t.Fatal(err)
+	}
+
+	// Delete all PVCs at the end of the test.
+	// For dynamically provisioned PVs (as is the case on minikube), this will
+	// also delete the PVs.
+	defer (func(name string) {
+		ls := labels.SelectorFromSet(labels.Set(map[string]string{
+			habv1beta1.HabitatNameLabel: name,
+		}))
+
+		lo := metav1.ListOptions{
+			LabelSelector: ls.String(),
+		}
+
+		err := framework.KubeClient.CoreV1().PersistentVolumeClaims(utils.TestNs).DeleteCollection(&metav1.DeleteOptions{}, lo)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})(persisted.Name)
+
+	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, persisted.Name, 1); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test that persistence is only enabled if requested
+	ephemeralSTS, err := framework.KubeClient.AppsV1beta1().StatefulSets(utils.TestNs).Get(ephemeral.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(ephemeralSTS.Spec.VolumeClaimTemplates) != 0 {
+		t.Fatal("PersistentVolumeClaims created for ephemeral StatefulSet")
+	}
+
+	persistedSTS, err := framework.KubeClient.AppsV1beta1().StatefulSets(utils.TestNs).Get(persisted.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(persistedSTS.Spec.VolumeClaimTemplates) == 0 {
+		t.Fatal("No PersistentVolumeClaims created for persistent StatefulSet")
 	}
 }

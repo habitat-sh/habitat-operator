@@ -1,0 +1,28 @@
+apiVersion: habitat.sh/v1beta1
+kind: Habitat
+metadata:
+  name: example-persistent-habitat
+spec:
+  # the core/redis habitat service packaged as a Docker image
+  image: kinvolk/redis-hab
+  count: 3
+  # the presence of this key activates persistent storage
+  persistentStorage:
+    # the size of the volume that will be mounted in each Pod
+    size: 1Gi
+    # a StorageClass object with name "standard" must be created beforehand by
+    # the cluster administrator
+    storageClassName: example-sc
+    # the location under which the volume will be mounted
+    mountPath: /tmp/foobar
+  env:
+    - name: HAB_REDIS
+      # this is needed to make redis accept connections from other hosts
+      # see https://redis.io/topics/security#protected-mode
+      # NOTE: do not use this setting in a production environment
+      value: '{ "protected-mode": "no" }'
+  service:
+    name: redis
+    topology: leader
+    # if not present, defaults to "default"
+    group: foobar

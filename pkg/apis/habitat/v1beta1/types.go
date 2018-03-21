@@ -51,6 +51,20 @@ type HabitatSpec struct {
 	// The EnvVar type is documented at https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.9/#envvar-v1-core.
 	// Optional.
 	Env []corev1.EnvVar `json:"env,omitempty"`
+	// Optional.
+	PersistentStorage *PersistentStorage `json:"persistentStorage,omitempty"`
+}
+
+// PersistentStorage contains the details of the persistent storage that the
+// cluster should provision.
+type PersistentStorage struct {
+	// Size is the volume's size.
+	// It uses the same format as Kubernetes' size fields, e.g. 10Gi
+	Size string `json:"size"`
+	// MountPath is the path at which the PersistentVolume will be mounted.
+	MountPath string `json:"mountPath"`
+	// StorageClassName is the name of the StorageClass that the StatefulSet will request.
+	StorageClassName string `json:"storageClassName"`
 }
 
 type HabitatStatus struct {
@@ -102,6 +116,8 @@ const (
 
 	TopologyStandalone Topology = "standalone"
 	TopologyLeader     Topology = "leader"
+
+	HabitatKind = "Habitat"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

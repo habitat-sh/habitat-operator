@@ -8,6 +8,12 @@ Before deploying the Habitat operator inside your cluster the following roles mu
 
     kubectl apply -f examples/rbac/rbac.yml
 
+
+If you're running the operator on minikube, the `minikube.yml` manifest sets up
+the required RBAC rules.
+
+    kubectl apply -f examples/rbac/minikube.yml
+
 Once those roles were successfully created the Habitat operator can be deployed in the cluster:
 
     kubectl apply -f examples/rbac/habitat-operator.yml

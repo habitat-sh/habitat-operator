@@ -22,10 +22,10 @@ import (
 	"regexp"
 	"time"
 
+	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
+
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
-	appsv1beta1 "k8s.io/api/apps/v1beta1"
 	apiv1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,14 +71,14 @@ type HabitatController struct {
 	// delay, so that jobs in a crashing loop don't fill the queue.
 	queue workqueue.RateLimitingInterface
 
-	habInformer    cache.SharedIndexInformer
-	deployInformer cache.SharedIndexInformer
-	cmInformer     cache.SharedIndexInformer
+	habInformer cache.SharedIndexInformer
+	stsInformer cache.SharedIndexInformer
+	cmInformer  cache.SharedIndexInformer
 
 	// cache.InformerSynced returns true if the store has been synced at least once.
-	habInformerSynced    cache.InformerSynced
-	deployInformerSynced cache.InformerSynced
-	cmInformerSynced     cache.InformerSynced
+	habInformerSynced cache.InformerSynced
+	stsInformerSynced cache.InformerSynced
+	cmInformerSynced  cache.InformerSynced
 }
 
 type Config struct {
@@ -95,7 +95,7 @@ func New(config Config, logger log.Logger) (*HabitatController, error) {
 		return nil, errors.New("invalid controller config: no KubernetesClientset")
 	}
 	if config.Scheme == nil {
-		return nil, errors.New("invalid controller config: no Schema")
+		return nil, errors.New("invalid controller config: no Scheme")
 	}
 	if logger == nil {
 		return nil, errors.New("invalid controller config: no logger")
@@ -118,16 +118,16 @@ func (hc *HabitatController) Run(workers int, ctx context.Context) error {
 	level.Info(hc.logger).Log("msg", "Watching Habitat objects")
 
 	hc.cacheHabitats()
-	hc.cacheDeployments()
+	hc.cacheStatefulSets()
 	hc.cacheConfigMaps()
 	hc.watchPods(ctx)
 
 	go hc.habInformer.Run(ctx.Done())
-	go hc.deployInformer.Run(ctx.Done())
+	go hc.stsInformer.Run(ctx.Done())
 	go hc.cmInformer.Run(ctx.Done())
 
 	// Wait for caches to be synced before starting workers.
-	if !cache.WaitForCacheSync(ctx.Done(), hc.habInformerSynced, hc.deployInformerSynced, hc.cmInformerSynced) {
+	if !cache.WaitForCacheSync(ctx.Done(), hc.habInformerSynced, hc.stsInformerSynced, hc.cmInformerSynced) {
 		return nil
 	}
 	level.Debug(hc.logger).Log("msg", "Caches synced")
@@ -169,29 +169,6 @@ func (hc *HabitatController) cacheHabitats() {
 	})
 
 	hc.habInformerSynced = hc.habInformer.HasSynced
-}
-
-func (hc *HabitatController) cacheDeployments() {
-	source := newListWatchFromClientWithLabels(
-		hc.config.KubernetesClientset.AppsV1beta1().RESTClient(),
-		"deployments",
-		apiv1.NamespaceAll,
-		labelListOptions())
-
-	hc.deployInformer = cache.NewSharedIndexInformer(
-		source,
-		&appsv1beta1.Deployment{},
-		resyncPeriod,
-		cache.Indexers{},
-	)
-
-	hc.deployInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    hc.handleDeployAdd,
-		UpdateFunc: hc.handleDeployUpdate,
-		DeleteFunc: hc.handleDeployDelete,
-	})
-
-	hc.deployInformerSynced = hc.deployInformer.HasSynced
 }
 
 func (hc *HabitatController) cacheConfigMaps() {
@@ -278,56 +255,7 @@ func (hc *HabitatController) handleHabDelete(obj interface{}) {
 	hc.enqueue(h)
 }
 
-func (hc *HabitatController) handleDeployAdd(obj interface{}) {
-	d, ok := obj.(*appsv1beta1.Deployment)
-	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to type assert Deployment", "obj", obj)
-		return
-	}
-
-	h, err := hc.getHabitatFromLabeledResource(d)
-	if err != nil {
-		level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
-		return
-	}
-
-	hc.enqueue(h)
-}
-
-func (hc *HabitatController) handleDeployUpdate(oldObj, newObj interface{}) {
-	d, ok := newObj.(*appsv1beta1.Deployment)
-	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to type assert deployment", "obj", newObj)
-		return
-	}
-
-	h, err := hc.getHabitatFromLabeledResource(d)
-	if err != nil {
-		level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
-		return
-	}
-
-	hc.enqueue(h)
-}
-
-func (hc *HabitatController) handleDeployDelete(obj interface{}) {
-	d, ok := obj.(*appsv1beta1.Deployment)
-	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to type assert deployment", "obj", obj)
-		return
-	}
-
-	h, err := hc.getHabitatFromLabeledResource(d)
-	if err != nil {
-		// Could not find Habitat, it must have already been removed.
-		level.Debug(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
-		return
-	}
-
-	hc.enqueue(h)
-}
-
-func (hc *HabitatController) enqueueCM(obj interface{}) {
+func (hc *HabitatController) handleCM(obj interface{}) {
 	cm, ok := obj.(*apiv1.ConfigMap)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert ConfigMap", "obj", obj)
@@ -347,15 +275,15 @@ func (hc *HabitatController) enqueueCM(obj interface{}) {
 }
 
 func (hc *HabitatController) handleCMAdd(obj interface{}) {
-	hc.enqueueCM(obj)
+	hc.handleCM(obj)
 }
 
 func (hc *HabitatController) handleCMUpdate(oldObj, newObj interface{}) {
-	hc.enqueueCM(newObj)
+	hc.handleCM(newObj)
 }
 
 func (hc *HabitatController) handleCMDelete(obj interface{}) {
-	hc.enqueueCM(obj)
+	hc.handleCM(obj)
 }
 
 func (hc *HabitatController) handlePodAdd(obj interface{}) {
@@ -436,7 +364,7 @@ func (hc *HabitatController) handlePodDelete(obj interface{}) {
 
 func (hc *HabitatController) getRunningPods(namespace string) ([]apiv1.Pod, error) {
 	fs := fields.SelectorFromSet(fields.Set{
-		"status.phase": "Running",
+		"status.phase": string(apiv1.PodRunning),
 	})
 	ls := fields.SelectorFromSet(fields.Set(map[string]string{
 		habv1beta1.HabitatLabel: "true",
@@ -546,210 +474,6 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 	return nil
 }
 
-func (hc *HabitatController) handleHabitatDeletion(key string) error {
-	// Delete deployment.
-	deploymentNS, deploymentName, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		return err
-	}
-
-	deploymentsClient := hc.config.KubernetesClientset.AppsV1beta1().Deployments(deploymentNS)
-
-	// With this policy, dependent resources will be deleted, but we don't wait
-	// for that to happen.
-	deletePolicy := metav1.DeletePropagationBackground
-	deleteOptions := &metav1.DeleteOptions{
-		PropagationPolicy: &deletePolicy,
-	}
-
-	if err := deploymentsClient.Delete(deploymentName, deleteOptions); err != nil {
-		level.Error(hc.logger).Log("msg", err)
-		return err
-	}
-
-	level.Info(hc.logger).Log("msg", "deleted deployment", "name", deploymentName)
-
-	return nil
-}
-
-func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.Deployment, error) {
-	// This value needs to be passed as a *int32, so we convert it, assign it to a
-	// variable and afterwards pass a pointer to it.
-	count := int32(h.Spec.Count)
-
-	// Set the service arguments we send to Habitat.
-	var habArgs []string
-	if h.Spec.Service.Group != "" {
-		// When a service is started without explicitly naming the group,
-		// it's assigned to the default group.
-		habArgs = append(habArgs,
-			"--group", h.Spec.Service.Group)
-	}
-
-	// As we want to label our pods with the
-	// topology type we set standalone as the default one.
-	// We do not need to pass this to habitat, as if no topology
-	// is set, habitat by default sets standalone topology.
-	topology := habv1beta1.TopologyStandalone
-
-	if h.Spec.Service.Topology == habv1beta1.TopologyLeader {
-		topology = habv1beta1.TopologyLeader
-	}
-
-	path := fmt.Sprintf("%s/%s", configMapDir, peerFilename)
-
-	habArgs = append(habArgs,
-		"--topology", topology.String(),
-		"--peer-watch-file", path,
-	)
-
-	// Runtime binding.
-	// One Service connects to another forming a producer/consumer relationship.
-	for _, bind := range h.Spec.Service.Bind {
-		// Pass --bind flag.
-		bindArg := fmt.Sprintf("%s:%s.%s", bind.Name, bind.Service, bind.Group)
-		habArgs = append(habArgs,
-			"--bind", bindArg)
-	}
-
-	base := &appsv1beta1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: h.Name,
-		},
-		Spec: appsv1beta1.DeploymentSpec{
-			Replicas: &count,
-			Template: apiv1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						habv1beta1.HabitatLabel:     "true",
-						habv1beta1.HabitatNameLabel: h.Name,
-						habv1beta1.TopologyLabel:    topology.String(),
-					},
-				},
-				Spec: apiv1.PodSpec{
-					Containers: []apiv1.Container{
-						{
-							Name:  "habitat-service",
-							Image: h.Spec.Image,
-							Args:  habArgs,
-							VolumeMounts: []apiv1.VolumeMount{
-								{
-									Name:      "config",
-									MountPath: configMapDir,
-									ReadOnly:  true,
-								},
-							},
-							Env: h.Spec.Env,
-						},
-					},
-					// Define the volume for the ConfigMap.
-					Volumes: []apiv1.Volume{
-						{
-							Name: "config",
-							VolumeSource: apiv1.VolumeSource{
-								ConfigMap: &apiv1.ConfigMapVolumeSource{
-									LocalObjectReference: apiv1.LocalObjectReference{
-										Name: configMapName,
-									},
-									Items: []apiv1.KeyToPath{
-										{
-											Key:  peerFile,
-											Path: peerFilename,
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	// If we have a secret name present we should mount that secret.
-	if h.Spec.Service.ConfigSecretName != "" {
-		// Let's make sure our secret is there before mounting it.
-		secret, err := hc.config.KubernetesClientset.CoreV1().Secrets(h.Namespace).Get(h.Spec.Service.ConfigSecretName, metav1.GetOptions{})
-		if err != nil {
-			return nil, err
-		}
-
-		secretVolume := &apiv1.Volume{
-			Name: userConfigFilename,
-			VolumeSource: apiv1.VolumeSource{
-				Secret: &apiv1.SecretVolumeSource{
-					SecretName: secret.Name,
-					Items: []apiv1.KeyToPath{
-						{
-							Key:  userTOMLFile,
-							Path: userTOMLFile,
-						},
-					},
-				},
-			},
-		}
-
-		secretVolumeMount := &apiv1.VolumeMount{
-			Name: userConfigFilename,
-			// The Habitat supervisor creates a directory for each service under /hab/user/<servicename>/config.
-			// We need to place the user.toml file in there in order for it to be detected.
-			MountPath: fmt.Sprintf("/hab/user/%s/config", h.Spec.Service.Name),
-			ReadOnly:  false,
-		}
-
-		base.Spec.Template.Spec.Containers[0].VolumeMounts = append(base.Spec.Template.Spec.Containers[0].VolumeMounts, *secretVolumeMount)
-		base.Spec.Template.Spec.Volumes = append(base.Spec.Template.Spec.Volumes, *secretVolume)
-	}
-
-	// Handle ring key, if one is specified.
-	if ringSecretName := h.Spec.Service.RingSecretName; ringSecretName != "" {
-		s, err := hc.config.KubernetesClientset.CoreV1().Secrets(apiv1.NamespaceDefault).Get(ringSecretName, metav1.GetOptions{})
-		if err != nil {
-			level.Error(hc.logger).Log("msg", "Could not find Secret containing ring key")
-			return nil, err
-		}
-
-		// The filename under which the ring key is saved.
-		ringKeyFile := fmt.Sprintf("%s.%s", ringSecretName, ringKeyFileExt)
-
-		// Extract the bare ring name, by removing the revision.
-		// Validation has already been performed by this point.
-		ringName := ringRegexp.FindStringSubmatch(ringSecretName)[1]
-
-		v := &apiv1.Volume{
-			Name: ringSecretName,
-			VolumeSource: apiv1.VolumeSource{
-				Secret: &apiv1.SecretVolumeSource{
-					SecretName: s.Name,
-					Items: []apiv1.KeyToPath{
-						{
-							Key:  ringSecretKey,
-							Path: ringKeyFile,
-						},
-					},
-				},
-			},
-		}
-
-		vm := &apiv1.VolumeMount{
-			Name:      ringSecretName,
-			MountPath: "/hab/cache/keys",
-			// This directory cannot be made read-only, as the supervisor writes to
-			// it during its operation.
-			ReadOnly: false,
-		}
-
-		// Mount ring key file.
-		base.Spec.Template.Spec.Volumes = append(base.Spec.Template.Spec.Volumes, *v)
-		base.Spec.Template.Spec.Containers[0].VolumeMounts = append(base.Spec.Template.Spec.Containers[0].VolumeMounts, *vm)
-
-		// Add --ring argument to supervisor invocation.
-		base.Spec.Template.Spec.Containers[0].Args = append(base.Spec.Template.Spec.Containers[0].Args, "--ring", ringName)
-	}
-
-	return base, nil
-}
-
 func (hc *HabitatController) enqueue(hab *habv1beta1.Habitat) {
 	if hab == nil {
 		level.Error(hc.logger).Log("msg", "Habitat object was nil", "object", hab)
@@ -802,7 +526,7 @@ func (hc *HabitatController) processNextItem() bool {
 
 // conform is where the reconciliation takes place.
 // It is invoked when any of the following resources get created, updated or deleted:
-// Habitat, Pod, Deployment, ConfigMap.
+// Habitat, Pod, StatefulSet, ConfigMap.
 func (hc *HabitatController) conform(key string) error {
 	obj, exists, err := hc.habInformer.GetStore().GetByKey(key)
 	if err != nil {
@@ -810,7 +534,8 @@ func (hc *HabitatController) conform(key string) error {
 	}
 	if !exists {
 		// The Habitat was deleted.
-		return hc.handleHabitatDeletion(key)
+		level.Info(hc.logger).Log("msg", "deleted Habitat", "key", key)
+		return nil
 	}
 
 	// The Habitat was either created or updated.
@@ -828,26 +553,26 @@ func (hc *HabitatController) conform(key string) error {
 
 	level.Debug(hc.logger).Log("msg", "validated object")
 
-	deployment, err := hc.newDeployment(h)
+	sts, err := hc.newStatefulSet(h)
 	if err != nil {
 		return err
 	}
 
-	// Create Deployment, if it doesn't already exist.
-	if _, err := hc.config.KubernetesClientset.AppsV1beta1().Deployments(h.Namespace).Create(deployment); err != nil {
-		// Was the error due to the Deployment already existing?
+	// Create StatefulSet, if it doesn't already exist.
+	if _, err := hc.config.KubernetesClientset.AppsV1beta1().StatefulSets(h.Namespace).Create(sts); err != nil {
+		// Was the error due to the StatefulSet already existing?
 		if apierrors.IsAlreadyExists(err) {
 			// If yes, update it.
-			if _, err := hc.config.KubernetesClientset.AppsV1beta1().Deployments(h.Namespace).Update(deployment); err != nil {
+			if _, err := hc.config.KubernetesClientset.AppsV1beta1().StatefulSets(h.Namespace).Update(sts); err != nil {
 				return err
 			}
 		} else {
 			return err
 		}
 
-		level.Debug(hc.logger).Log("msg", "deployment already existed", "name", deployment.Name)
+		level.Debug(hc.logger).Log("msg", "StatefulSet already existed", "name", sts.Name)
 	} else {
-		level.Info(hc.logger).Log("msg", "created deployment", "name", deployment.Name)
+		level.Info(hc.logger).Log("msg", "created StatefulSet", "name", sts.Name)
 	}
 
 	// Handle creation/updating of peer IP ConfigMap.
@@ -926,6 +651,14 @@ func newConfigMap(ip string, h *habv1beta1.Habitat) *apiv1.ConfigMap {
 			Namespace: h.Namespace,
 			Labels: map[string]string{
 				habv1beta1.HabitatLabel: "true",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				metav1.OwnerReference{
+					APIVersion: habv1beta1.SchemeGroupVersion.String(),
+					Kind:       habv1beta1.HabitatKind,
+					Name:       h.Name,
+					UID:        h.UID,
+				},
 			},
 		},
 		Data: map[string]string{

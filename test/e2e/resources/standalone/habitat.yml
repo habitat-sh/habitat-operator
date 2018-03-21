@@ -1,11 +1,11 @@
 apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
-  name: standalone-test-123
+  name: standalone-test
 spec:
-  image: habitat/nginx-hab
+  image: habitat/redis-hab
   count: 1
   service:
-    name: nginx
+    name: redis
     topology: standalone
     group: foobar
