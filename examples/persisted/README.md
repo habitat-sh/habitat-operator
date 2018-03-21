@@ -15,7 +15,10 @@ object with name `example-sc`
 `spec.persistence.storageClassName` in the Habitat object's manifest
 
 An example `StorageClass` for clusters running on minikube is provided in
-`minikube.yml`.
+`minikube.yml`
+
+**NOTE**: minikube started with `--vm-driver=none` is **NOT**
+supported
 
 ## Workflow
 
