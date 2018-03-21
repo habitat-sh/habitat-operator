@@ -5,6 +5,8 @@ provide optional support for persistent storage.
 
 In order to enable persistent storage for your Habitat object, you need to:
 
+* familiarize yourself with how persistent storage [works in
+Kubernetes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
 * create a
 [`StorageClass`](https://kubernetes.io/docs/concepts/storage/storage-classes/)
 object with name `example-sc`
