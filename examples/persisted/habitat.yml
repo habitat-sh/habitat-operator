@@ -12,7 +12,7 @@ spec:
     size: 1Gi
     # a StorageClass object with name "standard" must be created beforehand by
     # the cluster administrator
-    storageClassName: standard
+    storageClassName: example-sc
     # the location under which the volume will be mounted
     mountPath: /tmp/foobar
   env:

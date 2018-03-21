@@ -6,21 +6,21 @@ provide optional support for persistent storage.
 In order to enable persistent storage for your Habitat object, you need to:
 
 * create a
-[`StorageClass`](https://kubernetes.io/docs/concepts/storage/storage-classes/) object in your cluster
+[`StorageClass`](https://kubernetes.io/docs/concepts/storage/storage-classes/)
+object with name `example-sc`
 * add the `spec.persistentStorage` key to the Habitat object's manifest
 * specify the `name` of the aforementioned `StorageClass` object under
 `spec.persistence.storageClassName` in the Habitat object's manifest
 
+An example `StorageClass` for clusters running on minikube is provided in
+`minikube.yml`.
+
 ## Workflow
 
-Before deploying the example, create a `StorageClass` object, specifying the
-type of volume your cluster is able to provision.
+Before deploying the example, create a `StorageClass` object with name
+`example-sc`.
 
-**NOTE**: If you're deploying the example on GKE, a standard
-`StorageClass` for `GCEPersistentDisk` has already been defined, so you can skip
-the above step
-
-Once the `StorageClass` has been created, run the example:
+Then run the example:
 
     kubectl create -f examples/persisted/habitat.yml
 
