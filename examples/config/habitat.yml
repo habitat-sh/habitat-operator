@@ -16,7 +16,7 @@ spec:
   image: kinvolk/redis-hab
   count: 1
   service:
-    name: db
+    name: redis
     topology: standalone
     group: redisdb
     # Create Secret with the initial configuration you want.
