@@ -21,6 +21,7 @@ import (
 
 const (
 	HabitatResourcePlural = "habitats"
+	HabitatShortName      = "hab"
 
 	// HabitatLabel labels the resources that belong to Habitat.
 	// Example: 'habitat: true'
