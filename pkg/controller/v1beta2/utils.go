@@ -16,17 +16,29 @@ package v1beta2
 
 import (
 	"fmt"
+	"reflect"
+	"time"
 
+	"github.com/habitat-sh/habitat-operator/pkg/apis/habitat"
 	habv1beta2 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta2"
 
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 )
 
-const leaderFollowerTopologyMinCount = 3
+const (
+	leaderFollowerTopologyMinCount = 3
+	pollInterval                   = 500 * time.Millisecond
+	timeOut                        = 10 * time.Second
+	habitatCRDName                 = habv1beta2.HabitatResourcePlural + "." + habitat.GroupName
+)
 
 type keyNotFoundError struct {
 	key string
@@ -92,4 +104,64 @@ func labelListOptions() metav1.ListOptions {
 	return metav1.ListOptions{
 		LabelSelector: ls.String(),
 	}
+}
+
+func CreateCRD(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.CustomResourceDefinition, error) {
+	crd := &apiextensionsv1beta1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: habv1beta2.SchemeGroupVersion.String(),
+		},
+		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
+			Group:   habv1beta2.SchemeGroupVersion.Group,
+			Version: habv1beta2.SchemeGroupVersion.Version,
+			Scope:   apiextensionsv1beta1.NamespaceScoped,
+			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
+				Plural:     habv1beta2.HabitatResourcePlural,
+				Kind:       reflect.TypeOf(habv1beta2.Habitat{}).Name(),
+				ShortNames: []string{habv1beta2.HabitatShortName},
+			},
+		},
+	}
+
+	_, err := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Create(crd)
+	if err != nil {
+		return nil, err
+	}
+
+	// wait for CRD being established.
+	err = wait.Poll(pollInterval, timeOut, func() (bool, error) {
+		crd, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(habitatCRDName, metav1.GetOptions{})
+
+		if err != nil {
+			return false, err
+		}
+
+		for _, cond := range crd.Status.Conditions {
+			switch cond.Type {
+			case apiextensionsv1beta1.Established:
+				if cond.Status == apiextensionsv1beta1.ConditionTrue {
+					return true, err
+				}
+			case apiextensionsv1beta1.NamesAccepted:
+				if cond.Status == apiextensionsv1beta1.ConditionFalse {
+					// TODO re-introduce logging?
+					// fmt.Printf("Error: Name conflict: %v\n", cond.Reason)
+				}
+			}
+		}
+
+		return false, err
+	})
+
+	// delete CRD if there was an error.
+	if err != nil {
+		deleteErr := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(habitatCRDName, nil)
+		if deleteErr != nil {
+			return nil, errors.NewAggregate([]error{err, deleteErr})
+		}
+
+		return nil, err
+	}
+
+	return crd, nil
 }
