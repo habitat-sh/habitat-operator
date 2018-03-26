@@ -25,10 +25,8 @@ var (
 	AddToScheme   = SchemeBuilder.AddToScheme
 )
 
-// GroupName is the group name used in this package.
 const (
-	GroupName = "habitat.sh"
-	Version   = "v1beta1"
+	Version = "v1beta1"
 )
 
 // SchemeGroupVersion is the group version used to register these objects.
