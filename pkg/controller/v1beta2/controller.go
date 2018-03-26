@@ -27,6 +27,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	apiv1 "k8s.io/api/core/v1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -84,6 +85,7 @@ type HabitatController struct {
 type Config struct {
 	HabitatClient       *rest.RESTClient
 	KubernetesClientset *kubernetes.Clientset
+	ClusterConfig       *rest.Config
 	Scheme              *runtime.Scheme
 }
 
@@ -94,11 +96,32 @@ func New(config Config, logger log.Logger) (*HabitatController, error) {
 	if config.KubernetesClientset == nil {
 		return nil, errors.New("invalid controller config: no KubernetesClientset")
 	}
+	if config.ClusterConfig == nil {
+		return nil, errors.New("invalid controller config: no ClusterConfig")
+	}
 	if config.Scheme == nil {
 		return nil, errors.New("invalid controller config: no Scheme")
 	}
 	if logger == nil {
 		return nil, errors.New("invalid controller config: no logger")
+	}
+
+	// This is the clientset for interacting with the apiextensions group.
+	apiextensionsclientset, err := apiextensionsclient.NewForConfig(config.ClusterConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create Habitat v1beta2 CRD.
+	_, crdErr := CreateCRD(apiextensionsclientset)
+	if crdErr != nil {
+		if !apierrors.IsAlreadyExists(crdErr) {
+			return nil, err
+		}
+
+		level.Info(logger).Log("msg", "Habitat CRD already exists, continuing")
+	} else {
+		level.Info(logger).Log("msg", "created Habitat CRD")
 	}
 
 	hc := &HabitatController{
