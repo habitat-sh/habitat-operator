@@ -17,11 +17,11 @@
 package fake
 
 import (
-	clientset "github.com/kinvolk/habitat-operator/pkg/client/clientset/versioned"
-	habitatv1beta1 "github.com/kinvolk/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1"
-	fakehabitatv1beta1 "github.com/kinvolk/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1/fake"
-	habitatv1beta2 "github.com/kinvolk/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta2"
-	fakehabitatv1beta2 "github.com/kinvolk/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta2/fake"
+	clientset "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned"
+	habitatv1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1"
+	fakehabitatv1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1/fake"
+	habitatv1beta2 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta2"
+	fakehabitatv1beta2 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta2/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

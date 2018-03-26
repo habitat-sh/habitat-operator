@@ -17,8 +17,8 @@
 package scheme
 
 import (
-	habitatv1beta1 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1beta1"
-	habitatv1beta2 "github.com/kinvolk/habitat-operator/pkg/apis/habitat/v1beta2"
+	habitatv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
+	habitatv1beta2 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
