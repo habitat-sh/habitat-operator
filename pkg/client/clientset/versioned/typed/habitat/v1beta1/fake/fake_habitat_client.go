@@ -17,7 +17,7 @@
 package fake
 
 import (
-	v1beta1 "github.com/kinvolk/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1"
+	v1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )
