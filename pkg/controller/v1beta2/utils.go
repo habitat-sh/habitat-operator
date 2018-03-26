@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package controller
+package v1beta2
 
 import (
 	"fmt"
 
-	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
+	habv1beta2 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -36,12 +36,12 @@ func (err keyNotFoundError) Error() string {
 	return fmt.Sprintf("could not find Object with key %s in the cache", err.key)
 }
 
-func validateCustomObject(h habv1beta1.Habitat) error {
+func validateCustomObject(h habv1beta2.Habitat) error {
 	spec := h.Spec
 
 	switch spec.Service.Topology {
-	case habv1beta1.TopologyStandalone:
-	case habv1beta1.TopologyLeader:
+	case habv1beta2.TopologyStandalone:
+	case habv1beta2.TopologyLeader:
 		if spec.Count < leaderFollowerTopologyMinCount {
 			return fmt.Errorf("too few instances: %d, leader-follower topology requires at least %d", spec.Count, leaderFollowerTopologyMinCount)
 		}
@@ -86,7 +86,7 @@ func newListWatchFromClientWithLabels(c cache.Getter, resource string, namespace
 
 func labelListOptions() metav1.ListOptions {
 	ls := labels.SelectorFromSet(labels.Set(map[string]string{
-		habv1beta1.HabitatLabel: "true",
+		habv1beta2.HabitatLabel: "true",
 	}))
 
 	return metav1.ListOptions{
