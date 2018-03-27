@@ -267,18 +267,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta2.Habitat) (*appsv1beta1
 }
 
 func (hc *HabitatController) cacheStatefulSets() {
-	source := newListWatchFromClientWithLabels(
-		hc.config.KubernetesClientset.AppsV1beta1().RESTClient(),
-		"statefulsets",
-		apiv1.NamespaceAll,
-		labelListOptions())
-
-	hc.stsInformer = cache.NewSharedIndexInformer(
-		source,
-		&appsv1beta1.StatefulSet{},
-		resyncPeriod,
-		cache.Indexers{},
-	)
+	hc.stsInformer = hc.config.KubeInformerFactory.Apps().V1().StatefulSets().Informer()
 
 	hc.stsInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    hc.handleStsAdd,
