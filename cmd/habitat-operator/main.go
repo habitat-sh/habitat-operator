@@ -20,17 +20,18 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
+	"time"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	flag "github.com/spf13/pflag"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	habclient "github.com/habitat-sh/habitat-operator/pkg/client"
-	habcontroller "github.com/habitat-sh/habitat-operator/pkg/controller"
+	habclientset "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned"
+	habinformers "github.com/habitat-sh/habitat-operator/pkg/client/informers/externalversions"
+	habv1beta2controller "github.com/habitat-sh/habitat-operator/pkg/controller/v1beta2"
 )
 
 type Config struct {
@@ -60,45 +61,31 @@ func run() int {
 		return 1
 	}
 
-	// This is the clientset for interacting with the apiextensions group.
-	apiextensionsclientset, err := apiextensionsclient.NewForConfig(config)
-	if err != nil {
-		level.Error(logger).Log("msg", err)
-		return 1
-	}
-
-	// Create Habitat CRD.
-	_, crdErr := habclient.CreateCRD(apiextensionsclientset)
-	if crdErr != nil {
-		if !apierrors.IsAlreadyExists(crdErr) {
-			level.Error(logger).Log("msg", crdErr)
-			return 1
-		}
-
-		level.Info(logger).Log("msg", "Habitat CRD already exists, continuing")
-	} else {
-		level.Info(logger).Log("msg", "created Habitat CRD")
-	}
-
-	habClient, scheme, err := habclient.NewClient(config)
+	// This is the clientset for interacting with the Habitat API.
+	habClientset, err := habclientset.NewForConfig(config)
 	if err != nil {
 		level.Error(logger).Log("msg", err)
 		return 1
 	}
 
 	// This is the clientset for interacting with the stable API group.
-	clientset, err := kubernetes.NewForConfig(config)
+	kubeClientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		level.Error(logger).Log("msg", err)
 		return 1
 	}
 
-	controllerConfig := habcontroller.Config{
-		HabitatClient:       habClient,
-		KubernetesClientset: clientset,
-		Scheme:              scheme,
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientset, time.Second*30)
+	habInformerFactory := habinformers.NewSharedInformerFactory(habClientset, time.Second*30)
+
+	controllerConfig := habv1beta2controller.Config{
+		HabitatClient:          habClientset.HabitatV1beta2().RESTClient(),
+		KubernetesClientset:    kubeClientset,
+		ClusterConfig:          config,
+		KubeInformerFactory:    kubeInformerFactory,
+		HabitatInformerFactory: habInformerFactory,
 	}
-	hc, err := habcontroller.New(controllerConfig, log.With(logger, "component", "controller"))
+	hc, err := habv1beta2controller.New(controllerConfig, log.With(logger, "component", "controller"))
 	if err != nil {
 		level.Error(logger).Log("msg", err)
 		return 1
@@ -107,6 +94,9 @@ func run() int {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 	go hc.Run(runtime.NumCPU(), ctx)
+
+	go kubeInformerFactory.Start(ctx.Done())
+	go habInformerFactory.Start(ctx.Done())
 
 	term := make(chan os.Signal)
 	// Relay these signals to the `term` channel.

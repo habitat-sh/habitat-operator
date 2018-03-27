@@ -23,6 +23,7 @@ import (
 	"time"
 
 	habv1beta2 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta2"
+	habinformers "github.com/habitat-sh/habitat-operator/pkg/client/informers/externalversions"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -32,8 +33,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -83,10 +84,11 @@ type HabitatController struct {
 }
 
 type Config struct {
-	HabitatClient       *rest.RESTClient
-	KubernetesClientset *kubernetes.Clientset
-	ClusterConfig       *rest.Config
-	Scheme              *runtime.Scheme
+	HabitatClient          rest.Interface
+	KubernetesClientset    *kubernetes.Clientset
+	ClusterConfig          *rest.Config
+	KubeInformerFactory    kubeinformers.SharedInformerFactory
+	HabitatInformerFactory habinformers.SharedInformerFactory
 }
 
 func New(config Config, logger log.Logger) (*HabitatController, error) {
@@ -99,8 +101,11 @@ func New(config Config, logger log.Logger) (*HabitatController, error) {
 	if config.ClusterConfig == nil {
 		return nil, errors.New("invalid controller config: no ClusterConfig")
 	}
-	if config.Scheme == nil {
-		return nil, errors.New("invalid controller config: no Scheme")
+	if config.KubeInformerFactory == nil {
+		return nil, errors.New("invalid controller config: no KubeInformerFactory")
+	}
+	if config.HabitatInformerFactory == nil {
+		return nil, errors.New("invalid controller config: no HabitatInformerFactory")
 	}
 	if logger == nil {
 		return nil, errors.New("invalid controller config: no logger")
@@ -170,20 +175,7 @@ func (hc *HabitatController) Run(workers int, ctx context.Context) error {
 }
 
 func (hc *HabitatController) cacheHabitats() {
-	source := cache.NewListWatchFromClient(
-		hc.config.HabitatClient,
-		habv1beta2.HabitatResourcePlural,
-		apiv1.NamespaceAll,
-		fields.Everything())
-
-	hc.habInformer = cache.NewSharedIndexInformer(
-		source,
-
-		// The object type.
-		&habv1beta2.Habitat{},
-		resyncPeriod,
-		cache.Indexers{},
-	)
+	hc.habInformer = hc.config.HabitatInformerFactory.Habitat().V1beta2().Habitats().Informer()
 
 	hc.habInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    hc.handleHabAdd,
@@ -195,18 +187,7 @@ func (hc *HabitatController) cacheHabitats() {
 }
 
 func (hc *HabitatController) cacheConfigMaps() {
-	source := newListWatchFromClientWithLabels(
-		hc.config.KubernetesClientset.CoreV1().RESTClient(),
-		"configmaps",
-		apiv1.NamespaceAll,
-		labelListOptions())
-
-	hc.cmInformer = cache.NewSharedIndexInformer(
-		source,
-		&apiv1.ConfigMap{},
-		resyncPeriod,
-		cache.Indexers{},
-	)
+	hc.cmInformer = hc.config.KubeInformerFactory.Core().V1().ConfigMaps().Informer()
 
 	hc.cmInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    hc.handleCMAdd,
