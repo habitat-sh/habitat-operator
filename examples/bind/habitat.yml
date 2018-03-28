@@ -1,4 +1,4 @@
-apiVersion: habitat.sh/v1beta1
+apiVersion: habitat.sh/v1beta2
 kind: Habitat 
 metadata:
   name: db
@@ -9,7 +9,7 @@ spec:
     name: redis
     topology: standalone
 ---
-apiVersion: habitat.sh/v1beta1
+apiVersion: habitat.sh/v1beta2
 kind: Habitat
 metadata:
   name: web-app

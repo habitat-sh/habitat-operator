@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   name: example-namespace
 ---
-apiVersion: habitat.sh/v1beta1
+apiVersion: habitat.sh/v1beta2
 kind: Habitat
 metadata:
   name: example-namespaced-habitat
