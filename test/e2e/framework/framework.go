@@ -17,7 +17,7 @@
 package framework
 
 import (
-	habclient "github.com/habitat-sh/habitat-operator/pkg/client"
+	habclient "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta2"
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,7 +33,7 @@ const (
 type Framework struct {
 	Image      string
 	KubeClient kubernetes.Interface
-	Client     *rest.RESTClient
+	Client     rest.Interface
 	ExternalIP string
 }
 
@@ -49,7 +49,7 @@ func Setup(image, kubeconfig, externalIP string) (*Framework, error) {
 		return nil, err
 	}
 
-	cl, _, err := habclient.NewClient(config)
+	cl, err := habclient.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func Setup(image, kubeconfig, externalIP string) (*Framework, error) {
 	f := &Framework{
 		Image:      image,
 		KubeClient: apiclientset,
-		Client:     cl,
+		Client:     cl.RESTClient(),
 		ExternalIP: externalIP,
 	}
 
