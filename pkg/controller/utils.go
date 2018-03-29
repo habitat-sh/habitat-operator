@@ -46,7 +46,7 @@ func validateCustomObject(h habv1beta1.Habitat) error {
 			return fmt.Errorf("too few instances: %d, leader-follower topology requires at least %d", spec.Count, leaderFollowerTopologyMinCount)
 		}
 	default:
-		return fmt.Errorf("unkown topology: %s", spec.Service.Topology)
+		return fmt.Errorf("unknown topology: %s", spec.Service.Topology)
 	}
 
 	if rsn := spec.Service.RingSecretName; rsn != "" {
