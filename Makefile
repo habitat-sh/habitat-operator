@@ -5,6 +5,7 @@ IMAGE := $(if $(HUB),$(HUB)/)$(DOCKER_ORG)/habitat-operator
 BIN_PATH := habitat-operator
 TAG := $(shell git describe --tags --always)
 TESTIMAGE :=
+SUDO :=
 
 build:
 	go build -i github.com/$(GITHUB_ORG)/habitat-operator/cmd/habitat-operator
@@ -14,7 +15,7 @@ linux:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s" -o $(BIN_PATH) github.com/$(GITHUB_ORG)/habitat-operator/cmd/habitat-operator
 
 image: linux
-	docker build -t "$(IMAGE):$(TAG)" .
+	$(SUDO) docker build -t "$(IMAGE):$(TAG)" .
 
 test:
 	go test -v $(shell go list ./... | grep -v /vendor/ | grep -v /test/)
