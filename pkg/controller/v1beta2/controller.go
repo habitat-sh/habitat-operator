@@ -118,9 +118,8 @@ func New(config Config, logger log.Logger) (*HabitatController, error) {
 	}
 
 	// Create Habitat v1beta2 CRD.
-	_, crdErr := CreateCRD(apiextensionsclientset)
-	if crdErr != nil {
-		if !apierrors.IsAlreadyExists(crdErr) {
+	if _, err := CreateCRD(apiextensionsclientset); err != nil {
+		if !apierrors.IsAlreadyExists(err) {
 			return nil, err
 		}
 
