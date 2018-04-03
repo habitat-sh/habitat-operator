@@ -23,7 +23,7 @@ test:
 # requires minikube to be running
 e2e:
 	@if test 'x$(TESTIMAGE)' = 'x'; then echo "TESTIMAGE must be passed."; exit 1; fi
-	go test -v ./test/e2e/ --image "$(TESTIMAGE)" --kubeconfig ~/.kube/config --ip "$$(minikube ip)"
+	go test -v ./test/e2e/... --image "$(TESTIMAGE)" --kubeconfig ~/.kube/config --ip "$$(minikube ip)"
 
 clean-test:
 	kubectl delete namespace testing

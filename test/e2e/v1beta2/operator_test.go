@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package e2e
+package v1beta2
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ import (
 	"time"
 
 	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
-	utils "github.com/habitat-sh/habitat-operator/test/e2e/framework"
+	utils "github.com/habitat-sh/habitat-operator/test/e2e/v1beta2/framework"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
