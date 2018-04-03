@@ -132,7 +132,7 @@ func New(config Config, logger log.Logger) (*HabitatController, error) {
 	hc := &HabitatController{
 		config: config,
 		logger: logger,
-		queue:  workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "habitat"),
+		queue:  workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Habitats"),
 	}
 
 	return hc, nil
