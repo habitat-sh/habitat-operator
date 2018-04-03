@@ -22,7 +22,6 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -33,7 +32,7 @@ const (
 type Framework struct {
 	Image      string
 	KubeClient kubernetes.Interface
-	Client     rest.Interface
+	Client     habclient.HabitatInterface
 	ExternalIP string
 }
 
@@ -57,7 +56,7 @@ func Setup(image, kubeconfig, externalIP string) (*Framework, error) {
 	f := &Framework{
 		Image:      image,
 		KubeClient: apiclientset,
-		Client:     cl.RESTClient(),
+		Client:     cl.Habitats(TestNs),
 		ExternalIP: externalIP,
 	}
 
