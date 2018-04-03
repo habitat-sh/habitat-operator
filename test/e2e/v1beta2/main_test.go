@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package e2e
+package v1beta2
 
 import (
 	"flag"
@@ -20,7 +20,7 @@ import (
 	"os"
 	"testing"
 
-	operatorFramework "github.com/habitat-sh/habitat-operator/test/e2e/framework"
+	operatorFramework "github.com/habitat-sh/habitat-operator/test/e2e/v1beta2/framework"
 )
 
 var framework *operatorFramework.Framework
