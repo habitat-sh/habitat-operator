@@ -107,9 +107,11 @@ func labelListOptions() metav1.ListOptions {
 }
 
 func CreateCRD(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.CustomResourceDefinition, error) {
+	name := habv1beta2.Kind(habv1beta2.HabitatResourcePlural)
+
 	crd := &apiextensionsv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: habv1beta2.SchemeGroupVersion.String(),
+			Name: name.String(),
 		},
 		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
 			Group:   habv1beta2.SchemeGroupVersion.Group,
