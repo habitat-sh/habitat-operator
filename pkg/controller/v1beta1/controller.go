@@ -31,7 +31,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -84,7 +83,6 @@ type HabitatController struct {
 type Config struct {
 	HabitatClient       *rest.RESTClient
 	KubernetesClientset *kubernetes.Clientset
-	Scheme              *runtime.Scheme
 }
 
 func New(config Config, logger log.Logger) (*HabitatController, error) {
@@ -93,9 +91,6 @@ func New(config Config, logger log.Logger) (*HabitatController, error) {
 	}
 	if config.KubernetesClientset == nil {
 		return nil, errors.New("invalid controller config: no KubernetesClientset")
-	}
-	if config.Scheme == nil {
-		return nil, errors.New("invalid controller config: no Schema")
 	}
 	if logger == nil {
 		return nil, errors.New("invalid controller config: no logger")
