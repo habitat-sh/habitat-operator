@@ -2,6 +2,8 @@ language: go
 
 sudo: required
 
+go_import_path: github.com/habitat-sh/habitat-operator
+
 # This moves Kubernetes specific config files.
 env:
   global:
