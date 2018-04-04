@@ -37,12 +37,9 @@ import (
 
 // CreateHabitat creates a Habitat.
 func (f *Framework) CreateHabitat(habitat *habv1beta1.Habitat) error {
-	return f.Client.Post().
-		Namespace(TestNs).
-		Resource(habv1beta1.HabitatResourcePlural).
-		Body(habitat).
-		Do().
-		Error()
+	_, err := f.Client.Create(habitat)
+
+	return err
 }
 
 // WaitForResources waits until numPods are in the "Running" state.
@@ -92,12 +89,7 @@ func (f *Framework) WaitForEndpoints(habitatName string) error {
 
 // DeleteHabitat deletes a Habitat as a user would.
 func (f *Framework) DeleteHabitat(habitatName string) error {
-	return f.Client.Delete().
-		Namespace(TestNs).
-		Resource(habv1beta1.HabitatResourcePlural).
-		Name(habitatName).
-		Do().
-		Error()
+	return f.Client.Delete(habitatName, nil)
 }
 
 // DeleteService delete a Kubernetes service provided.
