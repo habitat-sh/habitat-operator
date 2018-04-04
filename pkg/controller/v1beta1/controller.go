@@ -81,7 +81,7 @@ type HabitatController struct {
 }
 
 type Config struct {
-	HabitatClient       *rest.RESTClient
+	HabitatClient       rest.Interface
 	KubernetesClientset *kubernetes.Clientset
 }
 
