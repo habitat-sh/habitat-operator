@@ -31,6 +31,7 @@ import (
 
 	habclientset "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned"
 	habinformers "github.com/habitat-sh/habitat-operator/pkg/client/informers/externalversions"
+	habv1beta1controller "github.com/habitat-sh/habitat-operator/pkg/controller/v1beta1"
 	habv1beta2controller "github.com/habitat-sh/habitat-operator/pkg/controller/v1beta2"
 )
 
@@ -91,9 +92,20 @@ func run() int {
 		return 1
 	}
 
+	beta1Config := habv1beta1controller.Config{
+		HabitatClient:       habClientset.HabitatV1beta1().RESTClient(),
+		KubernetesClientset: kubeClientset,
+	}
+	beta1Controller, err := habv1beta1controller.New(beta1Config, log.With(logger, "component", "controller"))
+	if err != nil {
+		level.Error(logger).Log("msg", err)
+		return 1
+	}
+
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 	go hc.Run(runtime.NumCPU(), ctx)
+	go beta1Controller.Run(runtime.NumCPU(), ctx)
 
 	go kubeInformerFactory.Start(ctx.Done())
 	go habInformerFactory.Start(ctx.Done())
