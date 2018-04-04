@@ -28,8 +28,11 @@ import (
 )
 
 const (
-	defaultWaitTime = 1 * time.Minute
-	configMapName   = "peer-watch-file"
+	serviceStartupWaitTime = 1 * time.Minute
+	secretUpdateTimeout    = 2 * time.Minute
+	secretUpdateQueryTime  = 10 * time.Second
+
+	configMapName = "peer-watch-file"
 )
 
 // TestBind tests that the operator correctly created two Habitat Services and bound them together.
@@ -97,7 +100,7 @@ func TestBind(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	time.Sleep(defaultWaitTime)
+	time.Sleep(serviceStartupWaitTime)
 
 	// Get response from Habitat Service.
 	url := fmt.Sprintf("http://%s:30001/", framework.ExternalIP)
@@ -126,22 +129,29 @@ func TestBind(t *testing.T) {
 		t.Fatalf("Could not update Secret: \"%s\"", err)
 	}
 
-	// Wait for SecretVolume to be updated.
-	time.Sleep(defaultWaitTime)
-
-	// Check that the port differs after the update.
-	body, err = utils.QueryService(url)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	ticker := time.NewTicker(secretUpdateQueryTime)
+	defer ticker.Stop()
+	timer := time.NewTimer(secretUpdateTimeout)
+	defer timer.Stop()
 	// Update the message set in the config of the habitat/bindgo-hab Go Habitat Service.
 	expectedMsg = fmt.Sprintf("hello from port: %v", 6333)
-	actualMsg = body
-	// actualMsg can contain whitespace and newlines or different formatting,
-	// the only thing we need to check is it contains the expectedMsg.
-	if !strings.Contains(actualMsg, expectedMsg) {
-		t.Fatalf("Configuration update did not go through. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
+	for {
+		// Check that the port differs after the update.
+		actualMsg, err := utils.QueryService(url)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// actualMsg can contain whitespace and newlines or different formatting,
+		// the only thing we need to check is it contains the expectedMsg.
+		if strings.Contains(actualMsg, expectedMsg) {
+			break
+		}
+		select {
+		case <-timer.C:
+			t.Fatalf("Configuration update did not go through. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
+		case <-ticker.C:
+		}
 	}
 }
 
