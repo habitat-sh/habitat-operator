@@ -18,7 +18,7 @@ image: linux
 	$(SUDO) docker build -t "$(IMAGE):$(TAG)" .
 
 test:
-	go test -v $(shell go list ./... | grep -v /vendor/ | grep -v /test/)
+	go test $(shell go list ./... | grep -v /vendor/ | grep -v /test/)
 
 # requires minikube to be running
 e2e:
