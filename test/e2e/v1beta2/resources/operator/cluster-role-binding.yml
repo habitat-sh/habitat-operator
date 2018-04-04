@@ -1,12 +1,12 @@
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: habitat-operator
+  name: habitat-operator-v1beta2
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: habitat-operator
+  name: habitat-operator-v1beta2
 subjects:
 - kind: ServiceAccount
-  name: habitat-operator
-  namespace: testing
+  name: habitat-operator-v1beta2
+  namespace: testing-v1beta2

@@ -26,7 +26,7 @@ e2e:
 	go test -v ./test/e2e/... --image "$(TESTIMAGE)" --kubeconfig ~/.kube/config --ip "$$(minikube ip)"
 
 clean-test:
-	kubectl delete namespace testing
+	kubectl delete namespace testing-v1beta1 testing-v1beta2
 	kubectl delete clusterrolebinding habitat-operator
 	kubectl delete clusterrole habitat-operator
 
