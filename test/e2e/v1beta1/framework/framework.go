@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	TestNs = "testing"
+	TestNs = "testing-v1beta1"
 )
 
 type Framework struct {
