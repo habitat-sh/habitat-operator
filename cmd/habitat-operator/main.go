@@ -37,6 +37,8 @@ import (
 	habv1beta2controller "github.com/habitat-sh/habitat-operator/pkg/controller/v1beta2"
 )
 
+const resyncPeriod = 30 * time.Second
+
 type Clientsets struct {
 	KubeClientset          *kubernetes.Clientset
 	HabClientset           *habclientset.Clientset
@@ -160,8 +162,8 @@ func v1beta2(ctx context.Context, cSets Clientsets, logger log.Logger) error {
 		level.Info(logger).Log("msg", "created Habitat CRD")
 	}
 
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(cSets.KubeClientset, time.Second*30)
-	habInformerFactory := habinformers.NewSharedInformerFactory(cSets.HabClientset, time.Second*30)
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(cSets.KubeClientset, resyncPeriod)
+	habInformerFactory := habinformers.NewSharedInformerFactory(cSets.HabClientset, resyncPeriod)
 
 	config := habv1beta2controller.Config{
 		HabitatClient:          cSets.HabClientset.HabitatV1beta2().RESTClient(),
