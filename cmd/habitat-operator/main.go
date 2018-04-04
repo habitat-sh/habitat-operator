@@ -25,6 +25,8 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	flag "github.com/spf13/pflag"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -62,6 +64,13 @@ func run() int {
 		return 1
 	}
 
+	// This is the clientset for interacting with the apiextensions group.
+	apiextensionsclientset, err := apiextensionsclient.NewForConfig(config)
+	if err != nil {
+		level.Error(logger).Log("msg", err)
+		return 1
+	}
+
 	// This is the clientset for interacting with the Habitat API.
 	habClientset, err := habclientset.NewForConfig(config)
 	if err != nil {
@@ -76,39 +85,18 @@ func run() int {
 		return 1
 	}
 
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientset, time.Second*30)
-	habInformerFactory := habinformers.NewSharedInformerFactory(habClientset, time.Second*30)
-
-	controllerConfig := habv1beta2controller.Config{
-		HabitatClient:          habClientset.HabitatV1beta2().RESTClient(),
-		KubernetesClientset:    kubeClientset,
-		ClusterConfig:          config,
-		KubeInformerFactory:    kubeInformerFactory,
-		HabitatInformerFactory: habInformerFactory,
-	}
-	hc, err := habv1beta2controller.New(controllerConfig, log.With(logger, "component", "controller"))
-	if err != nil {
-		level.Error(logger).Log("msg", err)
-		return 1
-	}
-
-	beta1Config := habv1beta1controller.Config{
-		HabitatClient:       habClientset.HabitatV1beta1().RESTClient(),
-		KubernetesClientset: kubeClientset,
-	}
-	beta1Controller, err := habv1beta1controller.New(beta1Config, log.With(logger, "component", "controller"))
-	if err != nil {
-		level.Error(logger).Log("msg", err)
-		return 1
-	}
-
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
-	go hc.Run(runtime.NumCPU(), ctx)
-	go beta1Controller.Run(runtime.NumCPU(), ctx)
 
-	go kubeInformerFactory.Start(ctx.Done())
-	go habInformerFactory.Start(ctx.Done())
+	if err := v1beta1(ctx, kubeClientset, habClientset, apiextensionsclientset, logger); err != nil {
+		level.Error(logger).Log("msg", err)
+		return 1
+	}
+
+	if err := v1beta2(ctx, kubeClientset, habClientset, apiextensionsclientset, logger); err != nil {
+		level.Error(logger).Log("msg", err)
+		return 1
+	}
 
 	term := make(chan os.Signal)
 	// Relay these signals to the `term` channel.
@@ -122,6 +110,68 @@ func run() int {
 	}
 
 	return 0
+}
+
+func v1beta1(ctx context.Context, kubeClientset *kubernetes.Clientset, habClientset *habclientset.Clientset, apiextensionsclientset *apiextensionsclient.Clientset, logger log.Logger) error {
+	// Create Habitat CRD.
+	_, err := habv1beta1controller.CreateCRD(apiextensionsclientset)
+	if err != nil {
+		if !apierrors.IsAlreadyExists(err) {
+			return err
+		}
+
+		level.Info(logger).Log("msg", "Habitat CRD already exists, continuing")
+	} else {
+		level.Info(logger).Log("msg", "created Habitat CRD")
+	}
+
+	config := habv1beta1controller.Config{
+		HabitatClient:       habClientset.HabitatV1beta1().RESTClient(),
+		KubernetesClientset: kubeClientset,
+	}
+	controller, err := habv1beta1controller.New(config, log.With(logger, "component", "controller/v1beta1"))
+	if err != nil {
+		return err
+	}
+
+	go controller.Run(runtime.NumCPU(), ctx)
+
+	return nil
+}
+
+func v1beta2(ctx context.Context, kubeClientset *kubernetes.Clientset, habClientset *habclientset.Clientset, apiextensionsclientset *apiextensionsclient.Clientset, logger log.Logger) error {
+	// Create Habitat CRD.
+	_, err := habv1beta2controller.CreateCRD(apiextensionsclientset)
+	if err != nil {
+		if !apierrors.IsAlreadyExists(err) {
+			return err
+		}
+
+		level.Info(logger).Log("msg", "Habitat CRD already exists, continuing")
+	} else {
+		level.Info(logger).Log("msg", "created Habitat CRD")
+	}
+
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientset, time.Second*30)
+	habInformerFactory := habinformers.NewSharedInformerFactory(habClientset, time.Second*30)
+
+	config := habv1beta2controller.Config{
+		HabitatClient:          habClientset.HabitatV1beta2().RESTClient(),
+		KubernetesClientset:    kubeClientset,
+		KubeInformerFactory:    kubeInformerFactory,
+		HabitatInformerFactory: habInformerFactory,
+	}
+	controller, err := habv1beta2controller.New(config, log.With(logger, "component", "controller/v1beta2"))
+	if err != nil {
+		return err
+	}
+
+	go kubeInformerFactory.Start(ctx.Done())
+	go habInformerFactory.Start(ctx.Done())
+
+	go controller.Run(runtime.NumCPU(), ctx)
+
+	return nil
 }
 
 func main() {
