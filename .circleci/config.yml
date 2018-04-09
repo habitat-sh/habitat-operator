@@ -19,9 +19,10 @@ jobs:
           environment:
             CODEGEN_PKG: ../../../../src/k8s.io/code-generator
             CODEGEN_VERSION: release-1.9
+            GOPATH: /home/circleci/.go_workspace
           command: |
             mkdir -p $CODEGEN_PKG
-            git clone https://github.com/kubernetes/code-generator.git --branch $CODEGEN_VERSION $CODEGEN_PKG
+            git clone https://github.com/kubernetes/code-generator.git --branch $CODEGEN_VERSION $GOPATH/src/k8s.io/code-generator
             hack/verify-codegen.sh
       - run:
           name: unit tests
