@@ -22,7 +22,7 @@ import (
 	"regexp"
 	"time"
 
-	habv1beta2 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta2"
+	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
 	habinformers "github.com/habitat-sh/habitat-operator/pkg/client/informers/externalversions"
 
 	"github.com/go-kit/kit/log"
@@ -153,7 +153,7 @@ func (hc *HabitatController) Run(workers int, ctx context.Context) error {
 }
 
 func (hc *HabitatController) cacheHabitats() {
-	hc.habInformer = hc.config.HabitatInformerFactory.Habitat().V1beta2().Habitats().Informer()
+	hc.habInformer = hc.config.HabitatInformerFactory.Habitat().V1beta1().Habitats().Informer()
 
 	hc.habInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    hc.handleHabAdd,
@@ -200,7 +200,7 @@ func (hc *HabitatController) watchPods(ctx context.Context) {
 }
 
 func (hc *HabitatController) handleHabAdd(obj interface{}) {
-	h, ok := obj.(*habv1beta2.Habitat)
+	h, ok := obj.(*habv1beta1.Habitat)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
 		return
@@ -210,13 +210,13 @@ func (hc *HabitatController) handleHabAdd(obj interface{}) {
 }
 
 func (hc *HabitatController) handleHabUpdate(oldObj, newObj interface{}) {
-	oldHab, ok := oldObj.(*habv1beta2.Habitat)
+	oldHab, ok := oldObj.(*habv1beta1.Habitat)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", oldObj)
 		return
 	}
 
-	newHab, ok := newObj.(*habv1beta2.Habitat)
+	newHab, ok := newObj.(*habv1beta1.Habitat)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", newObj)
 		return
@@ -228,7 +228,7 @@ func (hc *HabitatController) handleHabUpdate(oldObj, newObj interface{}) {
 }
 
 func (hc *HabitatController) handleHabDelete(obj interface{}) {
-	h, ok := obj.(*habv1beta2.Habitat)
+	h, ok := obj.(*habv1beta1.Habitat)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
 		return
@@ -245,7 +245,7 @@ func (hc *HabitatController) handleCM(obj interface{}) {
 	}
 
 	cache.ListAll(hc.habInformer.GetStore(), labels.Everything(), func(obj interface{}) {
-		h, ok := obj.(*habv1beta2.Habitat)
+		h, ok := obj.(*habv1beta1.Habitat)
 		if !ok {
 			level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
 			return
@@ -349,7 +349,7 @@ func (hc *HabitatController) getRunningPods(namespace string) ([]apiv1.Pod, erro
 		"status.phase": string(apiv1.PodRunning),
 	})
 	ls := fields.SelectorFromSet(fields.Set(map[string]string{
-		habv1beta2.HabitatLabel: "true",
+		habv1beta1.HabitatLabel: "true",
 	}))
 
 	running := metav1.ListOptions{
@@ -375,7 +375,7 @@ func (hc *HabitatController) writeLeaderIP(cm *apiv1.ConfigMap, ip string) error
 	return nil
 }
 
-func (hc *HabitatController) handleConfigMap(h *habv1beta2.Habitat) error {
+func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 	runningPods, err := hc.getRunningPods(h.Namespace)
 	if err != nil {
 		return err
@@ -456,7 +456,7 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta2.Habitat) error {
 	return nil
 }
 
-func (hc *HabitatController) enqueue(hab *habv1beta2.Habitat) {
+func (hc *HabitatController) enqueue(hab *habv1beta1.Habitat) {
 	if hab == nil {
 		level.Error(hc.logger).Log("msg", "Habitat object was nil", "object", hab)
 		return
@@ -521,7 +521,7 @@ func (hc *HabitatController) conform(key string) error {
 	}
 
 	// The Habitat was either created or updated.
-	h, ok := obj.(*habv1beta2.Habitat)
+	h, ok := obj.(*habv1beta1.Habitat)
 	if !ok {
 		return fmt.Errorf("unknown event type")
 	}
@@ -565,7 +565,7 @@ func (hc *HabitatController) conform(key string) error {
 	return nil
 }
 
-func (hc *HabitatController) habitatNeedsUpdate(oldHabitat, newHabitat *habv1beta2.Habitat) bool {
+func (hc *HabitatController) habitatNeedsUpdate(oldHabitat, newHabitat *habv1beta1.Habitat) bool {
 	if reflect.DeepEqual(oldHabitat.Spec, newHabitat.Spec) {
 		level.Debug(hc.logger).Log("msg", "Update ignored as it didn't change Habitat spec", "h", newHabitat)
 		return false
@@ -591,7 +591,7 @@ func (hc *HabitatController) podNeedsUpdate(oldPod, newPod *apiv1.Pod) bool {
 	return true
 }
 
-func (hc *HabitatController) getHabitatFromLabeledResource(r metav1.Object) (*habv1beta2.Habitat, error) {
+func (hc *HabitatController) getHabitatFromLabeledResource(r metav1.Object) (*habv1beta1.Habitat, error) {
 	key, err := habitatKeyFromLabeledResource(r)
 	if err != nil {
 		return nil, err
@@ -605,7 +605,7 @@ func (hc *HabitatController) getHabitatFromLabeledResource(r metav1.Object) (*ha
 		return nil, keyNotFoundError{key: key}
 	}
 
-	h, ok := obj.(*habv1beta2.Habitat)
+	h, ok := obj.(*habv1beta1.Habitat)
 	if !ok {
 		return nil, fmt.Errorf("unknown object type in Habitat cache: %v", obj)
 	}
@@ -616,9 +616,9 @@ func (hc *HabitatController) getHabitatFromLabeledResource(r metav1.Object) (*ha
 // habitatKeyFromLabeledResource returns a Store key for any resource tagged
 // with the `HabitatNameLabel`.
 func habitatKeyFromLabeledResource(r metav1.Object) (string, error) {
-	hName := r.GetLabels()[habv1beta2.HabitatNameLabel]
+	hName := r.GetLabels()[habv1beta1.HabitatNameLabel]
 	if hName == "" {
-		return "", fmt.Errorf("Could not retrieve %q label", habv1beta2.HabitatNameLabel)
+		return "", fmt.Errorf("Could not retrieve %q label", habv1beta1.HabitatNameLabel)
 	}
 
 	key := fmt.Sprintf("%s/%s", r.GetNamespace(), hName)
@@ -626,18 +626,18 @@ func habitatKeyFromLabeledResource(r metav1.Object) (string, error) {
 	return key, nil
 }
 
-func newConfigMap(ip string, h *habv1beta2.Habitat) *apiv1.ConfigMap {
+func newConfigMap(ip string, h *habv1beta1.Habitat) *apiv1.ConfigMap {
 	return &apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
 			Namespace: h.Namespace,
 			Labels: map[string]string{
-				habv1beta2.HabitatLabel: "true",
+				habv1beta1.HabitatLabel: "true",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				metav1.OwnerReference{
-					APIVersion: habv1beta2.SchemeGroupVersion.String(),
-					Kind:       habv1beta2.HabitatKind,
+					APIVersion: habv1beta1.SchemeGroupVersion.String(),
+					Kind:       habv1beta1.HabitatKind,
 					Name:       h.Name,
 					UID:        h.UID,
 				},
@@ -650,7 +650,7 @@ func newConfigMap(ip string, h *habv1beta2.Habitat) *apiv1.ConfigMap {
 }
 
 func isHabitatObject(objMeta *metav1.ObjectMeta) bool {
-	return objMeta.Labels[habv1beta2.HabitatLabel] == "true"
+	return objMeta.Labels[habv1beta1.HabitatLabel] == "true"
 }
 
 func (hc *HabitatController) findConfigMapInCache(cm *apiv1.ConfigMap) (*apiv1.ConfigMap, error) {
