@@ -41,6 +41,12 @@ type Habitat struct {
 	metav1.ObjectMeta `json:"metadata"`
 	Spec              HabitatSpec   `json:"spec"`
 	Status            HabitatStatus `json:"status,omitempty"`
+	// CustomVersion is a field that works around the lack of support for running
+	// multiple versions of a CDR.  It encodes the actual version of the type, so
+	// that controllers can decide whether to discard an object if the version
+	// doesn't match.
+	// +optional
+	CustomVersion *string `json:"customVersion,omitempty"`
 }
 
 type HabitatSpec struct {
