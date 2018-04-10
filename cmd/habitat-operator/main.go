@@ -166,7 +166,7 @@ func v1beta2(ctx context.Context, cSets Clientsets, logger log.Logger) error {
 	habInformerFactory := habinformers.NewSharedInformerFactory(cSets.HabClientset, resyncPeriod)
 
 	config := habv1beta2controller.Config{
-		HabitatClient:          cSets.HabClientset.HabitatV1beta2().RESTClient(),
+		HabitatClient:          cSets.HabClientset.HabitatV1beta1().RESTClient(),
 		KubernetesClientset:    cSets.KubeClientset,
 		KubeInformerFactory:    kubeInformerFactory,
 		HabitatInformerFactory: habInformerFactory,

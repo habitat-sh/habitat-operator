@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"github.com/habitat-sh/habitat-operator/pkg/apis/habitat"
-	habv1beta2 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta2"
+	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
 
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -37,7 +37,7 @@ const (
 	leaderFollowerTopologyMinCount = 3
 	pollInterval                   = 500 * time.Millisecond
 	timeOut                        = 10 * time.Second
-	habitatCRDName                 = habv1beta2.HabitatResourcePlural + "." + habitat.GroupName
+	habitatCRDName                 = habv1beta1.HabitatResourcePlural + "." + habitat.GroupName
 )
 
 type keyNotFoundError struct {
@@ -48,12 +48,12 @@ func (err keyNotFoundError) Error() string {
 	return fmt.Sprintf("could not find Object with key %s in the cache", err.key)
 }
 
-func validateCustomObject(h habv1beta2.Habitat) error {
+func validateCustomObject(h habv1beta1.Habitat) error {
 	spec := h.Spec
 
 	switch spec.Service.Topology {
-	case habv1beta2.TopologyStandalone:
-	case habv1beta2.TopologyLeader:
+	case habv1beta1.TopologyStandalone:
+	case habv1beta1.TopologyLeader:
 		if spec.Count < leaderFollowerTopologyMinCount {
 			return fmt.Errorf("too few instances: %d, leader-follower topology requires at least %d", spec.Count, leaderFollowerTopologyMinCount)
 		}
@@ -98,7 +98,7 @@ func newListWatchFromClientWithLabels(c cache.Getter, resource string, namespace
 
 func labelListOptions() metav1.ListOptions {
 	ls := labels.SelectorFromSet(labels.Set(map[string]string{
-		habv1beta2.HabitatLabel: "true",
+		habv1beta1.HabitatLabel: "true",
 	}))
 
 	return metav1.ListOptions{
@@ -107,20 +107,20 @@ func labelListOptions() metav1.ListOptions {
 }
 
 func CreateCRD(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.CustomResourceDefinition, error) {
-	name := habv1beta2.Kind(habv1beta2.HabitatResourcePlural)
+	name := habv1beta1.Kind(habv1beta1.HabitatResourcePlural)
 
 	crd := &apiextensionsv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name.String(),
 		},
 		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
-			Group:   habv1beta2.SchemeGroupVersion.Group,
-			Version: habv1beta2.SchemeGroupVersion.Version,
+			Group:   habv1beta1.SchemeGroupVersion.Group,
+			Version: habv1beta1.SchemeGroupVersion.Version,
 			Scope:   apiextensionsv1beta1.NamespaceScoped,
 			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
-				Plural:     habv1beta2.HabitatResourcePlural,
-				Kind:       reflect.TypeOf(habv1beta2.Habitat{}).Name(),
-				ShortNames: []string{habv1beta2.HabitatShortName},
+				Plural:     habv1beta1.HabitatResourcePlural,
+				Kind:       reflect.TypeOf(habv1beta1.Habitat{}).Name(),
+				ShortNames: []string{habv1beta1.HabitatShortName},
 			},
 		},
 	}
