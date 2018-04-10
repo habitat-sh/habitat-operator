@@ -267,7 +267,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 }
 
 func (hc *HabitatController) cacheStatefulSets() {
-	hc.stsInformer = hc.config.KubeInformerFactory.Apps().V1().StatefulSets().Informer()
+	hc.stsInformer = hc.config.KubeInformerFactory.Apps().V1beta1().StatefulSets().Informer()
 
 	hc.stsInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    hc.handleStsAdd,
