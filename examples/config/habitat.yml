@@ -8,7 +8,7 @@ data:
   # Plain text content: port = 6999
   user.toml: cG9ydCA9IDY5OTkK
 ---
-apiVersion: habitat.sh/v1beta2
+apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: example-configured-habitat

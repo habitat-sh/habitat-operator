@@ -11,7 +11,7 @@ data:
   # base64-encoded ring key
   ring-key: U1lNLVNFQy0xCmV4YW1wbGUtZW5jcnlwdGVkLXJpbmctMjAxNzA4MjkxMTMwMjkKClFGZm9ZTHJOV3NNRk93Tk4wb0F1d3d4WjA1aVBMdTQxSUdGSzJISVFqTlk9
 ---
-apiVersion: habitat.sh/v1beta2
+apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: example-encrypted-habitat

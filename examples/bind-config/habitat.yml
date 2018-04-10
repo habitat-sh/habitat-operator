@@ -9,7 +9,7 @@ data:
   # Plain text content of the secret: "port = 4444"
   user.toml: cG9ydCA9IDQ0NDQ=
 ---
-apiVersion: habitat.sh/v1beta2
+apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: example-bind-configured-db
@@ -23,7 +23,7 @@ spec:
     configSecretName: user-toml
     topology: standalone
 ---
-apiVersion: habitat.sh/v1beta2
+apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: example-bind-configured-web-app
