@@ -53,7 +53,7 @@ type HabitatSpec struct {
 	// The EnvVar type is documented at https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.9/#envvar-v1-core.
 	// Optional.
 	Env []corev1.EnvVar `json:"env,omitempty"`
-	// Optional.
+	// +optional
 	PersistentStorage *PersistentStorage `json:"persistentStorage,omitempty"`
 }
 
