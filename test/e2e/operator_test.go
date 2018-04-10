@@ -147,10 +147,23 @@ func TestBind(t *testing.T) {
 		if strings.Contains(actualMsg, expectedMsg) {
 			break
 		}
+
+		fail := func() {
+			t.Fatalf("Configuration update did not go through. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
+		}
+
 		select {
 		case <-timer.C:
-			t.Fatalf("Configuration update did not go through. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
+			fail()
 		case <-ticker.C:
+			// This is to avoid infinite loops when go
+			// decides to always pick the ticker channel,
+			// even when timer channel is ready too.
+			select {
+			case <-timer.C:
+				fail()
+			default:
+			}
 		}
 	}
 }
