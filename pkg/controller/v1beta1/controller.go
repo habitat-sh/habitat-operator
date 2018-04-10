@@ -242,6 +242,11 @@ func (hc *HabitatController) handleHabAdd(obj interface{}) {
 		return
 	}
 
+	if err := checkCustomVersionMatch(h); err != nil {
+		level.Debug(hc.logger).Log("msg", err)
+		return
+	}
+
 	hc.enqueue(h)
 }
 
@@ -258,6 +263,11 @@ func (hc *HabitatController) handleHabUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
+	if err := checkCustomVersionMatch(newHab); err != nil {
+		level.Debug(hc.logger).Log("msg", err)
+		return
+	}
+
 	if hc.habitatNeedsUpdate(oldHab, newHab) {
 		hc.enqueue(newHab)
 	}
@@ -267,6 +277,11 @@ func (hc *HabitatController) handleHabDelete(obj interface{}) {
 	h, ok := obj.(*habv1beta1.Habitat)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
+		return
+	}
+
+	if err := checkCustomVersionMatch(h); err != nil {
+		level.Debug(hc.logger).Log("msg", err)
 		return
 	}
 
@@ -286,6 +301,11 @@ func (hc *HabitatController) handleDeployAdd(obj interface{}) {
 		return
 	}
 
+	if err := checkCustomVersionMatch(h); err != nil {
+		level.Debug(hc.logger).Log("msg", err)
+		return
+	}
+
 	hc.enqueue(h)
 }
 
@@ -299,6 +319,11 @@ func (hc *HabitatController) handleDeployUpdate(oldObj, newObj interface{}) {
 	h, err := hc.getHabitatFromLabeledResource(d)
 	if err != nil {
 		level.Error(hc.logger).Log("msg", "Could not find Habitat for Deployment", "name", d.Name)
+		return
+	}
+
+	if err := checkCustomVersionMatch(h); err != nil {
+		level.Debug(hc.logger).Log("msg", err)
 		return
 	}
 
@@ -319,6 +344,11 @@ func (hc *HabitatController) handleDeployDelete(obj interface{}) {
 		return
 	}
 
+	if err := checkCustomVersionMatch(h); err != nil {
+		level.Debug(hc.logger).Log("msg", err)
+		return
+	}
+
 	hc.enqueue(h)
 }
 
@@ -335,6 +365,12 @@ func (hc *HabitatController) enqueueCM(obj interface{}) {
 			level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
 			return
 		}
+
+		if err := checkCustomVersionMatch(h); err != nil {
+			level.Debug(hc.logger).Log("msg", err)
+			return
+		}
+
 		if h.Namespace == cm.GetNamespace() {
 			hc.enqueue(h)
 		}
@@ -365,6 +401,12 @@ func (hc *HabitatController) handlePodAdd(obj interface{}) {
 			level.Error(hc.logger).Log("msg", err)
 			return
 		}
+
+		if err := checkCustomVersionMatch(h); err != nil {
+			level.Debug(hc.logger).Log("msg", err)
+			return
+		}
+
 		hc.enqueue(h)
 	}
 }
@@ -399,6 +441,11 @@ func (hc *HabitatController) handlePodUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
+	if err := checkCustomVersionMatch(h); err != nil {
+		level.Debug(hc.logger).Log("msg", err)
+		return
+	}
+
 	hc.enqueue(h)
 }
 
@@ -423,6 +470,11 @@ func (hc *HabitatController) handlePodDelete(obj interface{}) {
 		// This only means the Pod and the Habitat watchers are not in sync.
 		level.Debug(hc.logger).Log("msg", "Habitat not found", "function", "handlePodDelete")
 
+		return
+	}
+
+	if err := checkCustomVersionMatch(h); err != nil {
+		level.Debug(hc.logger).Log("msg", err)
 		return
 	}
 

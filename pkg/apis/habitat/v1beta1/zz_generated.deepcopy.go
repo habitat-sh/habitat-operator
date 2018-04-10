@@ -46,6 +46,15 @@ func (in *Habitat) DeepCopyInto(out *Habitat) {
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 	in.Spec.DeepCopyInto(&out.Spec)
 	out.Status = in.Status
+	if in.CustomVersion != nil {
+		in, out := &in.CustomVersion, &out.CustomVersion
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(string)
+			**out = **in
+		}
+	}
 	return
 }
 
