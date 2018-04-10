@@ -61,7 +61,7 @@ The name of the generated docker image can be changed with an `IMAGE` variable, 
 
 #### Using release image
 
-Habitat operator images are located [here](https://hub.docker.com/r/habitat-sh/habitat-operator/), they are tagged with the release version.
+Habitat operator images are located [here](https://hub.docker.com/r/habitat/habitat-operator/), they are tagged with the release version.
 
 #### Deploying Habitat operator
 

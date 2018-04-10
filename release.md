@@ -24,7 +24,7 @@ In the root directory of the repository generate the Docker image and push it to
 
     make image
     docker push habitat/habitat-operator:vx.y.z
-    docker tag habitat/habitat-operator:vx.y.z habitat-sh/habitat-operator:latest
+    docker tag habitat/habitat-operator:vx.y.z habitat/habitat-operator:latest
     docker push habitat/habitat-operator:latest
 
 ## Generate the Helm chart
