@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 		code int
 	)
 
-	image := flag.String("image", "", "habitat operator image, 'habitat-sh/habitat-operator'")
+	image := flag.String("image", "", "habitat operator image, 'habitat/habitat-operator'")
 	kubeconfig := flag.String("kubeconfig", "", "path to kube config file")
 	externalIP := flag.String("ip", "", "external ip, eg. minikube ip")
 	flag.Parse()
