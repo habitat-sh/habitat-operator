@@ -17,8 +17,6 @@ import (
 	clientset "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned"
 	habitatv1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1"
 	fakehabitatv1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1/fake"
-	habitatv1beta2 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta2"
-	fakehabitatv1beta2 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta2/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -64,12 +62,7 @@ func (c *Clientset) HabitatV1beta1() habitatv1beta1.HabitatV1beta1Interface {
 	return &fakehabitatv1beta1.FakeHabitatV1beta1{Fake: &c.Fake}
 }
 
-// HabitatV1beta2 retrieves the HabitatV1beta2Client
-func (c *Clientset) HabitatV1beta2() habitatv1beta2.HabitatV1beta2Interface {
-	return &fakehabitatv1beta2.FakeHabitatV1beta2{Fake: &c.Fake}
-}
-
-// Habitat retrieves the HabitatV1beta2Client
-func (c *Clientset) Habitat() habitatv1beta2.HabitatV1beta2Interface {
-	return &fakehabitatv1beta2.FakeHabitatV1beta2{Fake: &c.Fake}
+// Habitat retrieves the HabitatV1beta1Client
+func (c *Clientset) Habitat() habitatv1beta1.HabitatV1beta1Interface {
+	return &fakehabitatv1beta1.FakeHabitatV1beta1{Fake: &c.Fake}
 }
