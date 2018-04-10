@@ -16,7 +16,6 @@ package versioned
 import (
 	glog "github.com/golang/glog"
 	habitatv1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1"
-	habitatv1beta2 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta2"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -25,9 +24,8 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	HabitatV1beta1() habitatv1beta1.HabitatV1beta1Interface
-	HabitatV1beta2() habitatv1beta2.HabitatV1beta2Interface
 	// Deprecated: please explicitly pick a version if possible.
-	Habitat() habitatv1beta2.HabitatV1beta2Interface
+	Habitat() habitatv1beta1.HabitatV1beta1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -35,7 +33,6 @@ type Interface interface {
 type Clientset struct {
 	*discovery.DiscoveryClient
 	habitatV1beta1 *habitatv1beta1.HabitatV1beta1Client
-	habitatV1beta2 *habitatv1beta2.HabitatV1beta2Client
 }
 
 // HabitatV1beta1 retrieves the HabitatV1beta1Client
@@ -43,15 +40,10 @@ func (c *Clientset) HabitatV1beta1() habitatv1beta1.HabitatV1beta1Interface {
 	return c.habitatV1beta1
 }
 
-// HabitatV1beta2 retrieves the HabitatV1beta2Client
-func (c *Clientset) HabitatV1beta2() habitatv1beta2.HabitatV1beta2Interface {
-	return c.habitatV1beta2
-}
-
 // Deprecated: Habitat retrieves the default version of HabitatClient.
 // Please explicitly pick a version.
-func (c *Clientset) Habitat() habitatv1beta2.HabitatV1beta2Interface {
-	return c.habitatV1beta2
+func (c *Clientset) Habitat() habitatv1beta1.HabitatV1beta1Interface {
+	return c.habitatV1beta1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -74,10 +66,6 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
-	cs.habitatV1beta2, err = habitatv1beta2.NewForConfig(&configShallowCopy)
-	if err != nil {
-		return nil, err
-	}
 
 	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfig(&configShallowCopy)
 	if err != nil {
@@ -92,7 +80,6 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
 	cs.habitatV1beta1 = habitatv1beta1.NewForConfigOrDie(c)
-	cs.habitatV1beta2 = habitatv1beta2.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -102,7 +89,6 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.habitatV1beta1 = habitatv1beta1.New(c)
-	cs.habitatV1beta2 = habitatv1beta2.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs
