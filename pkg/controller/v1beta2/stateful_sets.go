@@ -279,15 +279,15 @@ func (hc *HabitatController) cacheStatefulSets() {
 }
 
 func (hc *HabitatController) handleStsAdd(obj interface{}) {
-	d, ok := obj.(*appsv1beta1.StatefulSet)
+	sts, ok := obj.(*appsv1beta1.StatefulSet)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", obj)
 		return
 	}
 
-	h, err := hc.getHabitatFromLabeledResource(d)
+	h, err := hc.getHabitatFromLabeledResource(sts)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", d.Name)
+		level.Error(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", sts.Name)
 		return
 	}
 
@@ -295,15 +295,15 @@ func (hc *HabitatController) handleStsAdd(obj interface{}) {
 }
 
 func (hc *HabitatController) handleStsUpdate(oldObj, newObj interface{}) {
-	d, ok := newObj.(*appsv1beta1.StatefulSet)
+	sts, ok := newObj.(*appsv1beta1.StatefulSet)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", newObj)
 		return
 	}
 
-	h, err := hc.getHabitatFromLabeledResource(d)
+	h, err := hc.getHabitatFromLabeledResource(sts)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", d.Name)
+		level.Error(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", sts.Name)
 		return
 	}
 
@@ -311,16 +311,16 @@ func (hc *HabitatController) handleStsUpdate(oldObj, newObj interface{}) {
 }
 
 func (hc *HabitatController) handleStsDelete(obj interface{}) {
-	d, ok := obj.(*appsv1beta1.StatefulSet)
+	sts, ok := obj.(*appsv1beta1.StatefulSet)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", obj)
 		return
 	}
 
-	h, err := hc.getHabitatFromLabeledResource(d)
+	h, err := hc.getHabitatFromLabeledResource(sts)
 	if err != nil {
 		// Could not find Habitat, it must have already been removed.
-		level.Debug(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", d.Name)
+		level.Debug(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", sts.Name)
 		return
 	}
 
