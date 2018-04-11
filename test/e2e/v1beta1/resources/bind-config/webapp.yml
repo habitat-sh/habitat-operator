@@ -2,6 +2,7 @@ apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: test-go
+customVersion: v1beta2
 spec:
   image: habitat/bindgo-hab
   count: 1
