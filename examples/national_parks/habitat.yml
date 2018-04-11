@@ -1,0 +1,39 @@
+apiVersion: habitat.sh/v1beta1
+kind: Habitat
+metadata:
+  name: db
+spec:
+  image: habitat/mongodb
+  count: 1
+  service:
+    name: mongodb
+    topology: standalone
+---
+apiVersion: habitat.sh/v1beta1
+kind: Habitat
+metadata:
+  name: configured-national-parks
+spec:
+  image: habitat/national-parks
+  count: 1
+  service:
+    name: national-parks
+    topology: standalone
+    bind:
+      - name: database
+        service: mongodb
+        group: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: national-parks
+spec:
+  selector:
+    habitat-name: configured-national-parks
+  type: NodePort
+  ports:
+  - name: web
+    nodePort: 30001
+    port: 8080
+    protocol: TCP
