@@ -274,3 +274,21 @@ func TestPersistentStorage(t *testing.T) {
 		t.Fatal("No PersistentVolumeClaims created for persistent StatefulSet")
 	}
 }
+
+func TestV1beta1(t *testing.T) {
+	h, err := utils.ConvertHabitat("resources/standalone/habitat.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	v := "v1beta1"
+	h.CustomVersion = &v
+
+	if err := framework.CreateHabitat(h); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := framework.KubeClient.AppsV1beta1().Deployments(utils.TestNs).Get(h.Name, metav1.GetOptions{}); err != nil {
+		t.Fatal("Could not retrieve Deployment")
+	}
+}
