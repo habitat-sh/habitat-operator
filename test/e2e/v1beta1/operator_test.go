@@ -24,11 +24,15 @@ import (
 	utils "github.com/habitat-sh/habitat-operator/test/e2e/v1beta1/framework"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 const (
-	defaultWaitTime = 1 * time.Minute
-	configMapName   = "peer-watch-file"
+	serviceStartupWaitTime = 1 * time.Minute
+	secretUpdateTimeout    = 2 * time.Minute
+	secretUpdateQueryTime  = 10 * time.Second
+
+	configMapName = "peer-watch-file"
 )
 
 // TestBind tests that the operator correctly created two Habitat Services and bound them together.
@@ -90,7 +94,7 @@ func TestBind(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	time.Sleep(defaultWaitTime)
+	time.Sleep(serviceStartupWaitTime)
 
 	// Get response from Habitat Service.
 	url := fmt.Sprintf("http://%s:30001/", framework.ExternalIP)
@@ -118,21 +122,43 @@ func TestBind(t *testing.T) {
 	}
 
 	// Wait for SecretVolume to be updated.
-	time.Sleep(defaultWaitTime)
-
-	// Check that the port differs after the update.
-	body, err = utils.QueryService(url)
-	if err != nil {
-		t.Fatal(err)
-	}
+	ticker := time.NewTicker(secretUpdateQueryTime)
+	defer ticker.Stop()
+	timer := time.NewTimer(secretUpdateTimeout)
+	defer timer.Stop()
 
 	// Update the message set in the config of the habitat/bindgo-hab Go Habitat Service.
 	expectedMsg = fmt.Sprintf("hello from port: %v", 6333)
-	actualMsg = body
-	// actualMsg can contain whitespace and newlines or different formatting,
-	// the only thing we need to check is it contains the expectedMsg.
-	if !strings.Contains(actualMsg, expectedMsg) {
-		t.Fatalf("Configuration update did not go through. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
+	for {
+		// Check that the port differs after the update.
+		actualMsg, err := utils.QueryService(url)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// actualMsg can contain whitespace and newlines or different formatting,
+		// the only thing we need to check is it contains the expectedMsg.
+		if strings.Contains(actualMsg, expectedMsg) {
+			break
+		}
+
+		fail := func() {
+			t.Fatalf("Configuration update did not go through. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
+		}
+
+		select {
+		case <-timer.C:
+			fail()
+		case <-ticker.C:
+			// This is to avoid infinite loops when go
+			// decides to always pick the ticker channel,
+			// even when timer channel is ready too.
+			select {
+			case <-timer.C:
+				fail()
+			default:
+			}
+		}
 	}
 
 	// Delete Service so it doesn't interfere with other tests.
@@ -179,5 +205,69 @@ func TestHabitatDelete(t *testing.T) {
 	_, err = framework.KubeClient.CoreV1().ConfigMaps(utils.TestNs).Get(configMapName, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestPersistentStorage(t *testing.T) {
+	// We run minikube in a VM on Travis. In that environment, we cannot create PersistentVolumes.
+	t.Skip("This test cannot be run successfully in our current testing setup")
+
+	ephemeral, err := utils.ConvertHabitat("resources/standalone/habitat.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	persisted, err := utils.ConvertHabitat("resources/persisted/habitat.yml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := framework.CreateHabitat(ephemeral); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := framework.CreateHabitat(persisted); err != nil {
+		t.Fatal(err)
+	}
+
+	// Delete all PVCs at the end of the test.
+	// For dynamically provisioned PVs (as is the case on minikube), this will
+	// also delete the PVs.
+	defer (func(name string) {
+		ls := labels.SelectorFromSet(labels.Set(map[string]string{
+			habv1beta1.HabitatNameLabel: name,
+		}))
+
+		lo := metav1.ListOptions{
+			LabelSelector: ls.String(),
+		}
+
+		err := framework.KubeClient.CoreV1().PersistentVolumeClaims(utils.TestNs).DeleteCollection(&metav1.DeleteOptions{}, lo)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})(persisted.Name)
+
+	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, persisted.Name, 1); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test that persistence is only enabled if requested
+	ephemeralSTS, err := framework.KubeClient.AppsV1beta1().StatefulSets(utils.TestNs).Get(ephemeral.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(ephemeralSTS.Spec.VolumeClaimTemplates) != 0 {
+		t.Fatal("PersistentVolumeClaims created for ephemeral StatefulSet")
+	}
+
+	persistedSTS, err := framework.KubeClient.AppsV1beta1().StatefulSets(utils.TestNs).Get(persisted.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(persistedSTS.Spec.VolumeClaimTemplates) == 0 {
+		t.Fatal("No PersistentVolumeClaims created for persistent StatefulSet")
 	}
 }
