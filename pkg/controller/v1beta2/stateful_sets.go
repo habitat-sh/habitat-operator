@@ -143,9 +143,6 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta2
 					},
 				},
 			},
-			UpdateStrategy: appsv1beta2.StatefulSetUpdateStrategy{
-				Type: appsv1beta2.StatefulSetUpdateStrategyType(appsv1beta2.RollingUpdateDeploymentStrategyType),
-			},
 		},
 	}
 
