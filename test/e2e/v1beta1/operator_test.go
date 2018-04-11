@@ -38,12 +38,12 @@ const (
 // TestBind tests that the operator correctly created two Habitat Services and bound them together.
 func TestBind(t *testing.T) {
 	// Get Habitat object from Habitat go example.
-	wApp, err := utils.ConvertHabitat("resources/bind-config/webapp.yml")
+	web, err := utils.ConvertHabitat("resources/bind-config/webapp.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := framework.CreateHabitat(wApp); err != nil {
+	if err := framework.CreateHabitat(web); err != nil {
 		t.Fatal(err)
 	}
 
@@ -68,6 +68,12 @@ func TestBind(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Delete Service so it doesn't interfere with other tests.
+	defer (func(name string) {
+		if err := framework.DeleteService(name); err != nil {
+			t.Fatal(err)
+		}
+	})(svc.Name)
 
 	// Get Secret object from example file.
 	sec, err := utils.ConvertSecret("resources/bind-config/secret.yml")
@@ -82,7 +88,7 @@ func TestBind(t *testing.T) {
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, wApp.ObjectMeta.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, web.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
 	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, db.ObjectMeta.Name, 1); err != nil {
@@ -112,6 +118,8 @@ func TestBind(t *testing.T) {
 	if !strings.Contains(actualMsg, expectedMsg) {
 		t.Fatalf("Habitat Service msg does not match one in default.toml. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
 	}
+
+	// Test `user.toml` updates.
 
 	// Update secret.
 	newPort := "port = 6333"
@@ -159,11 +167,6 @@ func TestBind(t *testing.T) {
 			default:
 			}
 		}
-	}
-
-	// Delete Service so it doesn't interfere with other tests.
-	if err := framework.DeleteService(svc.ObjectMeta.Name); err != nil {
-		t.Fatal(err)
 	}
 }
 
