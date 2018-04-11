@@ -13,4 +13,6 @@
 // limitations under the License.
 
 // +k8s:deepcopy-gen=package
+
+// +groupName=habitat.sh
 package v1beta1

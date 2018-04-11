@@ -8,6 +8,7 @@ kind: Habitat
 metadata:
   name: example-namespaced-habitat
   namespace: example-namespace
+customVersion: v1beta2
 spec:
   # the core/redis habitat service packaged as a Docker image
   image: habitat/redis-hab

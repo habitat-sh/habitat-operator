@@ -13,6 +13,7 @@ apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: example-bind-configured-db
+customVersion: v1beta2
 spec:
   image: habitat/redis-hab
   count: 1
@@ -27,6 +28,7 @@ apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: example-bind-configured-web-app
+customVersion: v1beta2
 spec:
   image: habitat/bindgo-hab
   count: 1

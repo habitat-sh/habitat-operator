@@ -21,6 +21,7 @@ import (
 
 const (
 	HabitatResourcePlural = "habitats"
+	HabitatShortName      = "hab"
 
 	// HabitatLabel labels the resources that belong to Habitat.
 	// Example: 'habitat: true'
@@ -32,6 +33,7 @@ const (
 	TopologyLabel = "topology"
 )
 
+// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type Habitat struct {
@@ -39,6 +41,12 @@ type Habitat struct {
 	metav1.ObjectMeta `json:"metadata"`
 	Spec              HabitatSpec   `json:"spec"`
 	Status            HabitatStatus `json:"status,omitempty"`
+	// CustomVersion is a field that works around the lack of support for running
+	// multiple versions of a CDR.  It encodes the actual version of the type, so
+	// that controllers can decide whether to discard an object if the version
+	// doesn't match.
+	// +optional
+	CustomVersion *string `json:"customVersion,omitempty"`
 }
 
 type HabitatSpec struct {
@@ -51,7 +59,7 @@ type HabitatSpec struct {
 	// The EnvVar type is documented at https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.9/#envvar-v1-core.
 	// Optional.
 	Env []corev1.EnvVar `json:"env,omitempty"`
-	// Optional.
+	// +optional
 	PersistentStorage *PersistentStorage `json:"persistentStorage,omitempty"`
 }
 

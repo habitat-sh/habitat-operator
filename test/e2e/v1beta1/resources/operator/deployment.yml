@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: habitat-operator-v1beta1
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: habitat-operator
+    spec:
+      containers:
+      - name: habitat-operator
+        image: habitat/habitat-operator:v0.3.0
+      serviceAccountName: habitat-operator-v1beta1

@@ -1,0 +1,12 @@
+apiVersion: habitat.sh/v1beta1
+kind: Habitat
+metadata:
+  name: standalone-test-123
+customVersion: v1beta2
+spec:
+  image: habitat/nginx-hab
+  count: 1
+  service:
+    name: nginx
+    topology: standalone
+    group: foobar
