@@ -45,6 +45,7 @@ type Habitat struct {
 	// multiple versions of a CDR.  It encodes the actual version of the type, so
 	// that controllers can decide whether to discard an object if the version
 	// doesn't match.
+	// When absent, it defaults to v1beta1.
 	// +optional
 	CustomVersion *string `json:"customVersion,omitempty"`
 }
