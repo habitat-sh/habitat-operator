@@ -2,6 +2,7 @@ apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: example-persistent-habitat
+customVersion: v1beta2
 spec:
   # the core/redis habitat service packaged as a Docker image
   image: kinvolk/redis-hab

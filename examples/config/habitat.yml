@@ -12,6 +12,7 @@ apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: example-configured-habitat
+customVersion: v1beta2
 spec:
   image: habitat/redis-hab
   count: 1
