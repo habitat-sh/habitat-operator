@@ -69,7 +69,7 @@ func run() int {
 	}
 
 	// This is the clientset for interacting with the apiextensions group.
-	apiextensionsclientset, err := apiextensionsclient.NewForConfig(config)
+	apiextensionsClientset, err := apiextensionsclient.NewForConfig(config)
 	if err != nil {
 		level.Error(logger).Log("msg", err)
 		return 1
@@ -95,7 +95,7 @@ func run() int {
 	cSets := Clientsets{
 		KubeClientset:          kubeClientset,
 		HabClientset:           habClientset,
-		ApiextensionsClientset: apiextensionsclientset,
+		ApiextensionsClientset: apiextensionsClientset,
 	}
 
 	if err := v1beta1(ctx, cSets, logger); err != nil {
