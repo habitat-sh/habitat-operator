@@ -166,6 +166,10 @@ func v1beta2(ctx context.Context, cSets Clientsets, logger log.Logger) error {
 	habInformerFactory := habinformers.NewSharedInformerFactory(cSets.HabClientset, resyncPeriod)
 
 	config := habv1beta2controller.Config{
+		// NOTE: The v1beta2 controller still needs to use a v1beta1 client,
+		// because we _have_ only one client.  This is due to the fact that it's
+		// not currently possible to have multiple versions of a CRD (and
+		// therefore, of a client), running at the same time
 		HabitatClient:          cSets.HabClientset.HabitatV1beta1().RESTClient(),
 		KubernetesClientset:    cSets.KubeClientset,
 		KubeInformerFactory:    kubeInformerFactory,
