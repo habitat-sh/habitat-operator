@@ -11,5 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+// This file was automatically generated, DO NOT EDIT.
+
 // This package has the automatically generated typed clients.
 package v1beta1
