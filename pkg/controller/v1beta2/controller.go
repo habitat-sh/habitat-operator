@@ -603,7 +603,7 @@ func (hc *HabitatController) conform(key string) error {
 }
 
 func (hc *HabitatController) habitatNeedsUpdate(oldHabitat, newHabitat *habv1beta1.Habitat) bool {
-	if reflect.DeepEqual(oldHabitat.Spec, newHabitat.Spec) {
+	if reflect.DeepEqual(oldHabitat.Spec.V1beta2, newHabitat.Spec.V1beta2) {
 		level.Debug(hc.logger).Log("msg", "Update ignored as it didn't change Habitat spec", "h", newHabitat)
 		return false
 	}

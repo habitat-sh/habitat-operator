@@ -30,17 +30,19 @@ import (
 const persistentVolumeName = "persistent"
 
 func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1.StatefulSet, error) {
+	hs := h.Spec.V1beta2
+
 	// This value needs to be passed as a *int32, so we convert it, assign it to a
 	// variable and afterwards pass a pointer to it.
-	count := int32(h.Spec.Count)
+	count := int32(hs.Count)
 
 	// Set the service arguments we send to Habitat.
 	var habArgs []string
-	if h.Spec.Service.Group != "" {
+	if hs.Service.Group != "" {
 		// When a service is started without explicitly naming the group,
 		// it's assigned to the default group.
 		habArgs = append(habArgs,
-			"--group", h.Spec.Service.Group)
+			"--group", hs.Service.Group)
 	}
 
 	// As we want to label our pods with the
@@ -49,7 +51,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 	// is set, habitat by default sets standalone topology.
 	topology := habv1beta1.TopologyStandalone
 
-	if h.Spec.Service.Topology == habv1beta1.TopologyLeader {
+	if hs.Service.Topology == habv1beta1.TopologyLeader {
 		topology = habv1beta1.TopologyLeader
 	}
 
@@ -62,7 +64,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 
 	// Runtime binding.
 	// One Service connects to another forming a producer/consumer relationship.
-	for _, bind := range h.Spec.Service.Bind {
+	for _, bind := range hs.Service.Bind {
 		// Pass --bind flag.
 		bindArg := fmt.Sprintf("%s:%s.%s", bind.Name, bind.Service, bind.Group)
 		habArgs = append(habArgs,
@@ -101,7 +103,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 					Containers: []apiv1.Container{
 						{
 							Name:  "habitat-service",
-							Image: h.Spec.Image,
+							Image: hs.Image,
 							Args:  habArgs,
 							VolumeMounts: []apiv1.VolumeMount{
 								{
@@ -110,7 +112,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 									ReadOnly:  true,
 								},
 							},
-							Env: h.Spec.Env,
+							Env: hs.Env,
 						},
 					},
 					// Define the volume for the ConfigMap.
@@ -144,9 +146,9 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 	tSpec := &spec.Template.Spec
 
 	// If we have a secret name present we should mount that secret.
-	if h.Spec.Service.ConfigSecretName != "" {
+	if hs.Service.ConfigSecretName != "" {
 		// Let's make sure our secret is there before mounting it.
-		secret, err := hc.config.KubernetesClientset.CoreV1().Secrets(h.Namespace).Get(h.Spec.Service.ConfigSecretName, metav1.GetOptions{})
+		secret, err := hc.config.KubernetesClientset.CoreV1().Secrets(h.Namespace).Get(hs.Service.ConfigSecretName, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -170,7 +172,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 			Name: userConfigFilename,
 			// The Habitat supervisor creates a directory for each service under /hab/svc/<servicename>.
 			// We need to place the user.toml file in there in order for it to be detected.
-			MountPath: fmt.Sprintf("/hab/user/%s/config", h.Spec.Service.Name),
+			MountPath: fmt.Sprintf("/hab/user/%s/config", hs.Service.Name),
 			ReadOnly:  false,
 		}
 
@@ -179,7 +181,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 	}
 
 	// Mount Persistent Volume, if requested.
-	if ps := h.Spec.PersistentStorage; ps != nil {
+	if ps := hs.PersistentStorage; ps != nil {
 		vm := &apiv1.VolumeMount{
 			Name:      persistentVolumeName,
 			MountPath: ps.MountPath,
@@ -218,7 +220,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 	}
 
 	// Handle ring key, if one is specified.
-	if ringSecretName := h.Spec.Service.RingSecretName; ringSecretName != "" {
+	if ringSecretName := hs.Service.RingSecretName; ringSecretName != "" {
 		s, err := hc.config.KubernetesClientset.CoreV1().Secrets(apiv1.NamespaceDefault).Get(ringSecretName, metav1.GetOptions{})
 		if err != nil {
 			level.Error(hc.logger).Log("msg", "Could not find Secret containing ring key")

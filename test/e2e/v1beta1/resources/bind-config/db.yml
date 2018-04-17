@@ -4,9 +4,10 @@ metadata:
   name: test-redis
 customVersion: v1beta2
 spec:
-  image: habitat/redis-hab
-  count: 1
-  service:
-    name: redis
-    configSecretName: user-toml
-    topology: standalone
+  v1beta2:
+    image: habitat/redis-hab
+    count: 1
+    service:
+      name: redis
+      configSecretName: user-toml
+      topology: standalone

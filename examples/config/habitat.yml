@@ -14,14 +14,15 @@ metadata:
   name: example-configured-habitat
 customVersion: v1beta2
 spec:
-  image: habitat/redis-hab
-  count: 1
-  service:
-    name: redis
-    topology: standalone
-    group: redisdb
-    # Create Secret with the initial configuration you want.
-    configSecretName: user-toml
+  v1beta2:
+    image: habitat/redis-hab
+    count: 1
+    service:
+      name: redis
+      topology: standalone
+      group: redisdb
+      # Create Secret with the initial configuration you want.
+      configSecretName: user-toml
 ---
 apiVersion: v1
 kind: Service

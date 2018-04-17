@@ -4,12 +4,13 @@ metadata:
   name: example-leader-follower-habitat
 customVersion: v1beta2
 spec:
-  # the core/redis habitat service packaged as a Docker image
-  image: habitat/redis-hab
-  # count must be at least 3 for a leader-follower topology
-  count: 3
-  service:
-    name: consul
-    topology: leader
-    # if not present, defaults to "default"
-    group: foobar
+  v1beta2:
+    # the core/redis habitat service packaged as a Docker image
+    image: habitat/redis-hab
+    # count must be at least 3 for a leader-follower topology
+    count: 3
+    service:
+      name: consul
+      topology: leader
+      # if not present, defaults to "default"
+      group: foobar

@@ -17,11 +17,12 @@ metadata:
   name: example-encrypted-habitat
 customVersion: v1beta2
 spec:
-  # the core/redis habitat service packaged as a Docker image
-  image: habitat/redis-hab
-  count: 3
-  service:
-    name: redis
-    topology: leader
-    # the name of the secret containing the ring key
-    ringSecretName: example-encrypted-ring-20170829113029
+  v1beta2:
+    # the core/redis habitat service packaged as a Docker image
+    image: habitat/redis-hab
+    count: 3
+    service:
+      name: redis
+      topology: leader
+      # the name of the secret containing the ring key
+      ringSecretName: example-encrypted-ring-20170829113029
