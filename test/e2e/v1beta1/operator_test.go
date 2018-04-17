@@ -276,13 +276,10 @@ func TestPersistentStorage(t *testing.T) {
 }
 
 func TestV1beta1(t *testing.T) {
-	h, err := utils.ConvertHabitat("resources/standalone/habitat.yml")
+	h, err := utils.ConvertHabitat("resources/v1beta1/habitat.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	v := "v1beta1"
-	h.CustomVersion = &v
 
 	if err := framework.CreateHabitat(h); err != nil {
 		t.Fatal(err)
