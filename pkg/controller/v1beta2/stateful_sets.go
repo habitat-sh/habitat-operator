@@ -38,11 +38,11 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 
 	// Set the service arguments we send to Habitat.
 	var habArgs []string
-	if hs.Service.Group != "" {
+	if hs.Service.Group != nil {
 		// When a service is started without explicitly naming the group,
 		// it's assigned to the default group.
 		habArgs = append(habArgs,
-			"--group", hs.Service.Group)
+			"--group", *hs.Service.Group)
 	}
 
 	// As we want to label our pods with the
@@ -146,9 +146,9 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 	tSpec := &spec.Template.Spec
 
 	// If we have a secret name present we should mount that secret.
-	if hs.Service.ConfigSecretName != "" {
+	if hs.Service.ConfigSecretName != nil {
 		// Let's make sure our secret is there before mounting it.
-		secret, err := hc.config.KubernetesClientset.CoreV1().Secrets(h.Namespace).Get(hs.Service.ConfigSecretName, metav1.GetOptions{})
+		secret, err := hc.config.KubernetesClientset.CoreV1().Secrets(h.Namespace).Get(*hs.Service.ConfigSecretName, metav1.GetOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -220,7 +220,8 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 	}
 
 	// Handle ring key, if one is specified.
-	if ringSecretName := hs.Service.RingSecretName; ringSecretName != "" {
+	if ringSecretName := hs.Service.RingSecretName; ringSecretName != nil {
+		ringSecretName := *ringSecretName
 		s, err := hc.config.KubernetesClientset.CoreV1().Secrets(apiv1.NamespaceDefault).Get(ringSecretName, metav1.GetOptions{})
 		if err != nil {
 			level.Error(hc.logger).Log("msg", "Could not find Secret containing ring key")
