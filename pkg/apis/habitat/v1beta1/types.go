@@ -65,18 +65,6 @@ type HabitatSpec struct {
 	V1beta2 *V1beta2 `json:"v1beta2"`
 }
 
-// PersistentStorage contains the details of the persistent storage that the
-// cluster should provision.
-type PersistentStorage struct {
-	// Size is the volume's size.
-	// It uses the same format as Kubernetes' size fields, e.g. 10Gi
-	Size string `json:"size"`
-	// MountPath is the path at which the PersistentVolume will be mounted.
-	MountPath string `json:"mountPath"`
-	// StorageClassName is the name of the StorageClass that the StatefulSet will request.
-	StorageClassName string `json:"storageClassName"`
-}
-
 // V1beta2 are fields for the v1beta2 type.
 type V1beta2 struct {
 	// Count is the amount of Services to start in this Habitat.
@@ -90,6 +78,18 @@ type V1beta2 struct {
 	Env []corev1.EnvVar `json:"env,omitempty"`
 	// +optional
 	PersistentStorage *PersistentStorage `json:"persistentStorage,omitempty"`
+}
+
+// PersistentStorage contains the details of the persistent storage that the
+// cluster should provision.
+type PersistentStorage struct {
+	// Size is the volume's size.
+	// It uses the same format as Kubernetes' size fields, e.g. 10Gi
+	Size string `json:"size"`
+	// MountPath is the path at which the PersistentVolume will be mounted.
+	MountPath string `json:"mountPath"`
+	// StorageClassName is the name of the StorageClass that the StatefulSet will request.
+	StorageClassName string `json:"storageClassName"`
 }
 
 type HabitatStatus struct {
