@@ -44,7 +44,7 @@ jobs:
           command: make TESTIMAGE=habitat/habitat-operator:testing e2e
       - run:
           name: print habitat object logs
-          command: kubectl logs -lhabitat=true --tail=100
+          command: kubectl logs -lhabitat-operator=true --tail=100
           when: on_fail
       - run:
           name: print minikube logs

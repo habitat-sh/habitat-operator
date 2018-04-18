@@ -1,0 +1,16 @@
+apiVersion: habitat.sh/v1beta1
+kind: Habitat
+metadata:
+  name: test-go
+customVersion: v1beta2
+spec:
+  v1beta2:
+    image: habitat/bindgo-hab
+    count: 1
+    service:
+      name: hab-server-go
+      topology: standalone
+      bind:
+        - name: db
+          service: redis
+          group: default

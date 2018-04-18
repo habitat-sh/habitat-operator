@@ -1,0 +1,13 @@
+apiVersion: habitat.sh/v1beta1
+kind: Habitat 
+metadata:
+  name: test-redis
+customVersion: v1beta2
+spec:
+  v1beta2:
+    image: habitat/redis-hab
+    count: 1
+    service:
+      name: redis
+      configSecretName: user-toml
+      topology: standalone

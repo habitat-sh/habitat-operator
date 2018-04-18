@@ -41,4 +41,4 @@ script:
 - make TAG=testing image && make TESTIMAGE=habitat/habitat-operator:testing e2e
 
 after_failure:
-- kubectl logs -lhabitat=true --tail=100
+- kubectl logs -lhabitat-operator=true --tail=100

@@ -21,6 +21,7 @@ import (
 
 const (
 	HabitatResourcePlural = "habitats"
+	HabitatShortName      = "hab"
 
 	// HabitatLabel labels the resources that belong to Habitat.
 	// Example: 'habitat: true'
@@ -32,6 +33,7 @@ const (
 	TopologyLabel = "topology"
 )
 
+// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type Habitat struct {
@@ -39,6 +41,13 @@ type Habitat struct {
 	metav1.ObjectMeta `json:"metadata"`
 	Spec              HabitatSpec   `json:"spec"`
 	Status            HabitatStatus `json:"status,omitempty"`
+	// CustomVersion is a field that works around the lack of support for running
+	// multiple versions of a CRD.  It encodes the actual version of the type, so
+	// that controllers can decide whether to discard an object if the version
+	// doesn't match.
+	// When absent, it defaults to v1beta1.
+	// +optional
+	CustomVersion *string `json:"customVersion,omitempty"`
 }
 
 type HabitatSpec struct {
@@ -51,8 +60,9 @@ type HabitatSpec struct {
 	// The EnvVar type is documented at https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.9/#envvar-v1-core.
 	// Optional.
 	Env []corev1.EnvVar `json:"env,omitempty"`
-	// Optional.
-	PersistentStorage *PersistentStorage `json:"persistentStorage,omitempty"`
+	// V1beta2 are fields for the v1beta2 type.
+	// +optional
+	V1beta2 *V1beta2 `json:"v1beta2"`
 }
 
 // PersistentStorage contains the details of the persistent storage that the
@@ -65,6 +75,21 @@ type PersistentStorage struct {
 	MountPath string `json:"mountPath"`
 	// StorageClassName is the name of the StorageClass that the StatefulSet will request.
 	StorageClassName string `json:"storageClassName"`
+}
+
+// V1beta2 are fields for the v1beta2 type.
+type V1beta2 struct {
+	// Count is the amount of Services to start in this Habitat.
+	Count int `json:"count"`
+	// Image is the Docker image of the Habitat Service.
+	Image   string  `json:"image"`
+	Service Service `json:"service"`
+	// Env is a list of environment variables.
+	// The EnvVar type is documented at https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.9/#envvar-v1-core.
+	// Optional.
+	Env []corev1.EnvVar `json:"env,omitempty"`
+	// +optional
+	PersistentStorage *PersistentStorage `json:"persistentStorage,omitempty"`
 }
 
 type HabitatStatus struct {

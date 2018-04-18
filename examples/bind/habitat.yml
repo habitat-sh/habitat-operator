@@ -2,30 +2,34 @@ apiVersion: habitat.sh/v1beta1
 kind: Habitat 
 metadata:
   name: db
+customVersion: v1beta2
 spec:
-  image: habitat/redis-hab
-  count: 1
-  service:
-    name: redis
-    topology: standalone
+  v1beta2:
+    image: habitat/redis-hab
+    count: 1
+    service:
+      name: redis
+      topology: standalone
 ---
 apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: web-app
+customVersion: v1beta2
 spec:
-  image: habitat/bindgo-hab
-  count: 1
-  service:
-    name: hab-server-go
-    topology: standalone
-    bind:
-      # Name is the name of the bind specified in the Habitat configuration files.
-      - name: db
-        # Service is the name of the service this bind refers to.
-        service: redis
-        # Group is the group of the service this bind refers to.
-        group: default
+  v1beta2:
+    image: habitat/bindgo-hab
+    count: 1
+    service:
+      name: hab-server-go
+      topology: standalone
+      bind:
+        # Name is the name of the bind specified in the Habitat configuration files.
+        - name: db
+          # Service is the name of the service this bind refers to.
+          service: redis
+          # Group is the group of the service this bind refers to.
+          group: default
 ---
 apiVersion: v1
 kind: Service

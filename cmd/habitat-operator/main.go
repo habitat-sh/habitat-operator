@@ -20,21 +20,29 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
+	"time"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	flag "github.com/spf13/pflag"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	habclient "github.com/habitat-sh/habitat-operator/pkg/client"
-	habcontroller "github.com/habitat-sh/habitat-operator/pkg/controller"
+	habclientset "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned"
+	habinformers "github.com/habitat-sh/habitat-operator/pkg/client/informers/externalversions"
+	habv1beta1controller "github.com/habitat-sh/habitat-operator/pkg/controller/v1beta1"
+	habv1beta2controller "github.com/habitat-sh/habitat-operator/pkg/controller/v1beta2"
 )
 
-type Config struct {
-	Client kubernetes.Interface
+const resyncPeriod = 30 * time.Second
+
+type Clientsets struct {
+	KubeClientset          *kubernetes.Clientset
+	HabClientset           *habclientset.Clientset
+	ApiextensionsClientset *apiextensionsclient.Clientset
 }
 
 func run() int {
@@ -61,44 +69,21 @@ func run() int {
 	}
 
 	// This is the clientset for interacting with the apiextensions group.
-	apiextensionsclientset, err := apiextensionsclient.NewForConfig(config)
+	apiextensionsClientset, err := apiextensionsclient.NewForConfig(config)
 	if err != nil {
 		level.Error(logger).Log("msg", err)
 		return 1
 	}
 
-	// Create Habitat CRD.
-	_, crdErr := habclient.CreateCRD(apiextensionsclientset)
-	if crdErr != nil {
-		if !apierrors.IsAlreadyExists(crdErr) {
-			level.Error(logger).Log("msg", crdErr)
-			return 1
-		}
-
-		level.Info(logger).Log("msg", "Habitat CRD already exists, continuing")
-	} else {
-		level.Info(logger).Log("msg", "created Habitat CRD")
-	}
-
-	habClient, scheme, err := habclient.NewClient(config)
+	// This is the clientset for interacting with the Habitat API.
+	habClientset, err := habclientset.NewForConfig(config)
 	if err != nil {
 		level.Error(logger).Log("msg", err)
 		return 1
 	}
 
 	// This is the clientset for interacting with the stable API group.
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		level.Error(logger).Log("msg", err)
-		return 1
-	}
-
-	controllerConfig := habcontroller.Config{
-		HabitatClient:       habClient,
-		KubernetesClientset: clientset,
-		Scheme:              scheme,
-	}
-	hc, err := habcontroller.New(controllerConfig, log.With(logger, "component", "controller"))
+	kubeClientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		level.Error(logger).Log("msg", err)
 		return 1
@@ -106,7 +91,22 @@ func run() int {
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
-	go hc.Run(runtime.NumCPU(), ctx)
+
+	cSets := Clientsets{
+		KubeClientset:          kubeClientset,
+		HabClientset:           habClientset,
+		ApiextensionsClientset: apiextensionsClientset,
+	}
+
+	if err := v1beta1(ctx, cSets, logger); err != nil {
+		level.Error(logger).Log("msg", err)
+		return 1
+	}
+
+	if err := v1beta2(ctx, cSets, logger); err != nil {
+		level.Error(logger).Log("msg", err)
+		return 1
+	}
 
 	term := make(chan os.Signal)
 	// Relay these signals to the `term` channel.
@@ -120,6 +120,72 @@ func run() int {
 	}
 
 	return 0
+}
+
+func v1beta1(ctx context.Context, cSets Clientsets, logger log.Logger) error {
+	// Create Habitat CRD.
+	_, err := habv1beta1controller.CreateCRD(cSets.ApiextensionsClientset)
+	if err != nil {
+		if !apierrors.IsAlreadyExists(err) {
+			return err
+		}
+
+		level.Info(logger).Log("msg", "Habitat CRD already exists, continuing")
+	} else {
+		level.Info(logger).Log("msg", "created Habitat CRD")
+	}
+
+	config := habv1beta1controller.Config{
+		HabitatClient:       cSets.HabClientset.HabitatV1beta1().RESTClient(),
+		KubernetesClientset: cSets.KubeClientset,
+	}
+	controller, err := habv1beta1controller.New(config, log.With(logger, "component", "controller/v1beta1"))
+	if err != nil {
+		return err
+	}
+
+	go controller.Run(runtime.NumCPU(), ctx)
+
+	return nil
+}
+
+func v1beta2(ctx context.Context, cSets Clientsets, logger log.Logger) error {
+	// Create Habitat CRD.
+	_, err := habv1beta2controller.CreateCRD(cSets.ApiextensionsClientset)
+	if err != nil {
+		if !apierrors.IsAlreadyExists(err) {
+			return err
+		}
+
+		level.Info(logger).Log("msg", "Habitat CRD already exists, continuing")
+	} else {
+		level.Info(logger).Log("msg", "created Habitat CRD")
+	}
+
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(cSets.KubeClientset, resyncPeriod)
+	habInformerFactory := habinformers.NewSharedInformerFactory(cSets.HabClientset, resyncPeriod)
+
+	config := habv1beta2controller.Config{
+		// NOTE: The v1beta2 controller still needs to use a v1beta1 client,
+		// because we _have_ only one client.  This is due to the fact that it's
+		// not currently possible to have multiple versions of a CRD (and
+		// therefore, of a client), running at the same time
+		HabitatClient:          cSets.HabClientset.HabitatV1beta1().RESTClient(),
+		KubernetesClientset:    cSets.KubeClientset,
+		KubeInformerFactory:    kubeInformerFactory,
+		HabitatInformerFactory: habInformerFactory,
+	}
+	controller, err := habv1beta2controller.New(config, log.With(logger, "component", "controller/v1beta2"))
+	if err != nil {
+		return err
+	}
+
+	go kubeInformerFactory.Start(ctx.Done())
+	go habInformerFactory.Start(ctx.Done())
+
+	go controller.Run(runtime.NumCPU(), ctx)
+
+	return nil
 }
 
 func main() {

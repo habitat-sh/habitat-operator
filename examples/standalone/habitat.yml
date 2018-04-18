@@ -2,12 +2,14 @@ apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: example-standalone-habitat
+customVersion: v1beta2
 spec:
-  # the core/redis habitat service packaged as a Docker image
-  image: habitat/redis-hab
-  count: 1
-  service:
-    name: redis
-    topology: standalone
-    # if not present, defaults to "default"
-    group: foobar
+  v1beta2:
+    # the core/redis habitat service packaged as a Docker image
+    image: habitat/redis-hab
+    count: 1
+    service:
+      name: redis
+      topology: standalone
+      # if not present, defaults to "default"
+      group: foobar
