@@ -50,6 +50,9 @@ func (err keyNotFoundError) Error() string {
 
 func validateCustomObject(h habv1beta1.Habitat) error {
 	spec := h.Spec.V1beta2
+	if spec == nil {
+		return fmt.Errorf("missing `spec.v1beta2` field")
+	}
 
 	switch spec.Service.Topology {
 	case habv1beta1.TopologyStandalone:
