@@ -60,8 +60,8 @@ type HabitatSpec struct {
 	// The EnvVar type is documented at https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.9/#envvar-v1-core.
 	// Optional.
 	Env []corev1.EnvVar `json:"env,omitempty"`
-	// +optional
 	// V1beta2 are fields for the v1beta2 type.
+	// +optional
 	V1beta2 *V1beta2 `json:"v1beta2"`
 }
 
