@@ -42,6 +42,21 @@ update-version:
 		'{}' \;
 	find examples helm -regex '.*\.ya?ml.bak' -type f \
 		-exec rm '{}' \;
+	sed \
+		-i.bak \
+		-e 's/\(e\.g `v\).*\(`\)/\1'"$$(cat VERSION)"'\2/' \
+		helm/habitat-operator/README.md
+	rm -f helm/habitat-operator/README.md.bak
+	sed \
+		-i.bak \
+		-e "s/\(habitat-operator:v\).*/\1$$(cat VERSION)/g" \
+		test/e2e/v1beta1/resources/operator/deployment.yml
+	rm -f test/e2e/v1beta1/resources/operator/deployment.yml.bak
+	sed \
+		-i.bak \
+		-e 's/\(`\*: cut \)[.[:digit:]]*\( release`\)/\1'"$$(cat VERSION)"'\2/' \
+		release.md
+	rm -f release.md.bak
 
 codegen:
 	CODEGEN_PKG=../../../k8s.io/code-generator hack/update-codegen.sh
