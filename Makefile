@@ -40,7 +40,7 @@ update-version:
 		-e "s/tag:.*/tag: v$$(cat VERSION)/g" \
 		-e "s/version:.*/version: $$(cat VERSION)/g" \
 		'{}' \;
-	find examples helm -regex '.*\.ya?ml$$.bak' -type f \
+	find examples helm -regex '.*\.ya?ml.bak' -type f \
 		-exec rm '{}' \;
 
 codegen:
