@@ -5,7 +5,7 @@ Habitat operator follows [Semantic Versioning](https://semver.org/).
 ## Pull request
 
 First bump the version in the `VERSION` file which is located in the top level directory of the repository.
-Run the following command to update version across files:
+Then run the following command to update version across files:
 
     make update-version
 
