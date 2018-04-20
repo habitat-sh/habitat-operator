@@ -1,5 +1,15 @@
 # Habitat operator CHANGELOG
 
+## [v0.6.0](https://github.com/kinvolk/habitat-operator/tree/v0.6.0) (20-4-2018)
+[Full changelog](https://github.com/kinvolk/habitat-operator/compare/v0.5.1...v0.6.0)
+
+### Features & Enhancements
+
+- New "version" of the habitat CRD that uses StatefulSets, has persistence functionality. The previous version that uses Deployments is still supported but is frozen [#201](https://github.com/habitat-sh/habitat-operator/pull/201) [#240](https://github.com/habitat-sh/habitat-operator/pull/240)
+- Oldest supported Habitat Supervisor is 0.52 [#190](https://github.com/habitat-sh/habitat-operator/pull/190)
+
+Please compare the `v1beta1` and `v1beta2` manifests of the standalone example in `examples/v1beta1/habitat.yml` and `examples/standalone/habitat.yml`, respectively, to compare the immediate differences between them. Please refer to `examples/persisted/habitat.yml` for an example of the persistence functionality.
+
 ## [v0.5.1](https://github.com/kinvolk/habitat-operator/tree/v0.5.1) (14-2-2018)
 [Full changelog](https://github.com/kinvolk/habitat-operator/compare/v0.5.0...v0.5.1)
 
