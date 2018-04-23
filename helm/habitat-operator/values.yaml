@@ -2,7 +2,7 @@
 ##
 image:
   repository: docker.io/habitat/habitat-operator
-  tag: v0.5.1
+  tag: v0.6.0
   pullPolicy: IfNotPresent
 
 ## Node labels for habitat-operator pod assignment

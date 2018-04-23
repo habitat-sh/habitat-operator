@@ -5,11 +5,11 @@ Habitat operator follows [Semantic Versioning](https://semver.org/).
 ## Pull request
 
 First bump the version in the `VERSION` file which is located in the top level directory of the repository.
-Run the following command to update version across files:
+Then run the following command to update version across files:
 
     make update-version
 
-Document the changes in this release in the `CHANGELOG.md` file, following the already established pattern. Commit all the changes and `CHANGELOG.md` file under one commit message e.g.: `*: cut 0.2.0 release`. Create a PR with the changes.
+Document the changes in this release in the `CHANGELOG.md` file, following the already established pattern. Commit all the changes and `CHANGELOG.md` file under one commit message e.g.: `*: cut 0.6.0 release`. Create a PR with the changes.
 
 ## Tag the release
 
