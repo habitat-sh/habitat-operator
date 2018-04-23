@@ -2,9 +2,13 @@ apiVersion: v1
 description: A Kubernetes controller that manages Habitat services in a Kubernetes cluster.
 engine: gotpl
 maintainers:
-  - name: Zeeshan Ali
-    email: zeeshan@kinvolk.io
+  - name: Krzesimir Nowak
+    email: krzesimir@kinvolk.io
+  - name: Iago López Galeiras
+    email: iago@kinvolk.io
+  - name: Indradhanush Gupta
+    email: indra@kinvolk.io
 name: habitat-operator
 sources:
   - https://github.com/habitat-sh/habitat-operator
-version: 0.6.0
+version: 0.6.1
