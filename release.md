@@ -9,7 +9,7 @@ Then run the following command to update version across files:
 
     make update-version
 
-Document the changes in this release in the `CHANGELOG.md` file, following the already established pattern. Commit all the changes and `CHANGELOG.md` file under one commit message e.g.: `*: cut 0.6.0 release`. Create a PR with the changes.
+Document the changes in this release in the `CHANGELOG.md` file, following the already established pattern. Commit all the changes and `CHANGELOG.md` file under one commit message e.g.: `*: cut 0.6.1 release`. Create a PR with the changes.
 
 ## Tag the release
 
