@@ -7,4 +7,4 @@ maintainers:
 name: habitat-operator
 sources:
   - https://github.com/habitat-sh/habitat-operator
-version: 0.5.1
+version: 0.6.0
