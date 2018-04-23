@@ -1,5 +1,12 @@
 # Habitat operator CHANGELOG
 
+## [v0.6.1](https://github.com/kinvolk/habitat-operator/tree/v0.6.1) (23-4-2018)
+[Full changelog](https://github.com/kinvolk/habitat-operator/compare/v0.6.0...v0.6.1)
+
+### Bug fixes
+
+- Fix RBAC rules used by helm charts [#249](https://github.com/habitat-sh/habitat-operator/pull/249)
+
 ## [v0.6.0](https://github.com/kinvolk/habitat-operator/tree/v0.6.0) (20-4-2018)
 [Full changelog](https://github.com/kinvolk/habitat-operator/compare/v0.5.1...v0.6.0)
 
