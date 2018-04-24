@@ -9,7 +9,6 @@ In order to enable persistent storage for your Habitat object, you need to:
 Kubernetes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
 * create a
 [`StorageClass`](https://kubernetes.io/docs/concepts/storage/storage-classes/)
-object with name `example-sc`
 * add the `spec.persistentStorage` key to the Habitat object's manifest
 * specify the `name` of the aforementioned `StorageClass` object under
 `spec.persistence.storageClassName` in the Habitat object's manifest
