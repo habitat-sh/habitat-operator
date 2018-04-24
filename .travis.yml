@@ -10,7 +10,7 @@ env:
     - CHANGE_MINIKUBE_NONE_USER=true
     - K8S_VERSION=v1.10.0
     - MINIKUBE_VERSION=v0.26.1
-    - CODEGEN_VERSION=release-1.9
+    - CODEGEN_VERSION=kubernetes-1.10.0
 
 # Skip installation of dependencies since they are already in vendor.
 install: true

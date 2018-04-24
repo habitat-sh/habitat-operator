@@ -21,7 +21,7 @@ jobs:
           name: code-gen script
           environment:
             CODEGEN_PKG: ../../../../src/k8s.io/code-generator
-            CODEGEN_VERSION: release-1.9
+            CODEGEN_VERSION: kubernetes-1.10.0
             GOPATH: /home/circleci/.go_workspace
           command: |
             mkdir -p $CODEGEN_PKG
