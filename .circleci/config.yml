@@ -47,7 +47,9 @@ jobs:
           name: print habitat object logs
           command: kubectl logs -lhabitat-operator=true --tail=100
           when: on_fail
-      - run:
-          name: print minikube logs
-          command: minikube logs
-          when: on_fail
+      # NOTE: this relies on journalctl, which is not present on the version of
+      # Ubuntu currenlty run by CircleCI
+      # - run:
+          # - runame: print minikube logs
+          # - rucommand: minikube logs
+          # - ruwhen: on_fail
