@@ -140,6 +140,12 @@ type ServiceV1beta2 struct {
 	// Name is the name of the Habitat service that this Habitat object represents.
 	// This field is used to mount the user.toml file in the correct directory under /hab/user/ in the Pod.
 	Name string `json:"name"`
+	// Channel is the value of the --channel flag for the hab client.
+	// It can be used to track upstream packages in builder channels but will never be used directly by the supervisor.
+	// The should only be used in conjunction with the habitat updater https://github.com/habitat-sh/habitat-updater
+	// Defaults to `stable`.
+	// +optional
+	Channel *string `json:"channel,omitempty"`
 }
 
 type Bind struct {

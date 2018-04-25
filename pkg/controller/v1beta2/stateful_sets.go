@@ -45,6 +45,13 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta1
 			"--group", *hs.Service.Group)
 	}
 
+	if hs.Service.Channel != nil {
+		// When a service is started without explicitly naming the channel,
+		// it's assigned to the stable channel.
+		habArgs = append(habArgs,
+			"--channel", *hs.Service.Channel)
+	}
+
 	// As we want to label our pods with the
 	// topology type we set standalone as the default one.
 	// We do not need to pass this to habitat, as if no topology
