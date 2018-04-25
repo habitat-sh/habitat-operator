@@ -256,7 +256,7 @@ func TestPersistentStorage(t *testing.T) {
 	}
 
 	// Test that persistence is only enabled if requested
-	ephemeralSTS, err := framework.KubeClient.AppsV1beta1().StatefulSets(utils.TestNs).Get(ephemeral.Name, metav1.GetOptions{})
+	ephemeralSTS, err := framework.KubeClient.AppsV1beta2().StatefulSets(utils.TestNs).Get(ephemeral.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -265,7 +265,7 @@ func TestPersistentStorage(t *testing.T) {
 		t.Fatal("PersistentVolumeClaims created for ephemeral StatefulSet")
 	}
 
-	persistedSTS, err := framework.KubeClient.AppsV1beta1().StatefulSets(utils.TestNs).Get(persisted.Name, metav1.GetOptions{})
+	persistedSTS, err := framework.KubeClient.AppsV1beta2().StatefulSets(utils.TestNs).Get(persisted.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
