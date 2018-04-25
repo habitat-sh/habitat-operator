@@ -1,0 +1,6 @@
+[habitat-operator]
+plan_path = "habitat"
+paths = [
+  "cmd/**/*",
+  "pkg/**/*"
+]
