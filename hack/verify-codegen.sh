@@ -17,6 +17,8 @@
 
 # Based on https://github.com/kubernetes/code-generator/blob/893b4433a4ba929dd0dacebf7c8956682d7a5d5f/hack/verify-codegen.sh
 
+# This script is run in the CI.
+
 set -o errexit
 set -o nounset
 set -o pipefail
