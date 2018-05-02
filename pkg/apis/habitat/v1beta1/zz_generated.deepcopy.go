@@ -234,6 +234,15 @@ func (in *ServiceV1beta2) DeepCopyInto(out *ServiceV1beta2) {
 		*out = make([]Bind, len(*in))
 		copy(*out, *in)
 	}
+	if in.Channel != nil {
+		in, out := &in.Channel, &out.Channel
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(string)
+			**out = **in
+		}
+	}
 	return
 }
 
