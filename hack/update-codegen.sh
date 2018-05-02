@@ -20,9 +20,9 @@
 # First of all, the code-generator needs to be fetched:
 # $ go get -u k8s.io/code-generator
 #
-# Now checkout the appropriate branch for the Kubernetes version that
+# Now checkout the appropriate tag for the Kubernetes version that
 # you're building for. For example if you're building for Kubernetes
-# 1.10.0 you would checkout the `release-1.10` branch.
+# 1.10.0 you would checkout the `kubernetes-1.10.0` tag.
 #
 # Then run this from the repo's root with:
 # $ CODEGEN_PKG=../../../k8s.io/code-generator hack/update-codegen.sh
