@@ -17,6 +17,13 @@
 
 Please compare the `v1beta1` and `v1beta2` manifests of the standalone example in `examples/v1beta1/habitat.yml` and `examples/standalone/habitat.yml`, respectively, to compare the immediate differences between them. Please refer to `examples/persisted/habitat.yml` for an example of the persistence functionality.
 
+### Deprecations
+
+* `Habitat` Manifests that do not specify a `customVersion`, or that specify a
+`customVersion = v1beta1` are deprecated, and support for them will be removed
+when Kubernetes 1.11 is released. Please upgrade your manifests to the latest
+`customVersion`.
+
 ## [v0.5.1](https://github.com/kinvolk/habitat-operator/tree/v0.5.1) (14-2-2018)
 [Full changelog](https://github.com/kinvolk/habitat-operator/compare/v0.5.0...v0.5.1)
 

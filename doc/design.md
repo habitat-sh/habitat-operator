@@ -85,6 +85,12 @@ offer support for persistence.
 Because this is a backwards-incompatible change, it was decided to implement it
 under a different custom version.
 
+### Deprecation
+
+Any time a new release of the CRD is released, the previous one is to be
+considered deprecated. Currently, we plan on supporting deprecated versions for
+a timespan of 3 Kubernetes releases, after which they will be removed.
+
 [crd]: https://kubernetes.io/docs/concepts/api-extension/custom-resources/#customresourcedefinitions
 [rolling]: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#rolling-updates
 [crd-vers]: https://github.com/kubernetes/kubernetes/pull/60113/
