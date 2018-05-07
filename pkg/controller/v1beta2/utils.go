@@ -26,11 +26,8 @@ import (
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/tools/cache"
 )
 
 const (
@@ -78,35 +75,15 @@ func validateCustomObject(h habv1beta1.Habitat) error {
 	return nil
 }
 
-// newListWatchFromClientWithLabels is a modified newListWatchFromClient function from listWatch.
-// Instead of using fields to filter, we modify the function to use labels.
-func newListWatchFromClientWithLabels(c cache.Getter, resource string, namespace string, op metav1.ListOptions) *cache.ListWatch {
-	listFunc := func(_ metav1.ListOptions) (runtime.Object, error) {
-		return c.Get().
-			Namespace(namespace).
-			Resource(resource).
-			VersionedParams(&op, metav1.ParameterCodec).
-			Do().
-			Get()
-	}
-	watchFunc := func(_ metav1.ListOptions) (watch.Interface, error) {
-		op.Watch = true
-		return c.Get().
-			Namespace(namespace).
-			Resource(resource).
-			VersionedParams(&op, metav1.ParameterCodec).
-			Watch()
-	}
-	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
-}
-
-func labelListOptions() metav1.ListOptions {
+// listOptions adds filtering for Habitat objects by adding a requirement
+// for the Habitat label.
+func listOptions() func(*metav1.ListOptions) {
 	ls := labels.SelectorFromSet(labels.Set(map[string]string{
 		habv1beta1.HabitatLabel: "true",
 	}))
 
-	return metav1.ListOptions{
-		LabelSelector: ls.String(),
+	return func(options *metav1.ListOptions) {
+		options.LabelSelector = ls.String()
 	}
 }
 

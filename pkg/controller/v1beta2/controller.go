@@ -177,11 +177,11 @@ func (hc *HabitatController) cacheConfigMaps() {
 }
 
 func (hc *HabitatController) watchPods(ctx context.Context) {
-	source := newListWatchFromClientWithLabels(
+	source := cache.NewFilteredListWatchFromClient(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
 		"pods",
 		apiv1.NamespaceAll,
-		labelListOptions())
+		listOptions())
 
 	c := cache.NewSharedIndexInformer(
 		source,
@@ -548,11 +548,11 @@ func (hc *HabitatController) conform(key string) error {
 	}
 
 	// Create StatefulSet, if it doesn't already exist.
-	if _, err := hc.config.KubernetesClientset.AppsV1beta1().StatefulSets(h.Namespace).Create(sts); err != nil {
+	if _, err := hc.config.KubernetesClientset.AppsV1beta2().StatefulSets(h.Namespace).Create(sts); err != nil {
 		// Was the error due to the StatefulSet already existing?
 		if apierrors.IsAlreadyExists(err) {
 			// If yes, update it.
-			if _, err := hc.config.KubernetesClientset.AppsV1beta1().StatefulSets(h.Namespace).Update(sts); err != nil {
+			if _, err := hc.config.KubernetesClientset.AppsV1beta2().StatefulSets(h.Namespace).Update(sts); err != nil {
 				return err
 			}
 		} else {

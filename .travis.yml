@@ -8,9 +8,9 @@ go_import_path: github.com/habitat-sh/habitat-operator
 env:
   global:
     - CHANGE_MINIKUBE_NONE_USER=true
-    - K8S_VERSION=v1.9.0
-    - MINIKUBE_VERSION=v0.25.2
-    - CODEGEN_VERSION=release-1.9
+    - K8S_VERSION=v1.10.0
+    - MINIKUBE_VERSION=v0.26.1
+    - CODEGEN_VERSION=kubernetes-1.10.0
 
 # Skip installation of dependencies since they are already in vendor.
 install: true
@@ -27,7 +27,8 @@ before_script:
 # Download minikube.
 - curl -Lo minikube https://github.com/kubernetes/minikube/releases/download/${MINIKUBE_VERSION}/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
 - sudo minikube config set WantReportErrorPrompt false
-- sudo minikube start --vm-driver=none --kubernetes-version=${K8S_VERSION} --extra-config=apiserver.Authorization.Mode=RBAC
+# TODO: remove the --bootstrapper flag once this issue is solved: https://github.com/kubernetes/minikube/issues/2704
+- sudo minikube start --vm-driver=none --bootstrapper=localkube --kubernetes-version=${K8S_VERSION} --extra-config=apiserver.Authorization.Mode=RBAC
 # Fix the kubectl context, as it's often stale.
 - minikube update-context
 # Clone the code generator repo
