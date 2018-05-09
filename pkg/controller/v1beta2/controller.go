@@ -23,6 +23,7 @@ import (
 	"time"
 
 	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
+	habscheme "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/scheme"
 	habinformers "github.com/habitat-sh/habitat-operator/pkg/client/informers/externalversions"
 
 	"github.com/go-kit/kit/log"
@@ -35,8 +36,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -59,6 +63,27 @@ const (
 	ringKeyRegexp = `^([\w_-]+)-\d{14}$`
 
 	userConfigFilename = "user-config"
+
+	controllerAgentName = "habitat-controller"
+
+	// Events.
+	validationFailed = "ValidationFailed"
+	cmCreated        = "ConfigMapCreated"
+	cmUpdated        = "ConfigMapUpdated"
+	cmFailed         = "ConfigMapCreationFailed"
+	stsCreated       = "StatefulSetCreated"
+	stsFailed        = "StatefulSetCreationFailed"
+
+	// Event messages.
+	messageValidationFailed = "Failed validating Habitat"
+	messageCMCreated        = "Created peer IP ConfigMap"
+	messageCMUpdated        = "Updated peer IP ConfigMap"
+	messageCMFailed         = "Failed creating ConfigMap"
+	messagePeerIPAdded      = "Added peer IP to ConfigMap"
+	messagePeerIPUpdated    = "Updated peer IP in ConfigMap"
+	messagePeerIPRemoved    = "Removed peer IP from ConfigMap"
+	messageStsCreated       = "Created StatefulSet"
+	messageStsFailed        = "Failed creating StatefulSet"
 )
 
 var ringRegexp *regexp.Regexp = regexp.MustCompile(ringKeyRegexp)
@@ -80,6 +105,8 @@ type HabitatController struct {
 	habInformerSynced cache.InformerSynced
 	stsInformerSynced cache.InformerSynced
 	cmInformerSynced  cache.InformerSynced
+
+	recorder record.EventRecorder
 }
 
 type Config struct {
@@ -107,10 +134,17 @@ func New(config Config, logger log.Logger) (*HabitatController, error) {
 		return nil, errors.New("invalid controller config: no logger")
 	}
 
+	// Set up event broadcasting.
+	habscheme.AddToScheme(scheme.Scheme)
+	eventBroadcaster := record.NewBroadcaster()
+	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: config.KubernetesClientset.CoreV1().Events("")})
+	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, apiv1.EventSource{Component: controllerAgentName})
+
 	hc := &HabitatController{
-		config: config,
-		logger: logger,
-		queue:  workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Habitats"),
+		config:   config,
+		logger:   logger,
+		queue:    workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Habitats"),
+		recorder: recorder,
 	}
 
 	return hc, nil
@@ -405,12 +439,14 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 				return err
 			}
 
-			level.Debug(hc.logger).Log("msg", "removed peer IP from ConfigMap", "name", newCM.Name)
+			level.Debug(hc.logger).Log("msg", messagePeerIPRemoved, "name", newCM.Name)
+			hc.recorder.Event(h, apiv1.EventTypeNormal, cmUpdated, messagePeerIPRemoved)
 
 			return nil
 		}
 
-		level.Info(hc.logger).Log("msg", "created peer IP ConfigMap", "name", cm.Name)
+		level.Info(hc.logger).Log("msg", messageCMCreated, "name", cm.Name)
+		hc.recorder.Event(h, apiv1.EventTypeNormal, cmCreated, messageCMCreated)
 
 		return nil
 	}
@@ -450,9 +486,11 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 			return err
 		}
 
-		level.Info(hc.logger).Log("msg", "updated peer IP in ConfigMap", "name", cm.Name, "ip", leaderIP)
+		level.Info(hc.logger).Log("msg", messagePeerIPUpdated, "name", cm.Name, "ip", leaderIP)
+		hc.recorder.Event(h, apiv1.EventTypeNormal, cmUpdated, messagePeerIPUpdated)
 	} else {
-		level.Info(hc.logger).Log("msg", "created peer IP ConfigMap", "name", cm.Name, "ip", leaderIP)
+		level.Info(hc.logger).Log("msg", messageCMCreated, "name", cm.Name, "ip", leaderIP)
+		hc.recorder.Event(h, apiv1.EventTypeNormal, cmCreated, messageCMCreated)
 	}
 
 	return nil
@@ -537,6 +575,7 @@ func (hc *HabitatController) conform(key string) error {
 
 	// Validate object.
 	if err := validateCustomObject(*h); err != nil {
+		hc.recorder.Event(h, apiv1.EventTypeWarning, validationFailed, messageValidationFailed)
 		return err
 	}
 
@@ -544,6 +583,7 @@ func (hc *HabitatController) conform(key string) error {
 
 	sts, err := hc.newStatefulSet(h)
 	if err != nil {
+		hc.recorder.Eventf(h, apiv1.EventTypeWarning, stsFailed, fmt.Sprintf("%s: %s", messageStsFailed, err))
 		return err
 	}
 
@@ -556,16 +596,19 @@ func (hc *HabitatController) conform(key string) error {
 				return err
 			}
 		} else {
+			hc.recorder.Event(h, apiv1.EventTypeWarning, stsFailed, messageStsFailed)
 			return err
 		}
 
 		level.Debug(hc.logger).Log("msg", "StatefulSet already existed", "name", sts.Name)
 	} else {
 		level.Info(hc.logger).Log("msg", "created StatefulSet", "name", sts.Name)
+		hc.recorder.Event(h, apiv1.EventTypeNormal, stsCreated, messageStsCreated)
 	}
 
 	// Handle creation/updating of peer IP ConfigMap.
 	if err := hc.handleConfigMap(h); err != nil {
+		hc.recorder.Eventf(h, apiv1.EventTypeWarning, cmFailed, fmt.Sprintf("%s: %s", messageCMFailed, err))
 		return err
 	}
 
