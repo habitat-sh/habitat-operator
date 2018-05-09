@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"os"
 	"os/signal"
 	"runtime"
@@ -24,7 +25,6 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	flag "github.com/spf13/pflag"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	kubeinformers "k8s.io/client-go/informers"
@@ -48,7 +48,7 @@ type Clientsets struct {
 func run() int {
 	// Parse config flags.
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
-	verbose := flag.BoolP("verbose", "v", false, "Enable verbose logging.")
+	verbose := flag.Bool("verbose", false, "Enable verbose logging.")
 	flag.Parse()
 
 	// Set up logging.
