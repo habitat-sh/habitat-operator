@@ -306,15 +306,26 @@ func (hc *HabitatController) handleStsAdd(obj interface{}) {
 }
 
 func (hc *HabitatController) handleStsUpdate(oldObj, newObj interface{}) {
-	sts, ok := newObj.(*appsv1beta2.StatefulSet)
+	oldSTS, ok := oldObj.(*appsv1beta2.StatefulSet)
+	if !ok {
+		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", oldObj)
+		return
+	}
+
+	newSTS, ok := newObj.(*appsv1beta2.StatefulSet)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", newObj)
 		return
 	}
 
-	h, err := hc.getHabitatFromLabeledResource(sts)
+	if oldSTS.ResourceVersion == newSTS.ResourceVersion {
+		level.Debug(hc.logger).Log("msg", "Update ignored as it didn't change ResourceVersion", "statefulset", newSTS.Name)
+		return
+	}
+
+	h, err := hc.getHabitatFromLabeledResource(newSTS)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", sts.Name)
+		level.Error(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", newSTS.Name)
 		return
 	}
 
