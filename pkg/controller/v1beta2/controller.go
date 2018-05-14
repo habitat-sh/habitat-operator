@@ -533,6 +533,11 @@ func (hc *HabitatController) processNextItem() bool {
 	k, ok := key.(string)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert key", "obj", key)
+
+		// The item in the queue does not have the expected type, so we remove it
+		// from the queue as there's no point in processing it.
+		hc.queue.Forget(k)
+
 		return false
 	}
 
