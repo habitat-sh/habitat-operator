@@ -1,5 +1,5 @@
-FROM alpine:3.6
+FROM scratch
 
 COPY habitat-operator /habitat-operator
 
-ENTRYPOINT ["/habitat-operator"]
+ENTRYPOINT ["/habitat-operator", "-logtostderr"]
