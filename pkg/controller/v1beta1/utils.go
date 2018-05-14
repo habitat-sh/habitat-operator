@@ -175,6 +175,6 @@ func checkCustomVersionMatch(h *habv1beta1.Habitat) error {
 		return nil
 	}
 
-	return fmt.Errorf("wrong CustomVersion: %v", v)
+	return fmt.Errorf("wrong CustomVersion: %v", *v)
 
 }
