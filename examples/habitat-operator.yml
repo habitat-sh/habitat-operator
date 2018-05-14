@@ -1,3 +1,4 @@
+# This example deploys the operator on a cluster that has RBAC disabled.
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
