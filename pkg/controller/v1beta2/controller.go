@@ -528,8 +528,6 @@ func (hc *HabitatController) processNextItem() bool {
 		return false
 	}
 
-	defer hc.queue.Done(key)
-
 	k, ok := key.(string)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert key", "obj", key)
@@ -541,8 +539,9 @@ func (hc *HabitatController) processNextItem() bool {
 		return false
 	}
 
-	err := hc.conform(k)
-	if err != nil {
+	defer hc.queue.Done(key)
+
+	if err := hc.conform(k); err != nil {
 		level.Error(hc.logger).Log("msg", "Habitat could not be synced, requeueing", "err", err, "obj", k)
 
 		hc.queue.AddRateLimited(k)
