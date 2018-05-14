@@ -329,6 +329,7 @@ func (hc *HabitatController) handleStsUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
+	level.Warn(hc.logger).Log("msg", messageReadOnlyResourceChanged, "name", newSTS.Name)
 	hc.enqueue(h)
 }
 
@@ -346,5 +347,6 @@ func (hc *HabitatController) handleStsDelete(obj interface{}) {
 		return
 	}
 
+	level.Warn(hc.logger).Log("msg", messageReadOnlyResourceChanged, "name", sts.Name)
 	hc.enqueue(h)
 }

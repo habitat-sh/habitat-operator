@@ -75,15 +75,16 @@ const (
 	stsFailed        = "StatefulSetCreationFailed"
 
 	// Event messages.
-	messageValidationFailed = "Failed validating Habitat"
-	messageCMCreated        = "Created peer IP ConfigMap"
-	messageCMUpdated        = "Updated peer IP ConfigMap"
-	messageCMFailed         = "Failed creating ConfigMap"
-	messagePeerIPAdded      = "Added peer IP to ConfigMap"
-	messagePeerIPUpdated    = "Updated peer IP in ConfigMap"
-	messagePeerIPRemoved    = "Removed peer IP from ConfigMap"
-	messageStsCreated       = "Created StatefulSet"
-	messageStsFailed        = "Failed creating StatefulSet"
+	messageValidationFailed        = "Failed validating Habitat"
+	messageCMCreated               = "Created peer IP ConfigMap"
+	messageCMUpdated               = "Updated peer IP ConfigMap"
+	messageCMFailed                = "Failed creating ConfigMap"
+	messagePeerIPAdded             = "Added peer IP to ConfigMap"
+	messagePeerIPUpdated           = "Updated peer IP in ConfigMap"
+	messagePeerIPRemoved           = "Removed peer IP from ConfigMap"
+	messageStsCreated              = "Created StatefulSet"
+	messageStsFailed               = "Failed creating StatefulSet"
+	messageReadOnlyResourceChanged = "Readonly configuration updated. Update will be reverted"
 )
 
 var ringRegexp *regexp.Regexp = regexp.MustCompile(ringKeyRegexp)
@@ -296,10 +297,12 @@ func (hc *HabitatController) handleCMAdd(obj interface{}) {
 }
 
 func (hc *HabitatController) handleCMUpdate(oldObj, newObj interface{}) {
+	level.Warn(hc.logger).Log("msg", messageReadOnlyResourceChanged)
 	hc.handleCM(newObj)
 }
 
 func (hc *HabitatController) handleCMDelete(obj interface{}) {
+	level.Warn(hc.logger).Log("msg", messageReadOnlyResourceChanged)
 	hc.handleCM(obj)
 }
 
@@ -350,6 +353,7 @@ func (hc *HabitatController) handlePodUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
+	level.Warn(hc.logger).Log("msg", messageReadOnlyResourceChanged, "name", oldPod.Name)
 	hc.enqueue(h)
 }
 
@@ -377,6 +381,7 @@ func (hc *HabitatController) handlePodDelete(obj interface{}) {
 		return
 	}
 
+	level.Warn(hc.logger).Log("msg", messageReadOnlyResourceChanged, "name", pod.Name)
 	hc.enqueue(h)
 }
 
