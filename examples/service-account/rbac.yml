@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: habitat-updater
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: habitat-updater
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: habitat-updater
+subjects:
+- kind: ServiceAccount
+  name: habitat-updater
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: habitat-updater
+rules:
+- apiGroups:
+  - habitat.sh
+  resources:
+  - habitats
+  verbs: ["get","update", "patch"]
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - statefulsets
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources:
+  - pods
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources:
+  - namespaces
+  verbs: ["list"]

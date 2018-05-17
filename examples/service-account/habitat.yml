@@ -1,0 +1,15 @@
+apiVersion: habitat.sh/v1beta1
+kind: Habitat
+metadata:
+  name: habitat-updater
+  labels:
+    source: operator-example
+    app: service-account-habitat
+customVersion: v1beta2
+spec:
+  v1beta2:
+    image: habitat/habitat-updater
+    count: 1
+    serviceAccountName: habitat-updater
+    service:
+      name: habitat-updater
