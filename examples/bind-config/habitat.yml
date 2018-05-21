@@ -13,6 +13,9 @@ apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: example-bind-configured-db
+  labels:
+    source: operator-example
+    app: bind-configured-db
 customVersion: v1beta2
 spec:
   v1beta2:
@@ -29,6 +32,9 @@ apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: example-bind-configured-web-app
+  labels:
+    source: operator-example
+    app: bind-configured-web-app
 customVersion: v1beta2
 spec:
   v1beta2:

@@ -8,6 +8,9 @@ kind: Habitat
 metadata:
   name: example-namespaced-habitat
   namespace: example-namespace
+  labels:
+    source: operator-example
+    app: namespaced-habitat
 customVersion: v1beta2
 spec:
   v1beta2:

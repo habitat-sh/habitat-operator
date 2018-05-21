@@ -2,6 +2,9 @@ apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: example-leader-follower-habitat
+  labels:
+    source: operator-example
+    app: leader-follower-habitat
 customVersion: v1beta2
 spec:
   v1beta2:
