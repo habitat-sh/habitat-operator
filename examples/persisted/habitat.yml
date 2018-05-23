@@ -12,11 +12,11 @@ spec:
     persistentStorage:
       # the size of the volume that will be mounted in each Pod
       size: 1Gi
-      # a StorageClass object with name "standard" must be created beforehand by
+      # a StorageClass object with name "example-sc" must be created beforehand by
       # the cluster administrator
       storageClassName: example-sc
       # the location under which the volume will be mounted
-      mountPath: /tmp/foobar
+      mountPath: /hab/svc/redis/data
     env:
       - name: HAB_REDIS
         # this is needed to make redis accept connections from other hosts
