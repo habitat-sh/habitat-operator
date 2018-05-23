@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"sync"
 	"syscall"
 	"time"
 
@@ -90,7 +91,9 @@ func run() int {
 	}
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
+
+	var wg sync.WaitGroup
+	wg.Add(2)
 
 	cSets := Clientsets{
 		KubeClientset:          kubeClientset,
@@ -98,31 +101,40 @@ func run() int {
 		ApiextensionsClientset: apiextensionsClientset,
 	}
 
-	if err := v1beta1(ctx, cSets, logger); err != nil {
+	if err := v1beta1(ctx, &wg, cSets, logger); err != nil {
 		level.Error(logger).Log("msg", err)
 		return 1
 	}
 
-	if err := v1beta2(ctx, cSets, logger); err != nil {
+	if err := v1beta2(ctx, &wg, cSets, logger); err != nil {
 		level.Error(logger).Log("msg", err)
 		return 1
 	}
 
-	term := make(chan os.Signal)
+	term := make(chan os.Signal, 2)
 	// Relay these signals to the `term` channel.
 	signal.Notify(term, syscall.SIGINT, syscall.SIGTERM)
 
-	select {
-	case <-term:
-		level.Info(logger).Log("msg", "received SIGTERM, exiting gracefully...")
-	case <-ctx.Done():
-		level.Info(logger).Log("msg", "context channel closed, exiting")
-	}
+	go func() {
+		<-term
+		level.Info(logger).Log("msg", "received termination signal, exiting gracefully...")
+		cancelFunc()
+
+		<-term
+		os.Exit(1)
+	}()
+
+	<-ctx.Done()
+
+	// Block until the WaitGroup counter is zero
+	wg.Wait()
+
+	level.Info(logger).Log("msg", "controllers stopped, exiting")
 
 	return 0
 }
 
-func v1beta1(ctx context.Context, cSets Clientsets, logger log.Logger) error {
+func v1beta1(ctx context.Context, wg *sync.WaitGroup, cSets Clientsets, logger log.Logger) error {
 	// Create Habitat CRD.
 	_, err := habv1beta1controller.CreateCRD(cSets.ApiextensionsClientset)
 	if err != nil {
@@ -144,12 +156,15 @@ func v1beta1(ctx context.Context, cSets Clientsets, logger log.Logger) error {
 		return err
 	}
 
-	go controller.Run(runtime.NumCPU(), ctx)
+	go func() {
+		controller.Run(ctx, runtime.NumCPU())
+		wg.Done()
+	}()
 
 	return nil
 }
 
-func v1beta2(ctx context.Context, cSets Clientsets, logger log.Logger) error {
+func v1beta2(ctx context.Context, wg *sync.WaitGroup, cSets Clientsets, logger log.Logger) error {
 	// Create Habitat CRD.
 	_, err := habv1beta2controller.CreateCRD(cSets.ApiextensionsClientset)
 	if err != nil {
@@ -180,10 +195,24 @@ func v1beta2(ctx context.Context, cSets Clientsets, logger log.Logger) error {
 		return err
 	}
 
-	go kubeInformerFactory.Start(ctx.Done())
-	go habInformerFactory.Start(ctx.Done())
+	var factoriesWg sync.WaitGroup
+	factoriesWg.Add(2)
 
-	go controller.Run(runtime.NumCPU(), ctx)
+	go func() {
+		kubeInformerFactory.Start(ctx.Done())
+		factoriesWg.Done()
+	}()
+
+	go func() {
+		habInformerFactory.Start(ctx.Done())
+		factoriesWg.Done()
+	}()
+
+	go func() {
+		controller.Run(ctx, runtime.NumCPU())
+		factoriesWg.Wait()
+		wg.Done()
+	}()
 
 	return nil
 }
