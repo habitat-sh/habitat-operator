@@ -27,8 +27,8 @@ e2e:
 
 clean-test:
 	kubectl delete namespace testing-v1beta1
-	kubectl delete clusterrolebinding habitat-operator
-	kubectl delete clusterrole habitat-operator
+	kubectl delete clusterrolebinding habitat-operator-v1beta1
+	kubectl delete clusterrole habitat-operator-v1beta1
 
 update-version:
 	find examples -name "*.yml" -type f \
