@@ -20,10 +20,13 @@ image: linux
 test:
 	go test $(shell go list ./... | grep -v /vendor/ | grep -v /test/)
 
-# requires minikube to be running
+# requires minikube or any kubernetes cluster to be running
 e2e:
+	$(eval IP := $(shell kubectl config view --output=jsonpath='{.clusters[0].cluster.server}' --minify | grep --only-matching '[0-9.]\+' | head --lines 1))
+	$(eval KUBECONFIG_PATH := $(shell mktemp --tmpdir operator-e2e.XXXXXXX))
+	kubectl config view --minify --flatten > $(KUBECONFIG_PATH)
 	@if test 'x$(TESTIMAGE)' = 'x'; then echo "TESTIMAGE must be passed."; exit 1; fi
-	go test -v ./test/e2e/... --image "$(TESTIMAGE)" --kubeconfig ~/.kube/config --ip "$$(minikube ip)"
+	go test -v ./test/e2e/... --image "$(TESTIMAGE)" --kubeconfig $(KUBECONFIG_PATH) --ip "$(IP)"
 
 clean-test:
 	kubectl delete namespace testing-v1beta1
