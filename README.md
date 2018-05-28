@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/habitat-sh/habitat-operator.svg?branch=master)](https://travis-ci.org/habitat-sh/habitat-operator) 
+[![Build Status](https://circleci.com/gh/habitat-sh/habitat-operator.svg?style=svg)](https://circleci.com/gh/habitat-sh/habitat-operator)
 [![Go Report Card](https://goreportcard.com/badge/github.com/habitat-sh/habitat-operator)](https://goreportcard.com/report/github.com/habitat-sh/habitat-operator)
 
 # habitat-operator
