@@ -2,6 +2,9 @@ apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: example-standalone-habitat
+  labels:
+    source: operator-example
+    app: standalone-habitat
 customVersion: v1beta2
 spec:
   v1beta2:

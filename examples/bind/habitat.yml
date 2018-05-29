@@ -1,7 +1,10 @@
 apiVersion: habitat.sh/v1beta1
-kind: Habitat 
+kind: Habitat
 metadata:
   name: db
+  labels:
+    source: operator-example
+    app: db
 customVersion: v1beta2
 spec:
   v1beta2:
@@ -15,6 +18,9 @@ apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: web-app
+  labels:
+    source: operator-example
+    app: web-app
 customVersion: v1beta2
 spec:
   v1beta2:
