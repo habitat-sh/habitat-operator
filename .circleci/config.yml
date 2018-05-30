@@ -6,6 +6,9 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Check for changes in documentation and examples
+          command: ./hack/check-skippable-changes.sh
+      - run:
           name: setup
           environment:
             K8S_VERSION: v1.10.0
