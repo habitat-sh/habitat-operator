@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"sync"
 	"time"
 
 	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
@@ -151,20 +152,31 @@ func New(config Config, logger log.Logger) (*HabitatController, error) {
 }
 
 // Run starts a Habitat resource controller.
-func (hc *HabitatController) Run(workers int, ctx context.Context) error {
-	// Make sure the work queue is shutdown which will trigger workers to end.
-	defer hc.queue.ShutDown()
-
+func (hc *HabitatController) Run(ctx context.Context, workers int) error {
 	level.Info(hc.logger).Log("msg", "Watching Habitat objects")
+
+	var wg sync.WaitGroup
+	wg.Add(4 + workers)
 
 	hc.cacheHabitats()
 	hc.cacheStatefulSets()
 	hc.cacheConfigMaps()
-	hc.watchPods(ctx)
+	hc.watchPods(ctx, &wg)
 
-	go hc.habInformer.Run(ctx.Done())
-	go hc.stsInformer.Run(ctx.Done())
-	go hc.cmInformer.Run(ctx.Done())
+	go func() {
+		hc.habInformer.Run(ctx.Done())
+		wg.Done()
+	}()
+
+	go func() {
+		hc.stsInformer.Run(ctx.Done())
+		wg.Done()
+	}()
+
+	go func() {
+		hc.cmInformer.Run(ctx.Done())
+		wg.Done()
+	}()
 
 	// Wait for caches to be synced before starting workers.
 	if !cache.WaitForCacheSync(ctx.Done(), hc.habInformerSynced, hc.stsInformerSynced, hc.cmInformerSynced) {
@@ -176,11 +188,20 @@ func (hc *HabitatController) Run(workers int, ctx context.Context) error {
 	// failed job, it will be restarted after a delay of 1 second.
 	for i := 0; i < workers; i++ {
 		level.Debug(hc.logger).Log("msg", "Starting worker", "id", i)
-		go wait.Until(hc.worker, time.Second, ctx.Done())
+		go func() {
+			wait.Until(hc.worker, time.Second, ctx.Done())
+			wg.Done()
+		}()
 	}
 
 	// This channel is closed when the context is canceled or times out.
 	<-ctx.Done()
+
+	// Make sure the work queue is shutdown which will trigger workers to end.
+	hc.queue.ShutDown()
+
+	// Block until the WaitGroup counter is zero
+	wg.Wait()
 
 	// Err() contains the error, if any.
 	return ctx.Err()
@@ -210,7 +231,7 @@ func (hc *HabitatController) cacheConfigMaps() {
 	hc.cmInformerSynced = hc.cmInformer.HasSynced
 }
 
-func (hc *HabitatController) watchPods(ctx context.Context) {
+func (hc *HabitatController) watchPods(ctx context.Context, wg *sync.WaitGroup) {
 	source := cache.NewFilteredListWatchFromClient(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
 		"pods",
@@ -230,7 +251,10 @@ func (hc *HabitatController) watchPods(ctx context.Context) {
 		DeleteFunc: hc.handlePodDelete,
 	})
 
-	go c.Run(ctx.Done())
+	go func() {
+		c.Run(ctx.Done())
+		wg.Done()
+	}()
 }
 
 func (hc *HabitatController) handleHabAdd(obj interface{}) {
