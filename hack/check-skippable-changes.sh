@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script checks to see if changes only affect documentation and examples
-# and skips running tests if that's the case
+# and skips running tests if that's the case in a pull request
 
 set -eu
 
@@ -26,7 +26,8 @@ DOC_EXAMPLE_CHANGE_PATTERN=(
 BRANCHING_POINT=$(getBranchingPoint HEAD origin/master)
 SRC_CHANGES=$(git diff-tree --no-commit-id --name-only -r HEAD.."${BRANCHING_POINT}" | grep -cEv "${DOC_EXAMPLE_CHANGE_PATTERN[@]}") || true
 
-if [[ "${SRC_CHANGES}" -eq 0 ]]; then
+if [[ "${SRC_CHANGES}" -eq 0 ]] && [[ -n "${CIRCLE_PULL_REQUEST}" ]]; then
+  # Skip build because only documentation and examples changed and this is a PR
   echo "Skipping CI build"
   circleci step halt
 else
