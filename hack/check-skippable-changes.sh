@@ -25,9 +25,12 @@ DOC_EXAMPLE_CHANGE_PATTERN=(
 
 BRANCHING_POINT=$(getBranchingPoint HEAD origin/master)
 SRC_CHANGES=$(git diff-tree --no-commit-id --name-only -r HEAD.."${BRANCHING_POINT}" | grep -cEv "${DOC_EXAMPLE_CHANGE_PATTERN[@]}") || true
+HEAD=$(git rev-parse HEAD)
+MASTER=$(git rev-parse origin/master)
 
-if [[ "${SRC_CHANGES}" -eq 0 ]] && [[ -n "${CIRCLE_PULL_REQUEST}" ]]; then
-  # Skip build because only documentation and examples changed and this is a PR
+if [[ "${SRC_CHANGES}" -eq 0 ]] && [[ "${HEAD}" != "${MASTER}" ]]; then
+  # Skip build because only documentation and examples changed
+  # and the current HEAD is not master, implying that this is a PR and not a merge
   echo "Skipping CI build"
   circleci step halt
 else
