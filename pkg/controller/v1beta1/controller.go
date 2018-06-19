@@ -480,7 +480,7 @@ func (hc *HabitatController) getRunningPods(namespace string) ([]apiv1.Pod, erro
 	return pods.Items, nil
 }
 
-func (hc *HabitatController) writeLeaderIP(cm *apiv1.ConfigMap, ip string) error {
+func (hc *HabitatController) writeToPeerFile(cm *apiv1.ConfigMap, ip string) error {
 	cm.Data[peerFile] = ip
 
 	if _, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(cm.Namespace).Update(cm); err != nil {
@@ -514,7 +514,7 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 				return err
 			}
 
-			if err := hc.writeLeaderIP(cm, ""); err != nil {
+			if err := hc.writeToPeerFile(cm, ""); err != nil {
 				return err
 			}
 
@@ -528,10 +528,10 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 		return nil
 	}
 
-	// There are running Pods, add the IP of one of them to the ConfigMap.
-	ipAddresses := make([]string, 0)
+	// There are running Pods, add their IP to the ConfigMap but
+	// limit it to a maxiumum of maxPeerFileAddresses.
 	maxPods := int(math.Min(float64(maxPeerFileAddresses), float64(len(runningPods))))
-
+	ipAddresses := make([]string, maxPods)
 	for i := 0; i < maxPods; i++ {
 		ipAddresses = append(ipAddresses, runningPods[i].Status.PodIP)
 	}
@@ -546,14 +546,21 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 			return err
 		}
 
-		// The ConfigMap already exists. Retrieve it and find out if the the leader
-		// is still running.
+		// The ConfigMap already exists. Retrieve it and find
+		// out if there has been a change in the running pods
+		// since the last time the ConfigMap was updated.
 		cm, err := hc.findConfigMapInCache(newCM)
 		if err != nil {
 			return err
 		}
 
-		if err := hc.writeLeaderIP(cm, ipAddressesStr); err != nil {
+		currPeerFileData := cm.Data[peerFile]
+		if ipAddressesStr == cm.Data[peerFile] {
+			level.Debug(hc.logger).Log("msg", "Running pods have not changed", "ip", currPeerFileData)
+			return nil
+		}
+
+		if err := hc.writeToPeerFile(cm, ipAddressesStr); err != nil {
 			return err
 		}
 
