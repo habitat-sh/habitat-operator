@@ -216,15 +216,12 @@ func TestHabitatDelete(t *testing.T) {
 }
 
 func TestPersistentStorage(t *testing.T) {
-	// We run minikube in a VM on the CI infrastructure. In that environment, we cannot create PersistentVolumes.
-	t.Skip("This test cannot be run successfully in our current testing setup")
-
 	ephemeral, err := utils.ConvertHabitat("resources/standalone/habitat.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	persisted, err := utils.ConvertHabitat("resources/persisted/habitat.yml")
+	persisted, err := utils.ConvertHabitat("resources/persistent/habitat.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -254,6 +251,13 @@ func TestPersistentStorage(t *testing.T) {
 			t.Fatal(err)
 		}
 	})(persisted.Name)
+
+	// Delete the ephemeral resource created
+	defer (func(name string) {
+		if err := framework.DeleteHabitat(name); err != nil {
+			t.Fatal(err)
+		}
+	})(ephemeral.Name)
 
 	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, persisted.Name, 1); err != nil {
 		t.Fatal(err)
