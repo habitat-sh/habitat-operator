@@ -533,7 +533,7 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 	maxPods := int(math.Min(float64(maxPeerFileAddresses), float64(len(runningPods))))
 	ipAddresses := make([]string, maxPods)
 	for i := 0; i < maxPods; i++ {
-		ipAddresses = append(ipAddresses, runningPods[i].Status.PodIP)
+		ipAddresses[i] = runningPods[i].Status.PodIP
 	}
 
 	ipAddressesStr := strings.Join(ipAddresses, "\n")
