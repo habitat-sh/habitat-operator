@@ -531,9 +531,9 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 	// There are running Pods, add their IP to the ConfigMap but
 	// limit it to a maxiumum of maxPeerFileAddresses.
 	maxPods := int(math.Min(float64(maxPeerFileAddresses), float64(len(runningPods))))
-	ipAddresses := make([]string, maxPods)
+	ipAddresses := make([]string, 0, maxPods)
 	for i := 0; i < maxPods; i++ {
-		ipAddresses[i] = runningPods[i].Status.PodIP
+		ipAddresses = append(ipAddresses, runningPods[i].Status.PodIP)
 	}
 
 	ipAddressesStr := strings.Join(ipAddresses, "\n")
@@ -546,16 +546,24 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 			return err
 		}
 
-		// The ConfigMap already exists. Retrieve it and find
-		// out if there has been a change in the running pods
-		// since the last time the ConfigMap was updated.
+		// The ConfigMap already exists. Retrieve it and find out if
+		// there has been a change in the running pods since the last
+		// time the ConfigMap was updated.
 		cm, err := hc.findConfigMapInCache(newCM)
 		if err != nil {
 			return err
 		}
 
+		// By default, the list of pods returned via the Kubernetes API
+		// is sorted in alphabetical order. As a result we rely on this
+		// ordering to recreate the string of IPs and do a simple string
+		// comparison to see if anything has changed. The string would
+		// be different if any pods were added, removed or rescheduled
+		// since the last time we updated the ConfigMap. This approach
+		// helps keep the code simpler than maintaining a set of pod IPs
+		// and checking if they are truly identical or not.
 		currPeerFileData := cm.Data[peerFile]
-		if ipAddressesStr == cm.Data[peerFile] {
+		if ipAddressesStr == currPeerFileData {
 			level.Debug(hc.logger).Log("msg", "Running pods have not changed", "ip", currPeerFileData)
 			return nil
 		}
