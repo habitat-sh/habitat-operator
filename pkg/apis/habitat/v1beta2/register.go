@@ -27,7 +27,7 @@ var (
 )
 
 const (
-	Version = "v1beta1"
+	Version = "v1beta2"
 )
 
 // SchemeGroupVersion is the group version used to register these objects.
