@@ -3,11 +3,10 @@ kind: Service
 metadata:
   name: test-go
 spec:
+  type: LoadBalancer
   selector:
     habitat-name: test-go
-  type: NodePort
   ports:
   - name: web
-    nodePort: 30001
     port: 5555
     protocol: TCP
