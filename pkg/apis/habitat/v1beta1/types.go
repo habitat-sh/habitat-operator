@@ -33,6 +33,12 @@ const (
 	TopologyLabel = "topology"
 )
 
+var HabitatLabelSet = map[string]struct{}{
+	HabitatLabel:     {},
+	HabitatNameLabel: {},
+	TopologyLabel:    {},
+}
+
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -79,6 +85,9 @@ type V1beta2 struct {
 	// +optional
 	PersistentStorage *PersistentStorage `json:"persistentStorage,omitempty"`
 
+	// PodLabels is a map to add custom labels to the pods created
+	// as part of the StatefulSet.
+	// +optional
 	PodLabels map[string]string `json:"podLabels,omitempty"`
 }
 
