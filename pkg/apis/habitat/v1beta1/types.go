@@ -78,6 +78,8 @@ type V1beta2 struct {
 	Env []corev1.EnvVar `json:"env,omitempty"`
 	// +optional
 	PersistentStorage *PersistentStorage `json:"persistentStorage,omitempty"`
+
+	PodLabels map[string]string `json:"podLabels,omitempty"`
 }
 
 // PersistentStorage contains the details of the persistent storage that the
