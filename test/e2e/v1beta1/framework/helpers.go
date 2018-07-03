@@ -263,3 +263,21 @@ func QueryService(url string) (string, error) {
 
 	return string(bodyBytes), nil
 }
+
+// GetLoadBalancerIP waits for Load Balancer IP to become available and returns it
+func (f *Framework) GetLoadBalancerIP(serviceName string) (string, error) {
+	loadBalancerIP := ""
+	err := wait.Poll(2*time.Second, 5*time.Minute, func() (bool, error) {
+		service, err := f.KubeClient.Core().Services(TestNs).Get(serviceName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+
+		if len(service.Status.LoadBalancer.Ingress) == 0 {
+			return false, nil
+		}
+		loadBalancerIP = service.Status.LoadBalancer.Ingress[0].IP
+		return true, nil
+	})
+	return loadBalancerIP, err
+}

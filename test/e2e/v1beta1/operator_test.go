@@ -102,8 +102,12 @@ func TestBind(t *testing.T) {
 
 	time.Sleep(serviceStartupWaitTime)
 
+	loadBalancerIP, err := framework.GetLoadBalancerIP(svc.ObjectMeta.Name)
+	if err != nil {
+		t.Fatal(err)
+	}
 	// Get response from Habitat Service.
-	url := fmt.Sprintf("http://%s:30001/", framework.ExternalIP)
+	url := fmt.Sprintf("http://%s:5555/", loadBalancerIP)
 
 	body, err := utils.QueryService(url)
 	if err != nil {

@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	operatorFramework "github.com/habitat-sh/habitat-operator/test/e2e/v1beta1/framework"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp" // Needed for GCP on Circle CI
 )
 
 var framework *operatorFramework.Framework
