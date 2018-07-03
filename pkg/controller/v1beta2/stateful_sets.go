@@ -78,6 +78,16 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta2
 			"--bind", bindArg)
 	}
 
+	podLabels := map[string]string{
+		habv1beta1.HabitatLabel:     "true",
+		habv1beta1.HabitatNameLabel: h.Name,
+		habv1beta1.TopologyLabel:    topology.String(),
+	}
+
+	for key := range hs.PodLabels {
+		podLabels[key] = hs.PodLabels[key]
+	}
+
 	base := &appsv1beta2.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: h.Name,
@@ -104,11 +114,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta2
 			PodManagementPolicy: appsv1beta2.ParallelPodManagement,
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						habv1beta1.HabitatLabel:     "true",
-						habv1beta1.HabitatNameLabel: h.Name,
-						habv1beta1.TopologyLabel:    topology.String(),
-					},
+					Labels: podLabels,
 				},
 				Spec: apiv1.PodSpec{
 					Containers: []apiv1.Container{
