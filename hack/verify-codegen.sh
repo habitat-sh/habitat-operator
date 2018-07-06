@@ -23,7 +23,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")/..
+SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 
 "${SCRIPT_ROOT}/hack/update-codegen.sh"
 echo "Checking against freshly generated codegen..."
@@ -32,8 +32,7 @@ ret=0
 
 git diff --quiet "*.deepcopy.go" || ret=$?
 
-if [[ $ret -eq 0 ]]
-then
+if [[ $ret -eq 0 ]]; then
   echo "  Up to date."
 else
   echo "  Out of date. Please run hack/update-codegen.sh"

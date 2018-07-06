@@ -1,94 +1,117 @@
-version: 2
-jobs:
-  build:
-    machine: true
-    working_directory: ~/.go_workspace/src/github.com/habitat-sh/habitat-operator
-    steps:
-      - checkout
-      - run:
-          name: Check for changes in documentation and examples
-          command: ./hack/check-skippable-changes.sh
-      - run:
-          name: Setup environment variables
-          command: |
-            echo 'export IMAGE_NAME=eu.gcr.io/$GCLOUD_PROJECT_ID/habitat/habitat-operator-$CIRCLE_BUILD_NUM' >>"${BASH_ENV}"
-            echo 'export IMAGE_TAG=testing' >>"${BASH_ENV}"
-            echo 'export IMAGE_FULL_NAME="${IMAGE_NAME}:${IMAGE_TAG}"' >>"${BASH_ENV}"
-      - run:
-          name: setup kubectl
-          environment:
-            K8S_VERSION: v1.10.0
-          command: |
-            curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${K8S_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-      - run:
-          name: code-gen script
-          environment:
-            CODEGEN_PKG: ../../../../src/k8s.io/code-generator
-            CODEGEN_VERSION: kubernetes-1.10.0
-            GOPATH: /home/circleci/.go_workspace
-          command: |
+defaults: &defaults
+  machine: true
+  working_directory: ~/.go_workspace/src/github.com/habitat-sh/habitat-operator
+  steps:
+    - checkout
+    - run:
+        name: Check for changes in documentation and examples
+        command: ./hack/check-skippable-changes.sh
+    - run:
+        name: Setup environment variables
+        command: |
+          echo 'export IMAGE_NAME=eu.gcr.io/$GCLOUD_PROJECT_ID/habitat/habitat-operator-$CIRCLE_BUILD_NUM' >>"${BASH_ENV}"
+          echo 'export IMAGE_TAG=testing' >>"${BASH_ENV}"
+          echo 'export IMAGE_FULL_NAME="${IMAGE_NAME}:${IMAGE_TAG}"' >>"${BASH_ENV}"
+    - run:
+        name: setup kubectl
+        command: |
+          curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${K8S_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+    - run:
+        name: code-gen script
+        environment:
+          CODEGEN_PKG: ../../../../src/k8s.io/code-generator
+          GOPATH: /home/circleci/.go_workspace
+        command: |
+          if [[ -n $CODEGEN_VERSION ]]; then
             mkdir -p $CODEGEN_PKG
             git clone https://github.com/kubernetes/code-generator.git --branch $CODEGEN_VERSION $GOPATH/src/k8s.io/code-generator
             hack/verify-codegen.sh
-      - run:
-          name: unit tests
-          command: make test
-      - run:
-          name: install google cloud sdk
-          command: |
-            sudo apt-get install lsb-release
-            CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
-            echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-            sudo apt-get update && sudo apt-get install google-cloud-sdk
+          else
+            echo "Skipping codegen checks..."
+          fi
+    - run:
+        name: unit tests
+        command: make test
+    - run:
+        name: install google cloud sdk
+        command: |
+          sudo apt-get install lsb-release
+          CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
+          echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+          curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+          sudo apt-get update && sudo apt-get install google-cloud-sdk
 
-            # the GCLOUD_SERVICE_KEY environment variable is set in the web UI
-            echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
+          # the GCLOUD_SERVICE_KEY environment variable is set in the web UI
+          echo $GCLOUD_SERVICE_KEY > ${HOME}/gcloud-service-key.json
 
-            # setup SDK
-            gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
-            # GCLOUD_PROJECT_ID is set in Circle CI web UI
-            gcloud config set project $GCLOUD_PROJECT_ID
-            gcloud config set compute/zone europe-west1-b
-      - run:
-          name: Update gcloud components
-          command: sudo /opt/google-cloud-sdk/bin/gcloud components update --quiet
-      - run:
-          name: boot cluster on gke
-          environment:
-            GKE_CLUSTER_VERSION: 1.10.4-gke.2
-          command: gcloud container clusters create --cluster-version=$GKE_CLUSTER_VERSION --disk-size=20 operator-test-$CIRCLE_BUILD_NUM
-      - run:
-          name: create image
-          command: make IMAGE=$IMAGE_NAME TAG=$IMAGE_TAG image
-      - run:
-          name: Configure docker to use gcloud to authenticate requests to Container Registry
-          command: gcloud auth configure-docker
-      - run:
-          name: Push the docker image
-          command: docker push $IMAGE_FULL_NAME
-      - run:
-          name: waiting for kubernetes to be ready
-          command: |
-            JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'
-            until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do
-              sleep 1
-            done
-      - run:
-          name: Grant the user the ability to create authorization roles
-          command: kubectl create clusterrolebinding cluster-admin-binding --clusterrole cluster-admin --user $(gcloud config get-value account)
-      - run:
-          name: e2e tests
-          command: make TESTIMAGE=$IMAGE_FULL_NAME e2e
-      - run:
-          name: print habitat object logs
-          command: kubectl logs -lhabitat-operator=true --tail=100
-          when: on_fail
-      - run:
-          name: Delete image from Container Registry
-          command: gcloud container images delete $IMAGE_FULL_NAME --force-delete-tags --quiet
-          when: always
-      - run:
-          name: delete cluster on gke
-          command: gcloud container clusters delete operator-test-$CIRCLE_BUILD_NUM --quiet
-          when: always
+          # setup SDK
+          gcloud auth activate-service-account --key-file=${HOME}/gcloud-service-key.json
+          # GCLOUD_PROJECT_ID is set in Circle CI web UI
+          gcloud config set project $GCLOUD_PROJECT_ID
+          gcloud config set compute/zone europe-west1-b
+    - run:
+        name: Update gcloud components
+        command: sudo /opt/google-cloud-sdk/bin/gcloud components update --quiet
+    - run:
+        name: boot cluster on gke
+        command: gcloud container clusters create --cluster-version=$GKE_CLUSTER_VERSION --disk-size=20 operator-test-$CIRCLE_BUILD_NUM
+    - run:
+        name: create image
+        command: make IMAGE=$IMAGE_NAME TAG=$IMAGE_TAG image
+    - run:
+        name: Configure docker to use gcloud to authenticate requests to Container Registry
+        command: gcloud auth configure-docker
+    - run:
+        name: Push the docker image
+        command: docker push $IMAGE_FULL_NAME
+    - run:
+        name: waiting for kubernetes to be ready
+        command: |
+          JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'
+          until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do
+            sleep 1
+          done
+    - run:
+        name: Grant the user the ability to create authorization roles
+        command: kubectl create clusterrolebinding cluster-admin-binding --clusterrole cluster-admin --user $(gcloud config get-value account)
+    - run:
+        name: e2e tests
+        command: make TESTIMAGE=$IMAGE_FULL_NAME e2e
+    - run:
+        name: print habitat object logs
+        command: kubectl logs -lhabitat-operator=true --tail=100
+        when: on_fail
+    - run:
+        name: Delete image from Container Registry
+        command: gcloud container images delete $IMAGE_FULL_NAME --force-delete-tags --quiet
+        when: always
+    - run:
+        name: delete cluster on gke
+        command: gcloud container clusters delete operator-test-$CIRCLE_BUILD_NUM --quiet
+        when: always
+
+jobs:
+  k8s-v1.10:
+    environment:
+      K8S_VERSION: v1.10.0
+      GKE_CLUSTER_VERSION: 1.10.5-gke.0
+      CODEGEN_VERSION: kubernetes-1.10.0
+    <<: *defaults
+  k8s-v1.9:
+    environment:
+      K8S_VERSION: v1.9.0
+      GKE_CLUSTER_VERSION: 1.9.7-gke.3
+    <<: *defaults
+  k8s-v1.8:
+    environment:
+      K8S_VERSION: v1.8.0
+      GKE_CLUSTER_VERSION: 1.8.10-gke.0
+    <<: *defaults
+
+workflows:
+  version: 2
+  all-k8s-tests:
+    jobs:
+      - k8s-v1.10
+      - k8s-v1.9
+      - k8s-v1.8
