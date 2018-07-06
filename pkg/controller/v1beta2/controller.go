@@ -18,8 +18,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -54,6 +56,8 @@ const (
 	peerFilename  = "peer-ip"
 	peerFile      = "peer-watch-file"
 	configMapName = peerFile
+	// The maximum number of IP addresses to be written to the peer-watch-file.
+	maxPeerFileAddresses = 5
 
 	// The key under which the ring key is stored in the Kubernetes Secret.
 	ringSecretKey = "ring-key"
@@ -425,7 +429,7 @@ func (hc *HabitatController) getRunningPods(namespace string) ([]apiv1.Pod, erro
 	return pods.Items, nil
 }
 
-func (hc *HabitatController) writeLeaderIP(cm *apiv1.ConfigMap, ip string) error {
+func (hc *HabitatController) writeToPeerFile(cm *apiv1.ConfigMap, ip string) error {
 	cm.Data[peerFile] = ip
 
 	if _, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(cm.Namespace).Update(cm); err != nil {
@@ -459,7 +463,7 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 				return err
 			}
 
-			if err := hc.writeLeaderIP(cm, ""); err != nil {
+			if err := hc.writeToPeerFile(cm, ""); err != nil {
 				return err
 			}
 
@@ -475,10 +479,16 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 		return nil
 	}
 
-	// There are running Pods, add the IP of one of them to the ConfigMap.
-	leaderIP := runningPods[0].Status.PodIP
+	// There are running Pods, add their IP to the ConfigMap but
+	// limit it to a maxiumum of maxPeerFileAddresses.
+	maxPods := int(math.Min(float64(maxPeerFileAddresses), float64(len(runningPods))))
+	ipAddresses := make([]string, 0, maxPods)
+	for i := 0; i < maxPods; i++ {
+		ipAddresses = append(ipAddresses, runningPods[i].Status.PodIP)
+	}
 
-	newCM := newConfigMap(leaderIP, h)
+	ipAddressesStr := strings.Join(ipAddresses, "\n")
+	newCM := newConfigMap(ipAddressesStr, h)
 
 	cm, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(h.Namespace).Create(newCM)
 	if err != nil {
@@ -487,33 +497,36 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 			return err
 		}
 
-		// The ConfigMap already exists. Retrieve it and find out if the the leader
-		// is still running.
+		// The ConfigMap already exists. Retrieve it and find out if
+		// there has been a change in the running pods since the last
+		// time the ConfigMap was updated.
 		cm, err := hc.findConfigMapInCache(newCM)
 		if err != nil {
 			return err
 		}
 
-		curLeader := cm.Data[peerFile]
-
-		for _, p := range runningPods {
-			if p.Status.PodIP == curLeader {
-				// The leader is still up, nothing to do.
-				level.Debug(hc.logger).Log("msg", "Leader still running", "ip", curLeader)
-
-				return nil
-			}
+		// By default, the list of pods returned via the Kubernetes API
+		// is sorted in alphabetical order. As a result we rely on this
+		// ordering to recreate the string of IPs and do a simple string
+		// comparison to see if anything has changed. The string would
+		// be different if any pods were added, removed or rescheduled
+		// since the last time we updated the ConfigMap. This approach
+		// helps keep the code simpler than maintaining a set of pod IPs
+		// and checking if they are truly identical or not.
+		currPeerFileData := cm.Data[peerFile]
+		if ipAddressesStr == currPeerFileData {
+			level.Debug(hc.logger).Log("msg", "Running pods have not changed", "ip", currPeerFileData)
+			return nil
 		}
 
-		// The leader is not in the list of running Pods, so the ConfigMap must be updated.
-		if err := hc.writeLeaderIP(cm, leaderIP); err != nil {
+		if err := hc.writeToPeerFile(cm, ipAddressesStr); err != nil {
 			return err
 		}
 
-		level.Info(hc.logger).Log("msg", messagePeerIPUpdated, "name", cm.Name, "ip", leaderIP)
+		level.Info(hc.logger).Log("msg", messagePeerIPUpdated, "name", cm.Name, "ip", ipAddressesStr)
 		hc.recorder.Event(h, apiv1.EventTypeNormal, cmUpdated, messagePeerIPUpdated)
 	} else {
-		level.Info(hc.logger).Log("msg", messageCMCreated, "name", cm.Name, "ip", leaderIP)
+		level.Info(hc.logger).Log("msg", messageCMCreated, "name", cm.Name, "ip", ipAddressesStr)
 		hc.recorder.Event(h, apiv1.EventTypeNormal, cmCreated, messageCMCreated)
 	}
 
