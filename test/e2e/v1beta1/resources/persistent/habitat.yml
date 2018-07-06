@@ -2,13 +2,14 @@ apiVersion: habitat.sh/v1beta1
 kind: Habitat
 metadata:
   name: persisted-test
+customVersion: v1beta2
 spec:
   v1beta2:
     image: kinvolk/redis-hab
     count: 1
     persistentStorage:
       size: 100Mi
-      # created by minikube
+      # created by default on GCP
       storageClassName: standard
       mountPath: /tmp/foo
     service:
