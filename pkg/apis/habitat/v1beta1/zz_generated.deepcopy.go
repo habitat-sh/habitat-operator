@@ -272,6 +272,13 @@ func (in *V1beta2) DeepCopyInto(out *V1beta2) {
 			**out = **in
 		}
 	}
+	if in.PodLabels != nil {
+		in, out := &in.PodLabels, &out.PodLabels
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 

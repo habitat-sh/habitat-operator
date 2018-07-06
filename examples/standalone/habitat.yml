@@ -16,3 +16,6 @@ spec:
       topology: standalone
       # if not present, defaults to "default"
       group: foobar
+    podLabels:
+      foo: bar
+      spam: eggs
