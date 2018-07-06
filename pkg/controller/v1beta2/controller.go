@@ -29,6 +29,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	apiv1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -609,28 +610,49 @@ func (hc *HabitatController) conform(key string) error {
 
 	level.Debug(hc.logger).Log("msg", "validated object")
 
-	sts, err := hc.newStatefulSet(h)
+	newSts, err := hc.newStatefulSet(h)
 	if err != nil {
 		hc.recorder.Eventf(h, apiv1.EventTypeWarning, stsFailed, fmt.Sprintf("%s: %s", messageStsFailed, err))
 		return err
 	}
 
 	// Create StatefulSet, if it doesn't already exist.
-	if _, err := hc.config.KubernetesClientset.AppsV1beta2().StatefulSets(h.Namespace).Create(sts); err != nil {
+	if _, err := hc.config.KubernetesClientset.AppsV1beta2().StatefulSets(h.Namespace).Create(newSts); err != nil {
 		// Was the error due to the StatefulSet already existing?
 		if apierrors.IsAlreadyExists(err) {
-			// If yes, update it.
-			if _, err := hc.config.KubernetesClientset.AppsV1beta2().StatefulSets(h.Namespace).Update(sts); err != nil {
+			// If yes, update it but retrieve the current state before that.
+			oldSts, err := hc.config.KubernetesClientset.AppsV1beta2().StatefulSets(h.Namespace).Get(newSts.Name, metav1.GetOptions{})
+			if err != nil {
 				return err
 			}
+
+			// Update the StatefulSet
+			updatedSts, err := hc.config.KubernetesClientset.AppsV1beta2().StatefulSets(h.Namespace).Update(newSts)
+			if err != nil {
+				return err
+			}
+
+			// Workaround for upstream bug with the habitat supervisor.
+			// https://github.com/habitat-sh/habitat/issues/5264
+			//
+			// When the bug is fixed and the workaround is removed, make
+			// sure to change UpdateStrategy to RollingUpdate as OnDelete
+			// will break updates to deployments.
+			if killAllPods := !reflect.DeepEqual(oldSts.Spec.Template, updatedSts.Spec.Template); killAllPods {
+				level.Info(hc.logger).Log("msg", "deleting pods under StatefulSet", "name", updatedSts.Name)
+				if err := hc.deleteStatefulSetPods(updatedSts); err != nil {
+					return err
+				}
+			}
+
+			level.Debug(hc.logger).Log("msg", "StatefulSet already existed", "name", updatedSts.Name)
 		} else {
 			hc.recorder.Event(h, apiv1.EventTypeWarning, stsFailed, messageStsFailed)
 			return err
 		}
 
-		level.Debug(hc.logger).Log("msg", "StatefulSet already existed", "name", sts.Name)
 	} else {
-		level.Info(hc.logger).Log("msg", "created StatefulSet", "name", sts.Name)
+		level.Info(hc.logger).Log("msg", "created StatefulSet", "name", newSts.Name)
 		hc.recorder.Event(h, apiv1.EventTypeNormal, stsCreated, messageStsCreated)
 	}
 
@@ -747,4 +769,14 @@ func (hc *HabitatController) findConfigMapInCache(cm *apiv1.ConfigMap) (*apiv1.C
 	}
 
 	return obj.(*apiv1.ConfigMap), nil
+}
+
+func (hc *HabitatController) deleteStatefulSetPods(sts *appsv1beta2.StatefulSet) error {
+	listOptions := metav1.ListOptions{
+		LabelSelector: sts.Spec.Selector.String(),
+	}
+
+	return hc.config.KubernetesClientset.CoreV1().
+		Pods(sts.Namespace).
+		DeleteCollection(&metav1.DeleteOptions{}, listOptions)
 }

@@ -147,6 +147,13 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta2
 					},
 				},
 			},
+			// We delete pods manually in the controller when StatefulSet
+			// objects are updated. Setting UpdateStrategy to OnDelete
+			// prevents us messing with the StatefulSet controller when
+			// StatefulSet is updated.
+			UpdateStrategy: appsv1beta2.StatefulSetUpdateStrategy{
+				Type: appsv1beta2.OnDeleteStatefulSetStrategyType,
+			},
 		},
 	}
 
