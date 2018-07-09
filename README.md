@@ -105,13 +105,11 @@ To run unit tests locally, run:
 
     make test
 
-To run end-to-end tests locally you need to have `minikube` up and running. After that just run:
- 
-    make TESTIMAGE=YOUR_OPERATOR_IMAGE e2e
-
 Clean up after the tests with:
 
     make clean-test
+
+Our current setup does not allow e2e tests to run locally. It is best run on a [CI setup with Google Cloud](/doc/ci-gcp-setup.md).
 
 ### Code generation
 
