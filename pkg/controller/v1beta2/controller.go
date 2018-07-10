@@ -772,8 +772,10 @@ func (hc *HabitatController) findConfigMapInCache(cm *apiv1.ConfigMap) (*apiv1.C
 }
 
 func (hc *HabitatController) deleteStatefulSetPods(sts *appsv1beta2.StatefulSet) error {
+	fs := fields.SelectorFromSet(fields.Set(sts.Spec.Selector.MatchLabels))
+
 	listOptions := metav1.ListOptions{
-		LabelSelector: sts.Spec.Selector.String(),
+		LabelSelector: fs.String(),
 	}
 
 	return hc.config.KubernetesClientset.CoreV1().
