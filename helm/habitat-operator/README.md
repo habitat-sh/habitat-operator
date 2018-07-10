@@ -60,7 +60,7 @@ The following table lists the configurable parameters of the habitat-operator ch
 Parameter | Description | Default
 --- | --- | ---
 `image.repository` | Image | `docker.io/habitat/habitat-operator`
-`image.tag` | Image tag | The latest release tag (e.g `v0.6.1`)
+`image.tag` | Image tag | The latest release tag (e.g `v0.7.0`)
 `image.pullPolicy` | Image pull policy | `IfNotPresent`
 `nodeSelector` | Node labels for pod assignment | `{}`
 `rbacEnable` | If true, create & use RBAC resources | `true`

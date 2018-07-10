@@ -58,8 +58,8 @@ update-version:
 	sed \
 		-i.bak \
 		-e 's/\(`\*: cut \)[.[:digit:]]*\( release`\)/\1'"$$(cat VERSION)"'\2/' \
-		release.md
-	rm -f release.md.bak
+		doc/release-process.md
+	rm -f doc/release-process.md.bak
 
 codegen:
 	CODEGEN_PKG=../../../k8s.io/code-generator hack/update-codegen.sh
