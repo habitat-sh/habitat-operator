@@ -11,9 +11,9 @@ Then run the following command to update version across files:
 
 Document the important changes in this release in the `CHANGELOG.md` file, following the already established pattern. You can get a list of changes since the last release by running:
 
-    git log --merges v0.7.0...master --reverse
+    git log --merges v0.7.1...master --reverse
 
-Commit all the generated changes and the changes in the `CHANGELOG.md` file under one commit message e.g.: `*: cut 0.7.0 release`. Create a PR with the changes.
+Commit all the generated changes and the changes in the `CHANGELOG.md` file under one commit message e.g.: `*: cut 0.7.1 release`. Create a PR with the changes.
 
 ## Tag the release
 
