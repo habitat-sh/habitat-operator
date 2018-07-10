@@ -1,5 +1,39 @@
 # Habitat operator CHANGELOG
 
+## [v0.7.0](https://github.com/habitat-sh/habitat-operator/tree/v0.7.0) (10-7-2018)
+[Full changelog](https://github.com/habitat-sh/habitat-operator/compare/v0.6.1...v0.7.0)
+
+### Bug fixes
+
+- Mark items as done after validity check [#274](https://github.com/habitat-sh/habitat-operator/pull/274)
+- Print custom version string instead of pointer to make error messages useful [#275](https://github.com/habitat-sh/habitat-operator/pull/275)
+
+### Features & Enhancements
+
+- Add "Channel" to Habitat CRD for Habitat packages [#259](https://github.com/habitat-sh/habitat-operator/pull/259)
+- Add support for Kubernetes 1.10 [#258](https://github.com/habitat-sh/habitat-operator/pull/258)
+- Broadcast events when Habitat objects are modified or fail validation [#267](https://github.com/habitat-sh/habitat-operator/pull/267)
+- Remove dependency on pflag library [#271](https://github.com/habitat-sh/habitat-operator/pull/271)
+- Compare Resource Versions on update [#272](https://github.com/habitat-sh/habitat-operator/pull/272)
+- Shutdown gracefully through double signal handling [#285](https://github.com/habitat-sh/habitat-operator/pull/285)
+- Run E2E tests on GCE [#302](https://github.com/habitat-sh/habitat-operator/pull/302)
+- Enable test for persistent storage [#303](https://github.com/habitat-sh/habitat-operator/pull/303)
+- Run E2E tests on multiple versions of kubernetes [#306](https://github.com/habitat-sh/habitat-operator/pull/306)
+- Delete pods if StatefulSet object is updated [#307](https://github.com/habitat-sh/habitat-operator/pull/307)
+
+### Docs
+
+- Add instructions to update & verify scripts [#255](https://github.com/habitat-sh/habitat-operator/pull/255)
+- Add design document [#253](https://github.com/habitat-sh/habitat-operator/pull/253)
+
+### Deprecations
+
+- This is the last version to support v1beta1 custom veresion of the Habitat CRD.
+
+### Breaking changes
+
+- Support for Kubernetes 1.7 has been dropped [#258](https://github.com/habitat-sh/habitat-operator/pull/258)
+
 ## [v0.6.1](https://github.com/kinvolk/habitat-operator/tree/v0.6.1) (23-4-2018)
 [Full changelog](https://github.com/kinvolk/habitat-operator/compare/v0.6.0...v0.6.1)
 
@@ -80,4 +114,3 @@ Please refer to examples for how to adapt existing manifests.
 ### Bug fixes
 
 - Fix Habitat removal [#125](https://github.com/kinvolk/habitat-operator/pull/125)
-
