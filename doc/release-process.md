@@ -17,19 +17,25 @@ Commit all the generated changes and the changes in the `CHANGELOG.md` file unde
 
 ## Tag the release
 
-After the above mentioned PR was merged, switch to the updated master branch. Tag the new release with a tag named v<major>.<minor>.<patch>, e.g. `v2.1.3`, and push the tag.
+After the above mentioned PR was merged, switch to the updated master branch and run:
 
-    git tag -a vx.y.z -m 'vx.y.z'
-    git push origin vx.y.z
+    # Do a dry run first to see if the commands look right:
+    hack/tag-release.sh
+    # If the commands are right:
+    hack/tag-release.sh -r
+
+This will create a new tag on upstream.
 
 ## Generate release image
 
-In the root directory of the repository generate the Docker image and push it to Docker hub:
+And now run:
 
-    make image
-    docker push habitat/habitat-operator:vx.y.z
-    docker tag habitat/habitat-operator:vx.y.z habitat/habitat-operator:latest
-    docker push habitat/habitat-operator:latest
+    # Do a dry run first to see if the commands look right:
+    hack/publish-release.sh
+    # If the commands are right:
+    hack/publish-release.sh -r
+
+This will create a docker image and push it to the docker repository on docker hub.
 
 ## Generate the Helm chart
 
