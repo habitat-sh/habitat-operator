@@ -57,7 +57,9 @@ defaults: &defaults
         command: sudo /opt/google-cloud-sdk/bin/gcloud components update --quiet
     - run:
         name: boot cluster on gke
-        command: gcloud container clusters create --cluster-version=$GKE_CLUSTER_VERSION --disk-size=20 operator-test-$CIRCLE_BUILD_NUM
+        command: |
+          gcloud container clusters create --cluster-version=$GKE_CLUSTER_VERSION --disk-size=20 operator-test-$CIRCLE_BUILD_NUM
+          echo 'export CLUSTER_CREATED=yes' >>"${BASH_ENV}"
     - run:
         name: create image
         command: make IMAGE=$IMAGE_NAME TAG=$IMAGE_TAG image
@@ -66,7 +68,9 @@ defaults: &defaults
         command: gcloud auth configure-docker
     - run:
         name: Push the docker image
-        command: docker push $IMAGE_FULL_NAME
+        command: |
+          docker push $IMAGE_FULL_NAME
+          echo 'export IMAGE_PUSHED=yes' >>"${BASH_ENV}"
     - run:
         name: waiting for kubernetes to be ready
         command: |
@@ -82,15 +86,30 @@ defaults: &defaults
         command: make TESTIMAGE=$IMAGE_FULL_NAME e2e
     - run:
         name: print habitat object logs
-        command: kubectl logs -lhabitat-operator=true --tail=100
+        command: |
+          if [[ -n "${CLUSTER_CREATED}" ]]; then
+            kubectl logs -lhabitat-operator=true --tail=100
+          else
+            echo 'Cluster not set up, skipping getting logs'
+          fi
         when: on_fail
     - run:
         name: Delete image from Container Registry
-        command: gcloud container images delete $IMAGE_FULL_NAME --force-delete-tags --quiet
+        command: |
+          if [[ -n "${IMAGE_PUSHED}" ]]; then
+            gcloud container images delete $IMAGE_FULL_NAME --force-delete-tags --quiet
+          else
+            echo 'Image not pushed, skipping deleting images from container registry'
+          fi
         when: always
     - run:
         name: delete cluster on gke
-        command: gcloud container clusters delete operator-test-$CIRCLE_BUILD_NUM --quiet
+        command: |
+          if [[ -n "${CLUSTER_CREATED}" ]]; then
+            gcloud container clusters delete operator-test-$CIRCLE_BUILD_NUM --quiet
+          else
+            echo 'Cluster not set up, skipping deleting a cluster on gke'
+          fi
         when: always
 
 jobs:
