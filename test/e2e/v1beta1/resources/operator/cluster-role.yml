@@ -30,8 +30,12 @@ rules:
 - apiGroups: [""]
   resources:
   - pods
-  verbs: ["get", "list", "watch"]
+  verbs: ["get", "list", "watch", "deletecollection"]
 - apiGroups: [""]
   resources:
   - namespaces
   verbs: ["list"]
+- apiGroups: [""]
+  resources:
+  - events
+  verbs: [ "create", "patch" ]
