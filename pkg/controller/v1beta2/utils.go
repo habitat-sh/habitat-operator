@@ -31,10 +31,9 @@ import (
 )
 
 const (
-	leaderFollowerTopologyMinCount = 3
-	pollInterval                   = 500 * time.Millisecond
-	timeOut                        = 10 * time.Second
-	habitatCRDName                 = habv1beta1.HabitatResourcePlural + "." + habitat.GroupName
+	pollInterval   = 500 * time.Millisecond
+	timeOut        = 10 * time.Second
+	habitatCRDName = habv1beta1.HabitatResourcePlural + "." + habitat.GroupName
 )
 
 type keyNotFoundError struct {
@@ -54,9 +53,6 @@ func validateCustomObject(h habv1beta1.Habitat) error {
 	switch spec.Service.Topology {
 	case habv1beta1.TopologyStandalone:
 	case habv1beta1.TopologyLeader:
-		if spec.Count < leaderFollowerTopologyMinCount {
-			return fmt.Errorf("too few instances: %d, leader-follower topology requires at least %d", spec.Count, leaderFollowerTopologyMinCount)
-		}
 	default:
 		return fmt.Errorf("unknown topology: %s", spec.Service.Topology)
 	}

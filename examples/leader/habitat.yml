@@ -10,8 +10,10 @@ spec:
   v1beta2:
     # the core/redis habitat service packaged as a Docker image
     image: habitat/redis-hab
-    # count must be at least 3 for a leader-follower topology
-    count: 3
+    # While it is possible to deploy only one pod with a service
+    # instance in the leader-follower topology, at least 3 instances
+    # are required for services to be started by the supervisor.
+    count: 1
     service:
       name: redis
       topology: leader
