@@ -1,5 +1,25 @@
 # Habitat operator CHANGELOG
 
+## [v0.7.2](https://github.com/habitat-sh/habitat-operator/tree/v0.7.2) (12-7-2018)
+[Full changelog](https://github.com/habitat-sh/habitat-operator/compare/v0.7.1...v0.7.2)
+
+### Bug fixes
+
+- Fix outdated helm charts [#317](https://github.com/habitat-sh/habitat-operator/pull/317)
+
+### Features & Enhancements
+
+- Remove restriction to deploy at least 3 instances in leader topology [#299](https://github.com/habitat-sh/habitat-operator/pull/299)
+- Check if RBAC rules are in sync during the build process [#319](https://github.com/habitat-sh/habitat-operator/pull/319)
+
+### Docs
+
+- Add document for CI setup with GCP [#310](https://github.com/habitat-sh/habitat-operator/pull/310)
+
+### Deprecations
+
+- 0.7.x is the last version to support v1beta1 custom version of the Habitat CRD.
+
 ## [v0.7.1](https://github.com/habitat-sh/habitat-operator/tree/v0.7.1) (10-7-2018)
 [Full changelog](https://github.com/habitat-sh/habitat-operator/compare/v0.7.0...v0.7.1)
 
