@@ -12,9 +12,10 @@ defaults: &defaults
     - run:
         name: Setup environment variables
         command: |
-          echo 'export IMAGE_NAME=eu.gcr.io/$GCLOUD_PROJECT_ID/habitat/habitat-operator-$CIRCLE_BUILD_NUM' >>"${BASH_ENV}"
+          echo 'export IMAGE_NAME=eu.gcr.io/$GCLOUD_PROJECT_ID/habitat/habitat-operator-$CIRCLE_PROJECT_USERNAME-$CIRCLE_BUILD_NUM' >>"${BASH_ENV}"
           echo 'export IMAGE_TAG=testing' >>"${BASH_ENV}"
           echo 'export IMAGE_FULL_NAME="${IMAGE_NAME}:${IMAGE_TAG}"' >>"${BASH_ENV}"
+          echo 'export CLUSTER_NAME="operator-test-$CIRCLE_PROJECT_USERNAME-$CIRCLE_BUILD_NUM"' >>"${BASH_ENV}"
     - run:
         name: setup kubectl
         command: |
@@ -58,7 +59,7 @@ defaults: &defaults
     - run:
         name: boot cluster on gke
         command: |
-          gcloud container clusters create --cluster-version=$GKE_CLUSTER_VERSION --disk-size=20 operator-test-$CIRCLE_BUILD_NUM
+          gcloud container clusters create --cluster-version=$GKE_CLUSTER_VERSION --disk-size=20 $CLUSTER_NAME
           echo 'export CLUSTER_CREATED=yes' >>"${BASH_ENV}"
     - run:
         name: create image
@@ -106,7 +107,7 @@ defaults: &defaults
         name: delete cluster on gke
         command: |
           if [[ -n "${CLUSTER_CREATED}" ]]; then
-            gcloud container clusters delete operator-test-$CIRCLE_BUILD_NUM --quiet
+            gcloud container clusters delete $CLUSTER_NAME --quiet
           else
             echo 'Cluster not set up, skipping deleting a cluster on gke'
           fi
