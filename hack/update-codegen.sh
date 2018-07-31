@@ -40,5 +40,5 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${SCRIPT_ROOT}"; ls -d -1 ./vendor/k8s.io/code-
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 "${CODEGEN_PKG}"/generate-groups.sh all \
   github.com/habitat-sh/habitat-operator/pkg/client github.com/habitat-sh/habitat-operator/pkg/apis \
-  habitat:v1beta1 \
+  habitat:v1beta2 \
   --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate.go.txt
