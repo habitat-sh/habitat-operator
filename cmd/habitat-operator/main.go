@@ -34,7 +34,6 @@ import (
 
 	habclientset "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned"
 	habinformers "github.com/habitat-sh/habitat-operator/pkg/client/informers/externalversions"
-	habv1beta1controller "github.com/habitat-sh/habitat-operator/pkg/controller/v1beta1"
 	habv1beta2controller "github.com/habitat-sh/habitat-operator/pkg/controller/v1beta2"
 )
 
@@ -101,11 +100,6 @@ func run() int {
 		ApiextensionsClientset: apiextensionsClientset,
 	}
 
-	if err := v1beta1(ctx, &wg, cSets, logger); err != nil {
-		level.Error(logger).Log("msg", err)
-		return 1
-	}
-
 	if err := v1beta2(ctx, &wg, cSets, logger); err != nil {
 		level.Error(logger).Log("msg", err)
 		return 1
@@ -132,36 +126,6 @@ func run() int {
 	level.Info(logger).Log("msg", "controllers stopped, exiting")
 
 	return 0
-}
-
-func v1beta1(ctx context.Context, wg *sync.WaitGroup, cSets Clientsets, logger log.Logger) error {
-	// Create Habitat CRD.
-	_, err := habv1beta1controller.CreateCRD(cSets.ApiextensionsClientset)
-	if err != nil {
-		if !apierrors.IsAlreadyExists(err) {
-			return err
-		}
-
-		level.Info(logger).Log("msg", "Habitat CRD already exists, continuing")
-	} else {
-		level.Info(logger).Log("msg", "created Habitat CRD")
-	}
-
-	config := habv1beta1controller.Config{
-		HabitatClient:       cSets.HabClientset.HabitatV1beta1().RESTClient(),
-		KubernetesClientset: cSets.KubeClientset,
-	}
-	controller, err := habv1beta1controller.New(config, log.With(logger, "component", "controller/v1beta1"))
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		controller.Run(ctx, runtime.NumCPU())
-		wg.Done()
-	}()
-
-	return nil
 }
 
 func v1beta2(ctx context.Context, wg *sync.WaitGroup, cSets Clientsets, logger log.Logger) error {
