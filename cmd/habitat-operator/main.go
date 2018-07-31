@@ -92,7 +92,7 @@ func run() int {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(1)
 
 	cSets := Clientsets{
 		KubeClientset:          kubeClientset,
@@ -149,7 +149,7 @@ func v1beta2(ctx context.Context, wg *sync.WaitGroup, cSets Clientsets, logger l
 		// because we _have_ only one client.  This is due to the fact that it's
 		// not currently possible to have multiple versions of a CRD (and
 		// therefore, of a client), running at the same time
-		HabitatClient:          cSets.HabClientset.HabitatV1beta1().RESTClient(),
+		HabitatClient:          cSets.HabClientset.HabitatV1beta2().RESTClient(),
 		KubernetesClientset:    cSets.KubeClientset,
 		KubeInformerFactory:    kubeInformerFactory,
 		HabitatInformerFactory: habInformerFactory,
