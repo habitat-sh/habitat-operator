@@ -19,7 +19,7 @@ package externalversions
 import (
 	"fmt"
 
-	v1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
+	v1beta2 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta2"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -50,9 +50,9 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=habitat.sh, Version=v1beta1
-	case v1beta1.SchemeGroupVersion.WithResource("habitats"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Habitat().V1beta1().Habitats().Informer()}, nil
+	// Group=habitat.sh, Version=v1beta2
+	case v1beta2.SchemeGroupVersion.WithResource("habitats"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Habitat().V1beta2().Habitats().Informer()}, nil
 
 	}
 

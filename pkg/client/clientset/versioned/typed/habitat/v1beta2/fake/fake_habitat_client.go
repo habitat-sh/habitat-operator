@@ -17,22 +17,22 @@
 package fake
 
 import (
-	v1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1"
+	v1beta2 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta2"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )
 
-type FakeHabitatV1beta1 struct {
+type FakeHabitatV1beta2 struct {
 	*testing.Fake
 }
 
-func (c *FakeHabitatV1beta1) Habitats(namespace string) v1beta1.HabitatInterface {
+func (c *FakeHabitatV1beta2) Habitats(namespace string) v1beta2.HabitatInterface {
 	return &FakeHabitats{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *FakeHabitatV1beta1) RESTClient() rest.Interface {
+func (c *FakeHabitatV1beta2) RESTClient() rest.Interface {
 	var ret *rest.RESTClient
 	return ret
 }

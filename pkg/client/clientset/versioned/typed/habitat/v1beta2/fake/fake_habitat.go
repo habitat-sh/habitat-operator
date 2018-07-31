@@ -17,7 +17,7 @@
 package fake
 
 import (
-	v1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
+	v1beta2 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -28,29 +28,29 @@ import (
 
 // FakeHabitats implements HabitatInterface
 type FakeHabitats struct {
-	Fake *FakeHabitatV1beta1
+	Fake *FakeHabitatV1beta2
 	ns   string
 }
 
-var habitatsResource = schema.GroupVersionResource{Group: "habitat.sh", Version: "v1beta1", Resource: "habitats"}
+var habitatsResource = schema.GroupVersionResource{Group: "habitat.sh", Version: "v1beta2", Resource: "habitats"}
 
-var habitatsKind = schema.GroupVersionKind{Group: "habitat.sh", Version: "v1beta1", Kind: "Habitat"}
+var habitatsKind = schema.GroupVersionKind{Group: "habitat.sh", Version: "v1beta2", Kind: "Habitat"}
 
 // Get takes name of the habitat, and returns the corresponding habitat object, and an error if there is any.
-func (c *FakeHabitats) Get(name string, options v1.GetOptions) (result *v1beta1.Habitat, err error) {
+func (c *FakeHabitats) Get(name string, options v1.GetOptions) (result *v1beta2.Habitat, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(habitatsResource, c.ns, name), &v1beta1.Habitat{})
+		Invokes(testing.NewGetAction(habitatsResource, c.ns, name), &v1beta2.Habitat{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1beta1.Habitat), err
+	return obj.(*v1beta2.Habitat), err
 }
 
 // List takes label and field selectors, and returns the list of Habitats that match those selectors.
-func (c *FakeHabitats) List(opts v1.ListOptions) (result *v1beta1.HabitatList, err error) {
+func (c *FakeHabitats) List(opts v1.ListOptions) (result *v1beta2.HabitatList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(habitatsResource, habitatsKind, c.ns, opts), &v1beta1.HabitatList{})
+		Invokes(testing.NewListAction(habitatsResource, habitatsKind, c.ns, opts), &v1beta2.HabitatList{})
 
 	if obj == nil {
 		return nil, err
@@ -60,8 +60,8 @@ func (c *FakeHabitats) List(opts v1.ListOptions) (result *v1beta1.HabitatList, e
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v1beta1.HabitatList{}
-	for _, item := range obj.(*v1beta1.HabitatList).Items {
+	list := &v1beta2.HabitatList{ListMeta: obj.(*v1beta2.HabitatList).ListMeta}
+	for _, item := range obj.(*v1beta2.HabitatList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -77,43 +77,43 @@ func (c *FakeHabitats) Watch(opts v1.ListOptions) (watch.Interface, error) {
 }
 
 // Create takes the representation of a habitat and creates it.  Returns the server's representation of the habitat, and an error, if there is any.
-func (c *FakeHabitats) Create(habitat *v1beta1.Habitat) (result *v1beta1.Habitat, err error) {
+func (c *FakeHabitats) Create(habitat *v1beta2.Habitat) (result *v1beta2.Habitat, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(habitatsResource, c.ns, habitat), &v1beta1.Habitat{})
+		Invokes(testing.NewCreateAction(habitatsResource, c.ns, habitat), &v1beta2.Habitat{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1beta1.Habitat), err
+	return obj.(*v1beta2.Habitat), err
 }
 
 // Update takes the representation of a habitat and updates it. Returns the server's representation of the habitat, and an error, if there is any.
-func (c *FakeHabitats) Update(habitat *v1beta1.Habitat) (result *v1beta1.Habitat, err error) {
+func (c *FakeHabitats) Update(habitat *v1beta2.Habitat) (result *v1beta2.Habitat, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(habitatsResource, c.ns, habitat), &v1beta1.Habitat{})
+		Invokes(testing.NewUpdateAction(habitatsResource, c.ns, habitat), &v1beta2.Habitat{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1beta1.Habitat), err
+	return obj.(*v1beta2.Habitat), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeHabitats) UpdateStatus(habitat *v1beta1.Habitat) (*v1beta1.Habitat, error) {
+func (c *FakeHabitats) UpdateStatus(habitat *v1beta2.Habitat) (*v1beta2.Habitat, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(habitatsResource, "status", c.ns, habitat), &v1beta1.Habitat{})
+		Invokes(testing.NewUpdateSubresourceAction(habitatsResource, "status", c.ns, habitat), &v1beta2.Habitat{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1beta1.Habitat), err
+	return obj.(*v1beta2.Habitat), err
 }
 
 // Delete takes name of the habitat and deletes it. Returns an error if one occurs.
 func (c *FakeHabitats) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(habitatsResource, c.ns, name), &v1beta1.Habitat{})
+		Invokes(testing.NewDeleteAction(habitatsResource, c.ns, name), &v1beta2.Habitat{})
 
 	return err
 }
@@ -122,17 +122,17 @@ func (c *FakeHabitats) Delete(name string, options *v1.DeleteOptions) error {
 func (c *FakeHabitats) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(habitatsResource, c.ns, listOptions)
 
-	_, err := c.Fake.Invokes(action, &v1beta1.HabitatList{})
+	_, err := c.Fake.Invokes(action, &v1beta2.HabitatList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched habitat.
-func (c *FakeHabitats) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.Habitat, err error) {
+func (c *FakeHabitats) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta2.Habitat, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(habitatsResource, c.ns, name, data, subresources...), &v1beta1.Habitat{})
+		Invokes(testing.NewPatchSubresourceAction(habitatsResource, c.ns, name, data, subresources...), &v1beta2.Habitat{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1beta1.Habitat), err
+	return obj.(*v1beta2.Habitat), err
 }

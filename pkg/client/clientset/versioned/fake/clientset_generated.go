@@ -18,8 +18,8 @@ package fake
 
 import (
 	clientset "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned"
-	habitatv1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1"
-	fakehabitatv1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1/fake"
+	habitatv1beta2 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta2"
+	fakehabitatv1beta2 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta2/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -39,9 +39,10 @@ func NewSimpleClientset(objects ...runtime.Object) *Clientset {
 		}
 	}
 
-	fakePtr := testing.Fake{}
-	fakePtr.AddReactor("*", "*", testing.ObjectReaction(o))
-	fakePtr.AddWatchReactor("*", func(action testing.Action) (handled bool, ret watch.Interface, err error) {
+	cs := &Clientset{}
+	cs.discovery = &fakediscovery.FakeDiscovery{Fake: &cs.Fake}
+	cs.AddReactor("*", "*", testing.ObjectReaction(o))
+	cs.AddWatchReactor("*", func(action testing.Action) (handled bool, ret watch.Interface, err error) {
 		gvr := action.GetResource()
 		ns := action.GetNamespace()
 		watch, err := o.Watch(gvr, ns)
@@ -51,7 +52,7 @@ func NewSimpleClientset(objects ...runtime.Object) *Clientset {
 		return true, watch, nil
 	})
 
-	return &Clientset{fakePtr, &fakediscovery.FakeDiscovery{Fake: &fakePtr}}
+	return cs
 }
 
 // Clientset implements clientset.Interface. Meant to be embedded into a
@@ -68,12 +69,12 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 
 var _ clientset.Interface = &Clientset{}
 
-// HabitatV1beta1 retrieves the HabitatV1beta1Client
-func (c *Clientset) HabitatV1beta1() habitatv1beta1.HabitatV1beta1Interface {
-	return &fakehabitatv1beta1.FakeHabitatV1beta1{Fake: &c.Fake}
+// HabitatV1beta2 retrieves the HabitatV1beta2Client
+func (c *Clientset) HabitatV1beta2() habitatv1beta2.HabitatV1beta2Interface {
+	return &fakehabitatv1beta2.FakeHabitatV1beta2{Fake: &c.Fake}
 }
 
-// Habitat retrieves the HabitatV1beta1Client
-func (c *Clientset) Habitat() habitatv1beta1.HabitatV1beta1Interface {
-	return &fakehabitatv1beta1.FakeHabitatV1beta1{Fake: &c.Fake}
+// Habitat retrieves the HabitatV1beta2Client
+func (c *Clientset) Habitat() habitatv1beta2.HabitatV1beta2Interface {
+	return &fakehabitatv1beta2.FakeHabitatV1beta2{Fake: &c.Fake}
 }
