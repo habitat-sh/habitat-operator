@@ -17,7 +17,7 @@ package v1beta2
 import (
 	"fmt"
 
-	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
+	habv1beta2 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta2"
 
 	"github.com/go-kit/kit/log/level"
 	appsv1beta2 "k8s.io/api/apps/v1beta2"
@@ -29,7 +29,7 @@ import (
 
 const persistentVolumeName = "persistent"
 
-func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta2.StatefulSet, error) {
+func (hc *HabitatController) newStatefulSet(h *habv1beta2.Habitat) (*appsv1beta2.StatefulSet, error) {
 	hs := h.Spec.V1beta2
 
 	// This value needs to be passed as a *int32, so we convert it, assign it to a
@@ -56,10 +56,10 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta2
 	// topology type we set standalone as the default one.
 	// We do not need to pass this to habitat, as if no topology
 	// is set, habitat by default sets standalone topology.
-	topology := habv1beta1.TopologyStandalone
+	topology := habv1beta2.TopologyStandalone
 
-	if hs.Service.Topology == habv1beta1.TopologyLeader {
-		topology = habv1beta1.TopologyLeader
+	if hs.Service.Topology == habv1beta2.TopologyLeader {
+		topology = habv1beta2.TopologyLeader
 	}
 
 	path := fmt.Sprintf("%s/%s", configMapDir, peerFilename)
@@ -82,13 +82,13 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta2
 		ObjectMeta: metav1.ObjectMeta{
 			Name: h.Name,
 			Labels: map[string]string{
-				habv1beta1.HabitatLabel:     "true",
-				habv1beta1.HabitatNameLabel: h.Name,
+				habv1beta2.HabitatLabel:     "true",
+				habv1beta2.HabitatNameLabel: h.Name,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				metav1.OwnerReference{
-					APIVersion: habv1beta1.SchemeGroupVersion.String(),
-					Kind:       habv1beta1.HabitatKind,
+					APIVersion: habv1beta2.SchemeGroupVersion.String(),
+					Kind:       habv1beta2.HabitatKind,
 					Name:       h.Name,
 					UID:        h.UID,
 				},
@@ -97,7 +97,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta2
 		Spec: appsv1beta2.StatefulSetSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					habv1beta1.HabitatNameLabel: h.Name,
+					habv1beta2.HabitatNameLabel: h.Name,
 				},
 			},
 			Replicas:            &count,
@@ -105,9 +105,9 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta2
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						habv1beta1.HabitatLabel:     "true",
-						habv1beta1.HabitatNameLabel: h.Name,
-						habv1beta1.TopologyLabel:    topology.String(),
+						habv1beta2.HabitatLabel:     "true",
+						habv1beta2.HabitatNameLabel: h.Name,
+						habv1beta2.TopologyLabel:    topology.String(),
 					},
 				},
 				Spec: apiv1.PodSpec{
@@ -215,8 +215,8 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta2
 					Name:      persistentVolumeName,
 					Namespace: h.Namespace,
 					Labels: map[string]string{
-						habv1beta1.HabitatLabel:     "true",
-						habv1beta1.HabitatNameLabel: h.Name,
+						habv1beta2.HabitatLabel:     "true",
+						habv1beta2.HabitatNameLabel: h.Name,
 					},
 				},
 				Spec: apiv1.PersistentVolumeClaimSpec{
