@@ -17,7 +17,7 @@
 package framework
 
 import (
-	habclient "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1"
+	habclient "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta2"
 
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
