@@ -17,7 +17,7 @@
 package versioned
 
 import (
-	habitatv1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1"
+	habitatv1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta2"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

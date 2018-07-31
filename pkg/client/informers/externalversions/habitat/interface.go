@@ -17,7 +17,7 @@
 package habitat
 
 import (
-	v1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/informers/externalversions/habitat/v1beta1"
+	v1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/informers/externalversions/habitat/v1beta2"
 	internalinterfaces "github.com/habitat-sh/habitat-operator/pkg/client/informers/externalversions/internalinterfaces"
 )
 

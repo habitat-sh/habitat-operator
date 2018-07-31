@@ -19,10 +19,10 @@ package v1beta1
 import (
 	time "time"
 
-	habitat_v1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
+	habitat_v1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta2"
 	versioned "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/habitat-sh/habitat-operator/pkg/client/informers/externalversions/internalinterfaces"
-	v1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/listers/habitat/v1beta1"
+	v1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/listers/habitat/v1beta2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"

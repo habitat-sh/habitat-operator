@@ -25,7 +25,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
+	habv1beta2 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta2"
 	appsv1beta1 "k8s.io/api/apps/v1beta1"
 	apiv1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -165,7 +165,7 @@ func (hc *HabitatController) Run(ctx context.Context, workers int) error {
 func (hc *HabitatController) cacheHabitats() {
 	source := cache.NewListWatchFromClient(
 		hc.config.HabitatClient,
-		habv1beta1.HabitatResourcePlural,
+		habv1beta2.HabitatResourcePlural,
 		apiv1.NamespaceAll,
 		fields.Everything())
 
@@ -173,7 +173,7 @@ func (hc *HabitatController) cacheHabitats() {
 		source,
 
 		// The object type.
-		&habv1beta1.Habitat{},
+		&habv1beta2.Habitat{},
 		resyncPeriod,
 		cache.Indexers{},
 	)
@@ -260,7 +260,7 @@ func (hc *HabitatController) watchPods(ctx context.Context, wg *sync.WaitGroup) 
 }
 
 func (hc *HabitatController) handleHabAdd(obj interface{}) {
-	h, ok := obj.(*habv1beta1.Habitat)
+	h, ok := obj.(*habv1beta2.Habitat)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
 		return
@@ -270,13 +270,13 @@ func (hc *HabitatController) handleHabAdd(obj interface{}) {
 }
 
 func (hc *HabitatController) handleHabUpdate(oldObj, newObj interface{}) {
-	oldHab, ok := oldObj.(*habv1beta1.Habitat)
+	oldHab, ok := oldObj.(*habv1beta2.Habitat)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", oldObj)
 		return
 	}
 
-	newHab, ok := newObj.(*habv1beta1.Habitat)
+	newHab, ok := newObj.(*habv1beta2.Habitat)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", newObj)
 		return
@@ -288,7 +288,7 @@ func (hc *HabitatController) handleHabUpdate(oldObj, newObj interface{}) {
 }
 
 func (hc *HabitatController) handleHabDelete(obj interface{}) {
-	h, ok := obj.(*habv1beta1.Habitat)
+	h, ok := obj.(*habv1beta2.Habitat)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
 		return
@@ -354,7 +354,7 @@ func (hc *HabitatController) enqueueCM(obj interface{}) {
 	}
 
 	cache.ListAll(hc.habInformer.GetStore(), labels.Everything(), func(obj interface{}) {
-		h, ok := obj.(*habv1beta1.Habitat)
+		h, ok := obj.(*habv1beta2.Habitat)
 		if !ok {
 			level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
 			return
@@ -460,7 +460,7 @@ func (hc *HabitatController) getRunningPods(namespace string) ([]apiv1.Pod, erro
 		"status.phase": "Running",
 	})
 	ls := fields.SelectorFromSet(fields.Set(map[string]string{
-		habv1beta1.HabitatLabel: "true",
+		habv1beta2.HabitatLabel: "true",
 	}))
 
 	running := metav1.ListOptions{
@@ -486,7 +486,7 @@ func (hc *HabitatController) writeLeaderIP(cm *apiv1.ConfigMap, ip string) error
 	return nil
 }
 
-func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
+func (hc *HabitatController) handleConfigMap(h *habv1beta2.Habitat) error {
 	runningPods, err := hc.getRunningPods(h.Namespace)
 	if err != nil {
 		return err
@@ -593,7 +593,7 @@ func (hc *HabitatController) handleHabitatDeletion(key string) error {
 	return nil
 }
 
-func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.Deployment, error) {
+func (hc *HabitatController) newDeployment(h *habv1beta2.Habitat) (*appsv1beta1.Deployment, error) {
 	// This value needs to be passed as a *int32, so we convert it, assign it to a
 	// variable and afterwards pass a pointer to it.
 	count := int32(h.Spec.Count)
@@ -611,10 +611,10 @@ func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.
 	// topology type we set standalone as the default one.
 	// We do not need to pass this to habitat, as if no topology
 	// is set, habitat by default sets standalone topology.
-	topology := habv1beta1.TopologyStandalone
+	topology := habv1beta2.TopologyStandalone
 
-	if h.Spec.Service.Topology == habv1beta1.TopologyLeader {
-		topology = habv1beta1.TopologyLeader
+	if h.Spec.Service.Topology == habv1beta2.TopologyLeader {
+		topology = habv1beta2.TopologyLeader
 	}
 
 	path := fmt.Sprintf("%s/%s", configMapDir, peerFilename)
@@ -642,9 +642,9 @@ func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						habv1beta1.HabitatLabel:     "true",
-						habv1beta1.HabitatNameLabel: h.Name,
-						habv1beta1.TopologyLabel:    topology.String(),
+						habv1beta2.HabitatLabel:     "true",
+						habv1beta2.HabitatNameLabel: h.Name,
+						habv1beta2.TopologyLabel:    topology.String(),
 					},
 				},
 				Spec: apiv1.PodSpec{
@@ -771,7 +771,7 @@ func (hc *HabitatController) newDeployment(h *habv1beta1.Habitat) (*appsv1beta1.
 	return base, nil
 }
 
-func (hc *HabitatController) enqueue(hab *habv1beta1.Habitat) {
+func (hc *HabitatController) enqueue(hab *habv1beta2.Habitat) {
 	if hab == nil {
 		level.Error(hc.logger).Log("msg", "Habitat object was nil", "object", hab)
 		return
@@ -840,7 +840,7 @@ func (hc *HabitatController) conform(key string) error {
 	}
 
 	// The Habitat was either created or updated.
-	h, ok := obj.(*habv1beta1.Habitat)
+	h, ok := obj.(*habv1beta2.Habitat)
 	if !ok {
 		return fmt.Errorf("unknown event type")
 	}
@@ -884,7 +884,7 @@ func (hc *HabitatController) conform(key string) error {
 	return nil
 }
 
-func (hc *HabitatController) habitatNeedsUpdate(oldHabitat, newHabitat *habv1beta1.Habitat) bool {
+func (hc *HabitatController) habitatNeedsUpdate(oldHabitat, newHabitat *habv1beta2.Habitat) bool {
 	if reflect.DeepEqual(oldHabitat.Spec, newHabitat.Spec) {
 		level.Debug(hc.logger).Log("msg", "Update ignored as it didn't change Habitat spec", "h", newHabitat)
 		return false
@@ -910,7 +910,7 @@ func (hc *HabitatController) podNeedsUpdate(oldPod, newPod *apiv1.Pod) bool {
 	return true
 }
 
-func (hc *HabitatController) getHabitatFromLabeledResource(r metav1.Object) (*habv1beta1.Habitat, error) {
+func (hc *HabitatController) getHabitatFromLabeledResource(r metav1.Object) (*habv1beta2.Habitat, error) {
 	key, err := habitatKeyFromLabeledResource(r)
 	if err != nil {
 		return nil, err
@@ -924,7 +924,7 @@ func (hc *HabitatController) getHabitatFromLabeledResource(r metav1.Object) (*ha
 		return nil, keyNotFoundError{key: key}
 	}
 
-	h, ok := obj.(*habv1beta1.Habitat)
+	h, ok := obj.(*habv1beta2.Habitat)
 	if !ok {
 		return nil, fmt.Errorf("unknown object type in Habitat cache: %v", obj)
 	}
@@ -935,9 +935,9 @@ func (hc *HabitatController) getHabitatFromLabeledResource(r metav1.Object) (*ha
 // habitatKeyFromLabeledResource returns a Store key for any resource tagged
 // with the `HabitatNameLabel`.
 func habitatKeyFromLabeledResource(r metav1.Object) (string, error) {
-	hName := r.GetLabels()[habv1beta1.HabitatNameLabel]
+	hName := r.GetLabels()[habv1beta2.HabitatNameLabel]
 	if hName == "" {
-		return "", fmt.Errorf("Could not retrieve %q label", habv1beta1.HabitatNameLabel)
+		return "", fmt.Errorf("Could not retrieve %q label", habv1beta2.HabitatNameLabel)
 	}
 
 	key := fmt.Sprintf("%s/%s", r.GetNamespace(), hName)
@@ -945,13 +945,13 @@ func habitatKeyFromLabeledResource(r metav1.Object) (string, error) {
 	return key, nil
 }
 
-func newConfigMap(ip string, h *habv1beta1.Habitat) *apiv1.ConfigMap {
+func newConfigMap(ip string, h *habv1beta2.Habitat) *apiv1.ConfigMap {
 	return &apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
 			Namespace: h.Namespace,
 			Labels: map[string]string{
-				habv1beta1.HabitatLabel: "true",
+				habv1beta2.HabitatLabel: "true",
 			},
 		},
 		Data: map[string]string{
@@ -961,7 +961,7 @@ func newConfigMap(ip string, h *habv1beta1.Habitat) *apiv1.ConfigMap {
 }
 
 func isHabitatObject(objMeta *metav1.ObjectMeta) bool {
-	return objMeta.Labels[habv1beta1.HabitatLabel] == "true"
+	return objMeta.Labels[habv1beta2.HabitatLabel] == "true"
 }
 
 func (hc *HabitatController) findConfigMapInCache(cm *apiv1.ConfigMap) (*apiv1.ConfigMap, error) {

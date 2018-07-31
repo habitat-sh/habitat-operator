@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
+	habv1beta2 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta2"
 	utils "github.com/habitat-sh/habitat-operator/test/e2e/v1beta1/framework"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -88,10 +88,10 @@ func TestBind(t *testing.T) {
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, web.ObjectMeta.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta2.HabitatNameLabel, web.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, db.ObjectMeta.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta2.HabitatNameLabel, db.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
 
@@ -187,7 +187,7 @@ func TestHabitatDelete(t *testing.T) {
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, habitat.ObjectMeta.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta2.HabitatNameLabel, habitat.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
 
@@ -197,7 +197,7 @@ func TestHabitatDelete(t *testing.T) {
 	}
 
 	// Wait for resources to be deleted.
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, habitat.ObjectMeta.Name, 0); err != nil {
+	if err := framework.WaitForResources(habv1beta2.HabitatNameLabel, habitat.ObjectMeta.Name, 0); err != nil {
 		t.Fatal(err)
 	}
 
@@ -239,7 +239,7 @@ func TestPersistentStorage(t *testing.T) {
 	// also delete the PVs.
 	defer (func(name string) {
 		ls := labels.SelectorFromSet(labels.Set(map[string]string{
-			habv1beta1.HabitatNameLabel: name,
+			habv1beta2.HabitatNameLabel: name,
 		}))
 
 		lo := metav1.ListOptions{
@@ -259,7 +259,7 @@ func TestPersistentStorage(t *testing.T) {
 		}
 	})(ephemeral.Name)
 
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, persisted.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta2.HabitatNameLabel, persisted.Name, 1); err != nil {
 		t.Fatal(err)
 	}
 
@@ -293,7 +293,7 @@ func TestV1beta1(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, h.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta2.HabitatNameLabel, h.Name, 1); err != nil {
 		t.Fatal(err)
 	}
 
