@@ -209,7 +209,7 @@ func (hc *HabitatController) Run(ctx context.Context, workers int) error {
 }
 
 func (hc *HabitatController) cacheHabitats() {
-	hc.habInformer = hc.config.HabitatInformerFactory.Habitat().V1beta1().Habitats().Informer()
+	hc.habInformer = hc.config.HabitatInformerFactory.Habitat().V1beta2().Habitats().Informer()
 
 	hc.habInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    hc.handleHabAdd,
@@ -527,11 +527,6 @@ func (hc *HabitatController) enqueue(hab *habv1beta2.Habitat) {
 		return
 	}
 
-	if err := checkCustomVersionMatch(hab); err != nil {
-		level.Debug(hc.logger).Log("msg", err)
-		return
-	}
-
 	k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(hab)
 	if err != nil {
 		level.Error(hc.logger).Log("msg", "Habitat object key could not be retrieved", "object", hab)
@@ -603,7 +598,7 @@ func (hc *HabitatController) conform(key string) error {
 	level.Debug(hc.logger).Log("function", "handle Habitat Creation", "msg", h.ObjectMeta.SelfLink)
 
 	// Validate object.
-	if err := validateCustomObject(*h); err != nil {
+	if err := validateSpec(*h); err != nil {
 		hc.recorder.Event(h, apiv1.EventTypeWarning, validationFailed, messageValidationFailed)
 		return err
 	}
@@ -666,7 +661,7 @@ func (hc *HabitatController) conform(key string) error {
 }
 
 func (hc *HabitatController) habitatNeedsUpdate(oldHabitat, newHabitat *habv1beta2.Habitat) bool {
-	if reflect.DeepEqual(oldHabitat.Spec.V1beta2, newHabitat.Spec.V1beta2) {
+	if reflect.DeepEqual(oldHabitat.Spec, newHabitat.Spec) {
 		level.Debug(hc.logger).Log("msg", "Update ignored as it didn't change Habitat spec", "h", newHabitat)
 		return false
 	}

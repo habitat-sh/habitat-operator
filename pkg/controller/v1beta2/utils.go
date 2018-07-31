@@ -44,20 +44,17 @@ func (err keyNotFoundError) Error() string {
 	return fmt.Sprintf("could not find Object with key %s in the cache", err.key)
 }
 
-func validateCustomObject(h habv1beta2.Habitat) error {
-	spec := h.Spec.V1beta2
-	if spec == nil {
-		return fmt.Errorf("missing `spec.v1beta2` field")
-	}
+func validateSpec(h habv1beta2.Habitat) error {
+	svc := h.Spec.Service
 
-	switch spec.Service.Topology {
+	switch svc.Topology {
 	case habv1beta2.TopologyStandalone:
 	case habv1beta2.TopologyLeader:
 	default:
-		return fmt.Errorf("unknown topology: %s", spec.Service.Topology)
+		return fmt.Errorf("unknown topology: %s", svc.Topology)
 	}
 
-	if rsn := spec.Service.RingSecretName; rsn != nil {
+	if rsn := svc.RingSecretName; rsn != nil {
 		rsn := *rsn
 		ringParts := ringRegexp.FindStringSubmatch(rsn)
 
@@ -143,17 +140,4 @@ func CreateCRD(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.C
 	}
 
 	return crd, nil
-}
-
-func checkCustomVersionMatch(h *habv1beta2.Habitat) error {
-	v := h.CustomVersion
-
-	var err error
-	if v == nil {
-		err = fmt.Errorf("missing CustomVersion")
-	} else if *v != "v1beta2" {
-		err = fmt.Errorf("wrong CustomVersion: %s", *v)
-	}
-
-	return err
 }

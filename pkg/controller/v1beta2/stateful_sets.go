@@ -30,7 +30,7 @@ import (
 const persistentVolumeName = "persistent"
 
 func (hc *HabitatController) newStatefulSet(h *habv1beta2.Habitat) (*appsv1beta2.StatefulSet, error) {
-	hs := h.Spec.V1beta2
+	hs := h.Spec
 
 	// This value needs to be passed as a *int32, so we convert it, assign it to a
 	// variable and afterwards pass a pointer to it.
