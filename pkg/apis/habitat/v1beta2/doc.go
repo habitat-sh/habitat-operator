@@ -15,4 +15,4 @@
 // +k8s:deepcopy-gen=package
 
 // +groupName=habitat.sh
-package v1beta1
+package v1beta2

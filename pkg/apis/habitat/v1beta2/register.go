@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v1beta1
+package v1beta2
 
 import (
 	"github.com/habitat-sh/habitat-operator/pkg/apis/habitat"
@@ -27,7 +27,7 @@ var (
 )
 
 const (
-	Version = "v1beta1"
+	Version = "v1beta2"
 )
 
 // SchemeGroupVersion is the group version used to register these objects.
