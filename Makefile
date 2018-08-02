@@ -29,9 +29,9 @@ e2e:
 	go test -v ./test/e2e/... --image "$(TESTIMAGE)" --kubeconfig $(KUBECONFIG_PATH) --ip "$(IP)"
 
 clean-test:
-	kubectl delete namespace testing-v1beta1
-	kubectl delete clusterrolebinding habitat-operator-v1beta1
-	kubectl delete clusterrole habitat-operator-v1beta1
+	-kubectl delete namespace testing-v1beta1
+	-kubectl delete clusterrolebinding habitat-operator-v1beta1
+	-kubectl delete clusterrole habitat-operator-v1beta1
 
 update-version:
 	find examples -name "*.yml" -type f \
