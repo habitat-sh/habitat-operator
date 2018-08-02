@@ -7,32 +7,39 @@ TAG := $(shell git describe --tags --always)
 TESTIMAGE :=
 SUDO :=
 
+.PHONY: build
 build:
 	go build -i github.com/$(GITHUB_ORG)/habitat-operator/cmd/habitat-operator
 
+.PHONY: linux
 linux:
 	# Compile statically linked binary for linux.
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s" -o $(BIN_PATH) github.com/$(GITHUB_ORG)/habitat-operator/cmd/habitat-operator
 
+.PHONY: image
 image: linux
 	$(SUDO) docker build -t "$(IMAGE):$(TAG)" .
 
+.PHONY: test
 test:
 	go test $(shell go list ./... | grep -v /vendor/ | grep -v /test/)
 
 # requires minikube or any kubernetes cluster to be running
-e2e:
+.PHONY: e2e
+e2e: clean-test
 	$(eval IP := $(shell kubectl config view --output=jsonpath='{.clusters[0].cluster.server}' --minify | grep --only-matching '[0-9.]\+' | head --lines 1))
 	$(eval KUBECONFIG_PATH := $(shell mktemp --tmpdir operator-e2e.XXXXXXX))
 	kubectl config view --minify --flatten > $(KUBECONFIG_PATH)
 	@if test 'x$(TESTIMAGE)' = 'x'; then echo "TESTIMAGE must be passed."; exit 1; fi
 	go test -v ./test/e2e/... --image "$(TESTIMAGE)" --kubeconfig $(KUBECONFIG_PATH) --ip "$(IP)"
 
+.PHONY: clean-test
 clean-test:
 	kubectl delete namespace testing-v1beta1
 	kubectl delete clusterrolebinding habitat-operator-v1beta1
 	kubectl delete clusterrole habitat-operator-v1beta1
 
+.PHONY: update-version
 update-version:
 	find examples -name "*.yml" -type f \
 		-exec sed -i.bak \
@@ -61,7 +68,7 @@ update-version:
 		doc/release-process.md
 	rm -f doc/release-process.md.bak
 
+.PHONY: codegen
 codegen:
 	CODEGEN_PKG=../../../k8s.io/code-generator hack/update-codegen.sh
 
-.PHONY: build test linux image e2e clean-test update-version
