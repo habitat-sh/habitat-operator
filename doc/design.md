@@ -76,15 +76,6 @@ The reason for separating specs by version is to make it possible to introduce
 backwards-incompatible changes to existing fields (e.g. changing the type of a
 field to pointer type), without affecting existing clusters.
 
-### v1beta1 and v1beta2
-
-The main difference introduced in the v1beta2 custom version is that Habitat
-objects are now backed by `StatefulSet`s, rather than `Deployment`s, in order to
-offer support for persistence.
-
-Because this is a backwards-incompatible change, it was decided to implement it
-under a different custom version.
-
 ### Deprecation
 
 Any time a new release of the CRD is released, the previous one is to be

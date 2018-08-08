@@ -527,8 +527,8 @@ func (hc *HabitatController) enqueue(hab *habv1beta1.Habitat) {
 		return
 	}
 
-	if err := checkCustomVersionMatch(hab); err != nil {
-		level.Debug(hc.logger).Log("msg", err)
+	if err := checkCustomVersionMatch(hab.CustomVersion); err != nil {
+		level.Info(hc.logger).Log("msg", err)
 		return
 	}
 
@@ -716,16 +716,21 @@ func (hc *HabitatController) getHabitatFromLabeledResource(r metav1.Object) (*ha
 // habitatKeyFromLabeledResource returns a Store key for any resource tagged
 // with the `HabitatNameLabel`.
 func habitatKeyFromLabeledResource(r metav1.Object) (string, error) {
-	hName := r.GetLabels()[habv1beta1.HabitatNameLabel]
+	labelName := habv1beta1.HabitatNameLabel
+	hName, ok := r.GetLabels()[labelName]
+	if !ok {
+		return "", fmt.Errorf("Could not retrieve %q label", labelName)
+	}
 	if hName == "" {
-		return "", fmt.Errorf("Could not retrieve %q label", habv1beta1.HabitatNameLabel)
+		return "", fmt.Errorf("Empty value to the label: %q", labelName)
 	}
 
 	key := fmt.Sprintf("%s/%s", r.GetNamespace(), hName)
-
 	return key, nil
 }
 
+// newConfigMap takes in ip and the habitat object and creates configmap
+// using it. The name of the configmap is fixed.
 func newConfigMap(ip string, h *habv1beta1.Habitat) *apiv1.ConfigMap {
 	return &apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
