@@ -48,12 +48,8 @@ func (in *Habitat) DeepCopyInto(out *Habitat) {
 	out.Status = in.Status
 	if in.CustomVersion != nil {
 		in, out := &in.CustomVersion, &out.CustomVersion
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(string)
-			**out = **in
-		}
+		*out = new(string)
+		**out = **in
 	}
 	return
 }
@@ -114,12 +110,8 @@ func (in *HabitatSpec) DeepCopyInto(out *HabitatSpec) {
 	*out = *in
 	if in.V1beta2 != nil {
 		in, out := &in.V1beta2, &out.V1beta2
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(V1beta2)
-			(*in).DeepCopyInto(*out)
-		}
+		*out = new(V1beta2)
+		(*in).DeepCopyInto(*out)
 	}
 	return
 }
@@ -171,30 +163,18 @@ func (in *ServiceV1beta2) DeepCopyInto(out *ServiceV1beta2) {
 	*out = *in
 	if in.Group != nil {
 		in, out := &in.Group, &out.Group
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(string)
-			**out = **in
-		}
+		*out = new(string)
+		**out = **in
 	}
 	if in.ConfigSecretName != nil {
 		in, out := &in.ConfigSecretName, &out.ConfigSecretName
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(string)
-			**out = **in
-		}
+		*out = new(string)
+		**out = **in
 	}
 	if in.RingSecretName != nil {
 		in, out := &in.RingSecretName, &out.RingSecretName
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(string)
-			**out = **in
-		}
+		*out = new(string)
+		**out = **in
 	}
 	if in.Bind != nil {
 		in, out := &in.Bind, &out.Bind
@@ -203,12 +183,8 @@ func (in *ServiceV1beta2) DeepCopyInto(out *ServiceV1beta2) {
 	}
 	if in.Channel != nil {
 		in, out := &in.Channel, &out.Channel
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(string)
-			**out = **in
-		}
+		*out = new(string)
+		**out = **in
 	}
 	return
 }
@@ -236,12 +212,8 @@ func (in *V1beta2) DeepCopyInto(out *V1beta2) {
 	}
 	if in.PersistentStorage != nil {
 		in, out := &in.PersistentStorage, &out.PersistentStorage
-		if *in == nil {
-			*out = nil
-		} else {
-			*out = new(PersistentStorage)
-			**out = **in
-		}
+		*out = new(PersistentStorage)
+		**out = **in
 	}
 	return
 }
