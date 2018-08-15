@@ -145,15 +145,13 @@ func CreateCRD(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.C
 	return crd, nil
 }
 
-func checkCustomVersionMatch(h *habv1beta1.Habitat) error {
-	v := h.CustomVersion
-
-	var err error
+func checkCustomVersionMatch(v *string) error {
 	if v == nil {
-		err = fmt.Errorf("missing CustomVersion")
-	} else if *v != "v1beta2" {
-		err = fmt.Errorf("wrong CustomVersion: %s", *v)
+		return fmt.Errorf("no CustomVersion field provided")
+	}
+	if *v == "v1beta2" {
+		return nil
 	}
 
-	return err
+	return fmt.Errorf("wrong CustomVersion: %v", *v)
 }

@@ -282,27 +282,3 @@ func TestPersistentStorage(t *testing.T) {
 		t.Fatal("No PersistentVolumeClaims created for persistent StatefulSet")
 	}
 }
-
-func TestV1beta1(t *testing.T) {
-	h, err := utils.ConvertHabitat("resources/v1beta1/habitat.yml")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err := framework.CreateHabitat(h); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, h.Name, 1); err != nil {
-		t.Fatal(err)
-	}
-
-	// Check that a `Deployment` has been created, rather than a `StatefulSet`.
-	if _, err := framework.KubeClient.AppsV1beta1().Deployments(utils.TestNs).Get(h.Name, metav1.GetOptions{}); err != nil {
-		t.Fatal("Could not retrieve Deployment")
-	}
-
-	if _, err := framework.KubeClient.AppsV1beta1().StatefulSets(utils.TestNs).Get(h.Name, metav1.GetOptions{}); err == nil {
-		t.Fatal("StatefulSet found where there shouldn't have been one")
-	}
-}
