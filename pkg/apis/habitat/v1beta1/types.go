@@ -30,7 +30,8 @@ const (
 	// Example: 'habitat-name: db'
 	HabitatNameLabel = "habitat-name"
 
-	TopologyLabel = "topology"
+	TopologyLabel        = "topology"
+	HabitatTopologyLabel = "operator.habitat.sh/topology"
 )
 
 // +genclient

@@ -105,9 +105,10 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1beta2
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						habv1beta1.HabitatLabel:     "true",
-						habv1beta1.HabitatNameLabel: h.Name,
-						habv1beta1.TopologyLabel:    topology.String(),
+						habv1beta1.HabitatLabel:         "true",
+						habv1beta1.HabitatNameLabel:     h.Name,
+						habv1beta1.TopologyLabel:        topology.String(),
+						habv1beta1.HabitatTopologyLabel: topology.String(),
 					},
 				},
 				Spec: apiv1.PodSpec{
