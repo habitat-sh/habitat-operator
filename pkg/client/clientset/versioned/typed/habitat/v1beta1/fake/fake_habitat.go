@@ -60,7 +60,7 @@ func (c *FakeHabitats) List(opts v1.ListOptions) (result *v1beta1.HabitatList, e
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v1beta1.HabitatList{}
+	list := &v1beta1.HabitatList{ListMeta: obj.(*v1beta1.HabitatList).ListMeta}
 	for _, item := range obj.(*v1beta1.HabitatList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)

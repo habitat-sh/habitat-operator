@@ -16,8 +16,8 @@ For a more detailed description of the Habitat type have a look [here](https://g
 ## Prerequisites
 
 - Habitat `>= 0.52.0`
-- Kubernetes cluster with version `1.9.x` or `1.10.x`
-- Kubectl version `1.9.x` or `1.10.x`
+- Kubernetes cluster with version `1.9.x`, `1.10.x` or `1.11.x`
+- Kubectl version `1.10.x` or `1.11.x`
 
 ## Installing
 

@@ -52,7 +52,7 @@ defaults: &defaults
     - run:
         name: boot cluster on gke
         command: |
-          gcloud container clusters create --cluster-version=$GKE_CLUSTER_VERSION --disk-size=20 $CLUSTER_NAME
+          gcloud container clusters create --enable-kubernetes-alpha --image-type=ubuntu --cluster-version=$GKE_CLUSTER_VERSION --disk-size=20 $CLUSTER_NAME
           echo 'export CLUSTER_CREATED=yes' >>"${BASH_ENV}"
     - run:
         name: create image
@@ -107,6 +107,11 @@ defaults: &defaults
         when: always
 
 jobs:
+  k8s-v1.11:
+    environment:
+      K8S_VERSION: v1.11.2
+      GKE_CLUSTER_VERSION: "1.11.2-gke.3"
+    <<: *defaults
   k8s-v1.10:
     environment:
       K8S_VERSION: v1.10.0
@@ -122,5 +127,6 @@ workflows:
   version: 2
   all-k8s-tests:
     jobs:
+      - k8s-v1.11
       - k8s-v1.10
       - k8s-v1.9
