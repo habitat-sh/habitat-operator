@@ -29,7 +29,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	appsv1beta2 "k8s.io/api/apps/v1beta2"
+	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -617,17 +617,17 @@ func (hc *HabitatController) conform(key string) error {
 	}
 
 	// Create StatefulSet, if it doesn't already exist.
-	if _, err := hc.config.KubernetesClientset.AppsV1beta2().StatefulSets(h.Namespace).Create(newSts); err != nil {
+	if _, err := hc.config.KubernetesClientset.AppsV1().StatefulSets(h.Namespace).Create(newSts); err != nil {
 		// Was the error due to the StatefulSet already existing?
 		if apierrors.IsAlreadyExists(err) {
 			// If yes, update it but retrieve the current state before that.
-			oldSts, err := hc.config.KubernetesClientset.AppsV1beta2().StatefulSets(h.Namespace).Get(newSts.Name, metav1.GetOptions{})
+			oldSts, err := hc.config.KubernetesClientset.AppsV1().StatefulSets(h.Namespace).Get(newSts.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
 
 			// Update the StatefulSet
-			updatedSts, err := hc.config.KubernetesClientset.AppsV1beta2().StatefulSets(h.Namespace).Update(newSts)
+			updatedSts, err := hc.config.KubernetesClientset.AppsV1().StatefulSets(h.Namespace).Update(newSts)
 			if err != nil {
 				return err
 			}
@@ -776,7 +776,7 @@ func (hc *HabitatController) findConfigMapInCache(cm *apiv1.ConfigMap) (*apiv1.C
 	return obj.(*apiv1.ConfigMap), nil
 }
 
-func (hc *HabitatController) deleteStatefulSetPods(sts *appsv1beta2.StatefulSet) error {
+func (hc *HabitatController) deleteStatefulSetPods(sts *appsv1.StatefulSet) error {
 	fs := fields.SelectorFromSet(fields.Set(sts.Spec.Selector.MatchLabels))
 
 	listOptions := metav1.ListOptions{
