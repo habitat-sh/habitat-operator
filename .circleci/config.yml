@@ -23,16 +23,9 @@ defaults: &defaults
     - run:
         name: code-gen script
         environment:
-          CODEGEN_PKG: ../../../../src/k8s.io/code-generator
           GOPATH: /home/circleci/.go_workspace
         command: |
-          if [[ -n $CODEGEN_VERSION ]]; then
-            mkdir -p $CODEGEN_PKG
-            git clone https://github.com/kubernetes/code-generator.git --branch $CODEGEN_VERSION $GOPATH/src/k8s.io/code-generator
-            hack/verify-codegen.sh
-          else
-            echo "Skipping codegen checks..."
-          fi
+          hack/verify-codegen.sh
     - run:
         name: unit tests
         command: make test
@@ -118,7 +111,6 @@ jobs:
     environment:
       K8S_VERSION: v1.10.0
       GKE_CLUSTER_VERSION: "1.10"
-      CODEGEN_VERSION: kubernetes-1.10.0
     <<: *defaults
   k8s-v1.9:
     environment:

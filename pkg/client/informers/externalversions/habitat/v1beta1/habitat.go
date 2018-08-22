@@ -19,7 +19,7 @@ package v1beta1
 import (
 	time "time"
 
-	habitat_v1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
+	habitatv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
 	versioned "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/habitat-sh/habitat-operator/pkg/client/informers/externalversions/internalinterfaces"
 	v1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/listers/habitat/v1beta1"
@@ -68,7 +68,7 @@ func NewFilteredHabitatInformer(client versioned.Interface, namespace string, re
 				return client.HabitatV1beta1().Habitats(namespace).Watch(options)
 			},
 		},
-		&habitat_v1beta1.Habitat{},
+		&habitatv1beta1.Habitat{},
 		resyncPeriod,
 		indexers,
 	)
@@ -79,7 +79,7 @@ func (f *habitatInformer) defaultInformer(client versioned.Interface, resyncPeri
 }
 
 func (f *habitatInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&habitat_v1beta1.Habitat{}, f.defaultInformer)
+	return f.factory.InformerFor(&habitatv1beta1.Habitat{}, f.defaultInformer)
 }
 
 func (f *habitatInformer) Lister() v1beta1.HabitatLister {

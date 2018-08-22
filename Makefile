@@ -70,5 +70,5 @@ update-version:
 
 .PHONY: codegen
 codegen:
-	CODEGEN_PKG=../../../k8s.io/code-generator hack/update-codegen.sh
+	hack/update-codegen.sh
 
