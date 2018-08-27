@@ -34,8 +34,7 @@ required = [
 
 [[override]]
   name = "k8s.io/code-generator"
-  # revision for tag "kubernetes-1.10.1"
-  revision = "7ead8f38b01cf8653249f5af80ce7b2c8aba12e2"
+  version = "kubernetes-1.11.2"
 
 [prune]
   go-tests = true
@@ -49,16 +48,16 @@ required = [
 
 [[constraint]]
   name = "k8s.io/client-go"
-  version = "v7.0.0"
+  version = "v8.0.0"
 
 [[constraint]]
   name = "k8s.io/api"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.11.2"
 
 [[constraint]]
   name = "k8s.io/apiextensions-apiserver"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.11.2"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.10.0"
+  version = "kubernetes-1.11.2"
