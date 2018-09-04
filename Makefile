@@ -22,7 +22,7 @@ build:
 		github.com/$(GITHUB_ORG)/habitat-operator/cmd/habitat-operator
 
 .PHONY: linux
-linux:
+linux: build
 	# Compile statically linked binary for linux.
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s" \
 		-ldflags="-X github.com/$(GITHUB_ORG)/habitat-operator/pkg/version.VERSION=$(VERSION)" \

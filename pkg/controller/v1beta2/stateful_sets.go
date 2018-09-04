@@ -196,6 +196,35 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 		tSpec.Volumes = append(tSpec.Volumes, *secretVolume)
 	}
 
+	// If we have a file volume name present we should mount that secret.
+	if hs.Service.FilesSecretName != nil {
+		// Let's make sure our secret is there before mounting it.
+		files, err := hc.config.KubernetesClientset.CoreV1().Secrets(h.Namespace).Get(*hs.Service.FilesSecretName, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		filesVolume := &apiv1.Volume{
+			Name: filesDirectoryName,
+			VolumeSource: apiv1.VolumeSource{
+				Secret: &apiv1.SecretVolumeSource{
+					SecretName: files.Name,
+				},
+			},
+		}
+
+		filesVolumeMount := &apiv1.VolumeMount{
+			Name: filesDirectoryName,
+			// The Habitat supervisor creates a directory for each service under /hab/svc/<servicename>.
+			// We need to place the files directory there.
+			MountPath: fmt.Sprintf("/hab/svc/%s/files", hs.Service.Name),
+			ReadOnly:  false,
+		}
+
+		tSpec.Containers[0].VolumeMounts = append(tSpec.Containers[0].VolumeMounts, *filesVolumeMount)
+		tSpec.Volumes = append(tSpec.Volumes, *filesVolume)
+	}
+
 	// Mount Persistent Volume, if requested.
 	if ps := hs.PersistentStorage; ps != nil {
 		vm := &apiv1.VolumeMount{
