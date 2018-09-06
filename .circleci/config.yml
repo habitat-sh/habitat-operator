@@ -10,6 +10,9 @@ defaults: &defaults
         name: Check if RBAC rules in various files are in sync
         command: ./hack/rbac-check.sh
     - run:
+        name: Check if CRDs in various location are in sync
+        command: ./hack/crd-check.sh
+    - run:
         name: Setup environment variables
         command: |
           echo 'export IMAGE_NAME=eu.gcr.io/$GCLOUD_PROJECT_ID/habitat/habitat-operator-$CIRCLE_PROJECT_USERNAME-$CIRCLE_BUILD_NUM' >>"${BASH_ENV}"
