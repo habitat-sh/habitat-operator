@@ -54,7 +54,7 @@ function read_rules
 
 readonly example_path='examples/rbac/rbac.yml'
 readonly chart_path='helm/habitat-operator/templates/clusterrole.yaml'
-readonly test_path='test/e2e/v1beta1/resources/operator/cluster-role.yml'
+readonly test_path='test/e2e/v1beta1/clusterwide/resources/operator/cluster-role.yml'
 
 readonly example_rules="$(read_rules "${dir}/../${example_path}")"
 readonly chart_rules="$(read_rules "${dir}/../${chart_path}")"
@@ -73,6 +73,31 @@ fi
 
 say "Diff between ${chart_path} and ${test_path}:"
 if diff <(say "${chart_rules}") <(say "${test_rules}")
+then
+    say 'OK, none'
+else
+    exit 1
+fi
+
+# Checking the namespaced RBAC rules
+readonly example_path_namespaced='examples/rbac-restricted/rbac-restricted.yml'
+readonly test_path_namespaced='test/e2e/v1beta1/namespaced/resources/operator/role.yml'
+readonly helm_path_namespaced='helm/habitat-operator/templates/role.yaml'
+
+readonly example_rules_namespaced="$(read_rules "${dir}/../${example_path_namespaced}")"
+readonly test_rules_namespaced="$(read_rules "${dir}/../${test_path_namespaced}")"
+readonly helm_rules_namespaced="$(read_rules "${dir}/../${helm_path_namespaced}")"
+
+say "Diff between ${example_path_namespaced} and ${test_path_namespaced}:"
+if diff <(say "${example_rules_namespaced}") <(say "${test_rules_namespaced}")
+then
+    say 'OK, none'
+else
+    exit 1
+fi
+
+say "Diff between ${test_path_namespaced} and ${helm_path_namespaced}:"
+if diff <(say "${test_rules_namespaced}") <(say "${helm_rules_namespaced}")
 then
     say 'OK, none'
 else
