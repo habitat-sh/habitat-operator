@@ -61,3 +61,7 @@ required = [
 [[constraint]]
   name = "k8s.io/apimachinery"
   version = "kubernetes-1.11.2"
+
+[[constraint]]
+  name = "github.com/pkg/errors"
+  version = "v0.8.0"
