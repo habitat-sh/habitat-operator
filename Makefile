@@ -63,11 +63,15 @@ update-version:
 		-e 's/\(e\.g `v\).*\(`\)/\1'"$$(cat VERSION)"'\2/' \
 		helm/habitat-operator/README.md
 	rm -f helm/habitat-operator/README.md.bak
-	sed \
-		-i.bak \
-		-e "s/\(habitat-operator:v\).*/\1$$(cat VERSION)/g" \
-		test/e2e/v1beta1/resources/operator/deployment.yml
-	rm -f test/e2e/v1beta1/resources/operator/deployment.yml.bak
+	# The deployments artifact for clusterwide and namespaced tests should be updated
+	# to have the newer updated image name
+	for f in test/e2e/v1beta1/{clusterwide,namespaced}/resources/operator/deployment.yml; do \
+		sed \
+			-i.bak \
+			-e "s/\(habitat-operator:v\).*/\1$$(cat VERSION)/g" $$f; \
+		rm -f $$f.bak; \
+	done
+
 	sed \
 		-i.bak \
 		-e 's/\(`\*: cut \)[.[:digit:]]*\( release`\)/\1'"$$(cat VERSION)"'\2/' \
