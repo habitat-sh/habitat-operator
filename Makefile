@@ -31,13 +31,19 @@ e2e: clean-test
 	$(eval KUBECONFIG_PATH := $(shell mktemp --tmpdir operator-e2e.XXXXXXX))
 	kubectl config view --minify --flatten > $(KUBECONFIG_PATH)
 	@if test 'x$(TESTIMAGE)' = 'x'; then echo "TESTIMAGE must be passed."; exit 1; fi
-	go test -v ./test/e2e/... --image "$(TESTIMAGE)" --kubeconfig $(KUBECONFIG_PATH) --ip "$(IP)"
+	# control the order in which tests are run
+	go test -v ./test/e2e/v1beta1/clusterwide/... --image "$(TESTIMAGE)" --kubeconfig $(KUBECONFIG_PATH) --ip "$(IP)"
+	go test -v ./test/e2e/v1beta1/namespaced/... --image "$(TESTIMAGE)" --kubeconfig $(KUBECONFIG_PATH) --ip "$(IP)"
 
 .PHONY: clean-test
 clean-test:
-	-kubectl delete namespace testing-v1beta1
+	# Delete resources created for the clusterwide tests
+	-kubectl delete namespace testing-clusterwide
 	-kubectl delete clusterrolebinding habitat-operator-v1beta1
 	-kubectl delete clusterrole habitat-operator-v1beta1
+	-kubectl delete crd habitats.habitat.sh
+	# Delete resources created for the namespaced tests
+	-kubectl delete namespace testing-namespaced
 
 .PHONY: update-version
 update-version:
