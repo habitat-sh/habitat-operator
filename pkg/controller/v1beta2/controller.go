@@ -117,6 +117,7 @@ type Config struct {
 	ClusterConfig          *rest.Config
 	KubeInformerFactory    kubeinformers.SharedInformerFactory
 	HabitatInformerFactory habinformers.SharedInformerFactory
+	Namespace              string
 }
 
 func New(config Config, logger log.Logger) (*HabitatController, error) {
@@ -235,8 +236,8 @@ func (hc *HabitatController) cacheConfigMaps() {
 func (hc *HabitatController) watchPods(ctx context.Context, wg *sync.WaitGroup) {
 	source := cache.NewFilteredListWatchFromClient(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
-		"pods",
-		apiv1.NamespaceAll,
+		"Pods",
+		hc.config.Namespace,
 		listOptions())
 
 	c := cache.NewSharedIndexInformer(

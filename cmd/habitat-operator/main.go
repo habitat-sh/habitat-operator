@@ -26,8 +26,10 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -45,10 +47,18 @@ type Clientsets struct {
 	ApiextensionsClientset *apiextensionsclient.Clientset
 }
 
+// FlagOpts struct is used to save all the flag values for operator
+type FlagOpts struct {
+	Namespace           string
+	AssumeCRDRegistered bool
+}
+
 func run() int {
 	// Parse config flags.
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 	verbose := flag.Bool("verbose", false, "Enable verbose logging.")
+	namespace := flag.String("namespace", metav1.NamespaceAll, "Specify namespace this Operator will be monitoring. (default: Monitors all namespaces)")
+	assumeCRDRegistered := flag.Bool("assume-crd-registered", false, "If cluster admin has already registered CRD then provide this flag with namespace flag.")
 	flag.Parse()
 
 	// Set up logging.
@@ -59,6 +69,11 @@ func run() int {
 		logger = level.NewFilter(logger, level.AllowDebug())
 	} else {
 		logger = level.NewFilter(logger, level.AllowInfo())
+	}
+
+	flags := &FlagOpts{
+		Namespace:           *namespace,
+		AssumeCRDRegistered: *assumeCRDRegistered,
 	}
 
 	// Build operator config.
@@ -89,6 +104,17 @@ func run() int {
 		return 1
 	}
 
+	// check if the operator has right permissions when trying to run cluster wide
+	// here since namespace is not provided so we are looking at all the namespaces
+	// Operator should have permission to query all the namespaces
+	if flags.Namespace == metav1.NamespaceAll {
+		level.Info(logger).Log("msg", "Running operator at cluster scope, looking for all the namespaces")
+		if _, err := kubeClientset.CoreV1().Namespaces().List(metav1.ListOptions{}); err != nil {
+			level.Error(logger).Log("msg", errors.Wrap(err, "Operator does not have cluster wide permissions"))
+			return 1
+		}
+	}
+
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 
@@ -101,7 +127,7 @@ func run() int {
 		ApiextensionsClientset: apiextensionsClientset,
 	}
 
-	if err := v1beta2(ctx, &wg, cSets, logger); err != nil {
+	if err := v1beta2(ctx, &wg, cSets, logger, flags); err != nil {
 		level.Error(logger).Log("msg", err)
 		return 1
 	}
@@ -129,21 +155,40 @@ func run() int {
 	return 0
 }
 
-func v1beta2(ctx context.Context, wg *sync.WaitGroup, cSets Clientsets, logger log.Logger) error {
-	// Create Habitat CRD.
-	_, err := habv1beta2controller.CreateCRD(cSets.ApiextensionsClientset)
-	if err != nil {
+// createCRD creates Habitat CRD in the cluster, provided the operator has 'create'
+// permission on apiextensions.k8s.io/CustomResourceDefinitions type
+// if it does not then this fails, logs information about the existing CRD.
+func createCRD(cSets Clientsets, logger log.Logger) error {
+	if _, err := habv1beta2controller.CreateCRD(cSets.ApiextensionsClientset); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
+			return errors.Wrap(err, "create Habitat CRD failed")
+		}
+		level.Info(logger).Log("msg", "Habitat CRD already exists, continuing")
+		return nil
+	}
+	level.Info(logger).Log("msg", "created Habitat CRD")
+	return nil
+}
+
+func v1beta2(ctx context.Context, wg *sync.WaitGroup, cSets Clientsets, logger log.Logger, flags *FlagOpts) error {
+	// if user has already created CRD in the cluster with help of cluster-admin
+	// then operator does not need to create CRD
+	if !flags.AssumeCRDRegistered {
+		if err := createCRD(cSets, logger); err != nil {
 			return err
 		}
-
-		level.Info(logger).Log("msg", "Habitat CRD already exists, continuing")
-	} else {
-		level.Info(logger).Log("msg", "created Habitat CRD")
 	}
 
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(cSets.KubeClientset, resyncPeriod)
-	habInformerFactory := habinformers.NewSharedInformerFactory(cSets.HabClientset, resyncPeriod)
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(
+		cSets.KubeClientset,
+		resyncPeriod,
+		kubeinformers.WithNamespace(flags.Namespace),
+	)
+	habInformerFactory := habinformers.NewSharedInformerFactoryWithOptions(
+		cSets.HabClientset,
+		resyncPeriod,
+		habinformers.WithNamespace(flags.Namespace),
+	)
 
 	config := habv1beta2controller.Config{
 		// NOTE: The v1beta2 controller still needs to use a v1beta1 client,
@@ -154,6 +199,7 @@ func v1beta2(ctx context.Context, wg *sync.WaitGroup, cSets Clientsets, logger l
 		KubernetesClientset:    cSets.KubeClientset,
 		KubeInformerFactory:    kubeInformerFactory,
 		HabitatInformerFactory: habInformerFactory,
+		Namespace:              flags.Namespace,
 	}
 	controller, err := habv1beta2controller.New(config, log.With(logger, "component", "controller/v1beta2"))
 	if err != nil {
