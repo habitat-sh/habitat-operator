@@ -13,6 +13,10 @@ nodeSelector: {}
 ##
 rbacEnable: true
 
+## Decide if habitat-operator runs at cluster or namespaced scope
+operatorNamespaced: true
+namespace: habitat-operator
+
 ## Habitat-operator resource limits & requests
 ## Ref: https://kubernetes.io/docs/user-guide/compute-resources/
 ##

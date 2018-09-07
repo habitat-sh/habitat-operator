@@ -31,13 +31,19 @@ e2e: clean-test
 	$(eval KUBECONFIG_PATH := $(shell mktemp --tmpdir operator-e2e.XXXXXXX))
 	kubectl config view --minify --flatten > $(KUBECONFIG_PATH)
 	@if test 'x$(TESTIMAGE)' = 'x'; then echo "TESTIMAGE must be passed."; exit 1; fi
-	go test -v ./test/e2e/... --image "$(TESTIMAGE)" --kubeconfig $(KUBECONFIG_PATH) --ip "$(IP)"
+	# control the order in which tests are run
+	go test -v ./test/e2e/v1beta1/clusterwide/... --image "$(TESTIMAGE)" --kubeconfig $(KUBECONFIG_PATH) --ip "$(IP)"
+	go test -v ./test/e2e/v1beta1/namespaced/... --image "$(TESTIMAGE)" --kubeconfig $(KUBECONFIG_PATH) --ip "$(IP)"
 
 .PHONY: clean-test
 clean-test:
-	-kubectl delete namespace testing-v1beta1
+	# Delete resources created for the clusterwide tests
+	-kubectl delete namespace testing-clusterwide
 	-kubectl delete clusterrolebinding habitat-operator-v1beta1
 	-kubectl delete clusterrole habitat-operator-v1beta1
+	-kubectl delete crd habitats.habitat.sh
+	# Delete resources created for the namespaced tests
+	-kubectl delete namespace testing-namespaced
 
 .PHONY: update-version
 update-version:
@@ -57,11 +63,15 @@ update-version:
 		-e 's/\(e\.g `v\).*\(`\)/\1'"$$(cat VERSION)"'\2/' \
 		helm/habitat-operator/README.md
 	rm -f helm/habitat-operator/README.md.bak
-	sed \
-		-i.bak \
-		-e "s/\(habitat-operator:v\).*/\1$$(cat VERSION)/g" \
-		test/e2e/v1beta1/resources/operator/deployment.yml
-	rm -f test/e2e/v1beta1/resources/operator/deployment.yml.bak
+	# The deployments artifact for clusterwide and namespaced tests should be updated
+	# to have the newer updated image name
+	for f in test/e2e/v1beta1/{clusterwide,namespaced}/resources/operator/deployment.yml; do \
+		sed \
+			-i.bak \
+			-e "s/\(habitat-operator:v\).*/\1$$(cat VERSION)/g" $$f; \
+		rm -f $$f.bak; \
+	done
+
 	sed \
 		-i.bak \
 		-e 's/\(`\*: cut \)[.[:digit:]]*\( release`\)/\1'"$$(cat VERSION)"'\2/' \

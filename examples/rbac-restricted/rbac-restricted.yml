@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: habitat-operator
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: habitat-operator
+  namespace: habitat-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: habitat-operator
+  namespace: habitat-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: habitat-operator
+subjects:
+- kind: ServiceAccount
+  name: habitat-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: habitat-operator
+  namespace: habitat-operator
+rules:
+- apiGroups:
+  - habitat.sh
+  resources:
+  - habitats
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups:
+  - apps
+  resources:
+  - statefulsets
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources:
+  - configmaps
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources:
+  - secrets
+  verbs: ["get"]
+- apiGroups: [""]
+  resources:
+  - pods
+  verbs: ["get", "list", "watch", "deletecollection"]
+- apiGroups: [""]
+  resources:
+  - events
+  verbs: [ "create", "patch" ]

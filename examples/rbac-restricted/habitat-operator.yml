@@ -1,0 +1,22 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: habitat-operator
+  namespace: habitat-operator
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: habitat-operator
+    spec:
+      containers:
+      - name: habitat-operator
+        image: habitat/habitat-operator:v0.7.2
+        env:
+        - name: OPERATOR_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        args: ["--assume-crd-registered", "--namespace", "$(OPERATOR_NAMESPACE)"]
+      serviceAccountName: habitat-operator

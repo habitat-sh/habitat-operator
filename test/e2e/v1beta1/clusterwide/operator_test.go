@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v1beta1
+package clusterwide
 
 import (
 	"fmt"
@@ -64,7 +64,7 @@ func TestBind(t *testing.T) {
 	}
 
 	// Create Service.
-	_, err = framework.KubeClient.CoreV1().Services(utils.TestNs).Create(svc)
+	_, err = framework.KubeClient.CoreV1().Services(TestNSClusterwide).Create(svc)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +82,7 @@ func TestBind(t *testing.T) {
 	}
 
 	// Create Secret.
-	sec, err = framework.KubeClient.CoreV1().Secrets(utils.TestNs).Create(sec)
+	sec, err = framework.KubeClient.CoreV1().Secrets(TestNSClusterwide).Create(sec)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +129,7 @@ func TestBind(t *testing.T) {
 	newPort := "port = 6333"
 
 	sec.Data["user.toml"] = []byte(newPort)
-	if _, err = framework.KubeClient.CoreV1().Secrets(utils.TestNs).Update(sec); err != nil {
+	if _, err = framework.KubeClient.CoreV1().Secrets(TestNSClusterwide).Update(sec); err != nil {
 		t.Fatalf("Could not update Secret: \"%s\"", err)
 	}
 
@@ -192,7 +192,7 @@ func TestHabitatDelete(t *testing.T) {
 	}
 
 	// Delete Habitat.
-	if err := framework.DeleteHabitat(habitat.ObjectMeta.Name); err != nil {
+	if err := framework.DeleteHabitat(habitat.ObjectMeta.Name, TestNSClusterwide); err != nil {
 		t.Fatal(err)
 	}
 
@@ -203,13 +203,13 @@ func TestHabitatDelete(t *testing.T) {
 
 	// Check if all the resources the operator creates are deleted.
 	// We do not care about secrets being deleted, as the user needs to delete those manually.
-	d, err := framework.KubeClient.AppsV1beta1().Deployments(utils.TestNs).Get(habitat.ObjectMeta.Name, metav1.GetOptions{})
+	d, err := framework.KubeClient.AppsV1beta1().Deployments(TestNSClusterwide).Get(habitat.ObjectMeta.Name, metav1.GetOptions{})
 	if err == nil && d != nil {
 		t.Fatal("Deployment was not deleted.")
 	}
 
 	// The CM with the peer IP should still be alive, despite the Habitat being deleted as it was created outside of the scope of a Habitat.
-	_, err = framework.KubeClient.CoreV1().ConfigMaps(utils.TestNs).Get(configMapName, metav1.GetOptions{})
+	_, err = framework.KubeClient.CoreV1().ConfigMaps(TestNSClusterwide).Get(configMapName, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -246,7 +246,7 @@ func TestPersistentStorage(t *testing.T) {
 			LabelSelector: ls.String(),
 		}
 
-		err := framework.KubeClient.CoreV1().PersistentVolumeClaims(utils.TestNs).DeleteCollection(&metav1.DeleteOptions{}, lo)
+		err := framework.KubeClient.CoreV1().PersistentVolumeClaims(TestNSClusterwide).DeleteCollection(&metav1.DeleteOptions{}, lo)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -254,7 +254,7 @@ func TestPersistentStorage(t *testing.T) {
 
 	// Delete the ephemeral resource created
 	defer (func(name string) {
-		if err := framework.DeleteHabitat(name); err != nil {
+		if err := framework.DeleteHabitat(name, TestNSClusterwide); err != nil {
 			t.Fatal(err)
 		}
 	})(ephemeral.Name)
@@ -264,7 +264,7 @@ func TestPersistentStorage(t *testing.T) {
 	}
 
 	// Test that persistence is only enabled if requested
-	ephemeralSTS, err := framework.KubeClient.AppsV1beta2().StatefulSets(utils.TestNs).Get(ephemeral.Name, metav1.GetOptions{})
+	ephemeralSTS, err := framework.KubeClient.AppsV1beta2().StatefulSets(TestNSClusterwide).Get(ephemeral.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -273,7 +273,7 @@ func TestPersistentStorage(t *testing.T) {
 		t.Fatal("PersistentVolumeClaims created for ephemeral StatefulSet")
 	}
 
-	persistedSTS, err := framework.KubeClient.AppsV1beta2().StatefulSets(utils.TestNs).Get(persisted.Name, metav1.GetOptions{})
+	persistedSTS, err := framework.KubeClient.AppsV1beta2().StatefulSets(TestNSClusterwide).Get(persisted.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}

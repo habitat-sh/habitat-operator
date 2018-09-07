@@ -65,6 +65,8 @@ Parameter | Description | Default
 `nodeSelector` | Node labels for pod assignment | `{}`
 `rbacEnable` | If true, create & use RBAC resources | `true`
 `resources` | Pod resource requests & limits | `{}`
+`operatorNamespaced` | If this operator should run scoped to Single namespace | `true`
+`namespace` | Namespace this operator should run inside | `habitat-operator`
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
 
