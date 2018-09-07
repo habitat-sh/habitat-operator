@@ -112,6 +112,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 					},
 				},
 				Spec: apiv1.PodSpec{
+					InitContainers: []apiv1.Container{},
 					Containers: []apiv1.Container{
 						{
 							Name:  "habitat-service",
@@ -204,7 +205,14 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 			return nil, err
 		}
 
-		filesVolume := &apiv1.Volume{
+		// In order to mount the volume such that hab can change the permissions, we need to
+		//   #1. Create A Secret Volume based on the supplied secret
+		//   #2. Create an EmptyDir Volume to hold /hab/svc/NAME/files
+		//   #3. Add an initContainer to copy the files from the Secret Volume to the EmptyDir Volume
+		//   #4. Mount only the EmptyDir Volume into the habitat service container
+
+		// #1
+		filesSecretVolume := &apiv1.Volume{
 			Name: filesDirectoryName,
 			VolumeSource: apiv1.VolumeSource{
 				Secret: &apiv1.SecretVolumeSource{
@@ -212,6 +220,21 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 				},
 			},
 		}
+		tSpec.Volumes = append(tSpec.Volumes, *filesSecretVolume)
+
+		filesSecretVolumeMount := &apiv1.VolumeMount{
+			Name:      filesDirectoryName,
+			MountPath: "/mnt/files",
+		}
+
+		// #2
+		filesVolume := &apiv1.Volume{
+			Name: filesDirectoryName,
+			VolumeSource: apiv1.VolumeSource{
+				EmptyDir: &apiv1.EmptyDirVolumeSource{},
+			},
+		}
+		tSpec.Volumes = append(tSpec.Volumes, *filesVolume)
 
 		filesVolumeMount := &apiv1.VolumeMount{
 			Name: filesDirectoryName,
@@ -221,8 +244,21 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 			ReadOnly:  false,
 		}
 
+		// #3
+		command := fmt.Sprintf("cp /mnt/files/* /hab/svc/%s/files", hs.Service.Name)
+		initContainer := &apiv1.Container{
+			Name:         "copy-files",
+			Image:        "busybox",
+			Command:      []string{"sh", "-c", command},
+			VolumeMounts: []apiv1.VolumeMount{},
+		}
+		initContainer.VolumeMounts = append(initContainer.VolumeMounts, *filesSecretVolumeMount)
+		initContainer.VolumeMounts = append(initContainer.VolumeMounts, *filesVolumeMount)
+
+		// #4
+		tSpec.InitContainers = append(tSpec.InitContainers, *initContainer)
 		tSpec.Containers[0].VolumeMounts = append(tSpec.Containers[0].VolumeMounts, *filesVolumeMount)
-		tSpec.Volumes = append(tSpec.Volumes, *filesVolume)
+
 	}
 
 	// Mount Persistent Volume, if requested.
