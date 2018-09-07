@@ -7,9 +7,6 @@ defaults: &defaults
         name: Check for changes in documentation and examples
         command: ./hack/check-skippable-changes.sh
     - run:
-        name: Check if RBAC rules in various files are in sync
-        command: ./hack/rbac-check.sh
-    - run:
         name: Check if CRDs in various location are in sync
         command: ./hack/crd-check.sh
     - run:

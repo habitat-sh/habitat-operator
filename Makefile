@@ -23,6 +23,8 @@ image: linux
 .PHONY: test
 test:
 	go test $(shell go list ./... | grep -v /vendor/ | grep -v /test/)
+	# Run the RBAC sync tests
+	go test github.com/habitat-sh/habitat-operator/test/sync/rbac
 
 # requires minikube or any kubernetes cluster to be running
 .PHONY: e2e
