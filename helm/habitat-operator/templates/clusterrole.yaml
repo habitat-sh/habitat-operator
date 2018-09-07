@@ -16,12 +16,19 @@ metadata:
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
   name: {{ template "habitat-operator.fullname" . }}
+# Keep Cluster wide permissions at the top of the list and then update
+# `TestRolesAndClusterRolesSync` in `test/sync/rbac` package to exclude
+# those rules
 rules:
 - apiGroups:
   - apiextensions.k8s.io
   resources:
   - customresourcedefinitions
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: [""]
+  resources:
+  - namespaces
+  verbs: ["list"]
 - apiGroups:
   - habitat.sh
   resources:
@@ -44,10 +51,6 @@ rules:
   resources:
   - pods
   verbs: ["get", "list", "watch", "deletecollection"]
-- apiGroups: [""]
-  resources:
-  - namespaces
-  verbs: ["list"]
 - apiGroups: [""]
   resources:
   - events
