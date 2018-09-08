@@ -213,7 +213,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 
 		// #1
 		filesSecretVolume := &apiv1.Volume{
-			Name: filesDirectoryName,
+			Name: "files-secrets",
 			VolumeSource: apiv1.VolumeSource{
 				Secret: &apiv1.SecretVolumeSource{
 					SecretName: files.Name,
@@ -223,7 +223,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 		tSpec.Volumes = append(tSpec.Volumes, *filesSecretVolume)
 
 		filesSecretVolumeMount := &apiv1.VolumeMount{
-			Name:      filesDirectoryName,
+			Name:      "files-secrets",
 			MountPath: "/mnt/files",
 		}
 
