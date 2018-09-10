@@ -6,15 +6,31 @@ BIN_PATH := habitat-operator
 TAG := $(shell git describe --tags --always)
 TESTIMAGE :=
 SUDO :=
+VERSION :=
+
+# determine if there are some uncommited changes
+changes := $(shell git status --porcelain)
+ifeq ($(changes),)
+	VERSION := $(TAG)
+else
+	VERSION := $(TAG)-dirty
+endif
 
 .PHONY: build
 build:
-	go build -i github.com/$(GITHUB_ORG)/habitat-operator/cmd/habitat-operator
+	go build -ldflags="-X github.com/$(GITHUB_ORG)/habitat-operator/pkg/version.VERSION=$(VERSION)" \
+		github.com/$(GITHUB_ORG)/habitat-operator/cmd/habitat-operator
 
 .PHONY: linux
 linux:
 	# Compile statically linked binary for linux.
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s" -o $(BIN_PATH) github.com/$(GITHUB_ORG)/habitat-operator/cmd/habitat-operator
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s" \
+		-ldflags="-X github.com/$(GITHUB_ORG)/habitat-operator/pkg/version.VERSION=$(VERSION)" \
+		-o $(BIN_PATH) github.com/$(GITHUB_ORG)/habitat-operator/cmd/habitat-operator
+
+.PHONY: print-version
+print-version:
+	@echo $(VERSION)
 
 .PHONY: image
 image: linux

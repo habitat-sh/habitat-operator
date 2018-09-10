@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"runtime"
@@ -37,6 +38,7 @@ import (
 	habclientset "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned"
 	habinformers "github.com/habitat-sh/habitat-operator/pkg/client/informers/externalversions"
 	habv1beta2controller "github.com/habitat-sh/habitat-operator/pkg/controller/v1beta2"
+	"github.com/habitat-sh/habitat-operator/pkg/version"
 )
 
 const resyncPeriod = 30 * time.Second
@@ -228,6 +230,12 @@ func v1beta2(ctx context.Context, wg *sync.WaitGroup, cSets Clientsets, logger l
 	return nil
 }
 
+func printVersion() {
+	fmt.Printf("Go Version: %s\n", runtime.Version())
+	fmt.Printf("Operator Version: %s\n", version.VERSION)
+}
+
 func main() {
+	printVersion()
 	os.Exit(run())
 }

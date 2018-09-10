@@ -8,6 +8,11 @@ set -euo pipefail
 DRY_RUN=1
 readonly VERSION="v$(cat VERSION)"
 
+if [ "${VERSION}" != $(make print-version) ]; then
+  echo "Version in 'VERSION' file ${VERSION} & git tag $(make print-version) don't match! Follow the release steps mentioned in https://github.com/habitat-sh/habitat-operator/blob/master/doc/release-process.md"
+  exit 1
+fi
+
 run() {
   if [[ "${DRY_RUN}" -eq 1 ]]; then
     printf '%s\n' "$*"
