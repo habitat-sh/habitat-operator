@@ -13,5 +13,5 @@ spec:
     spec:
       containers:
       - name: habitat-operator
-        image: habitat/habitat-operator:v0.7.2
+        image: habitat/habitat-operator:v0.8.0
       serviceAccountName: habitat-operator-v1beta1
