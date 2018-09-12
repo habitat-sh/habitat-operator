@@ -1,5 +1,30 @@
 # Habitat operator CHANGELOG
 
+## [v0.8.0](https://github.com/habitat-sh/habitat-operator/tree/v0.8.0) (11-9-2018)
+[Full changelog](https://github.com/habitat-sh/habitat-operator/compare/v0.7.2...v0.8.0)
+
+### Bug fixes
+
+- RBAC: Remove permission for Deployments with removal of Habitat spec v1beta1 [#339](https://github.com/habitat-sh/habitat-operator/pull/339)
+
+
+### Features & Enhancements
+
+- Added new topology label `operator.habitat.sh/topology` (see deprecation section for information about the older label) [#332](https://github.com/habitat-sh/habitat-operator/pull/332)
+- controller: change generated StatefulSet version from v1beta1 to v1 [#334](https://github.com/habitat-sh/habitat-operator/pull/334)
+- Add support for Kubernetes 1.11 [#340](https://github.com/habitat-sh/habitat-operator/pull/340)
+- RBAC: Harden RBAC policies for the operator enabling operator to run in two modes, clusterwide and namespaced [#346](https://github.com/habitat-sh/habitat-operator/pull/346)
+- RBAC version: update all artifacts to rbac.authorization.k8s.io/v1 [#353](https://github.com/habitat-sh/habitat-operator/pull/353)
+- Display version when booting operator [#350](https://github.com/habitat-sh/habitat-operator/pull/350)
+
+
+### Deprecations
+
+- Habitat CRD spec: drop support for v1beta1 [#331](https://github.com/habitat-sh/habitat-operator/pull/331)
+- Topology label `topology` is deprecated and will be removed in two releases [#332](https://github.com/habitat-sh/habitat-operator/pull/332)
+- Drop support of Kubernetes 1.8 [#344](https://github.com/habitat-sh/habitat-operator/pull/344)
+
+
 ## [v0.7.2](https://github.com/habitat-sh/habitat-operator/tree/v0.7.2) (12-7-2018)
 [Full changelog](https://github.com/habitat-sh/habitat-operator/compare/v0.7.1...v0.7.2)
 
