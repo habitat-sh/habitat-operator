@@ -14,7 +14,7 @@ nodeSelector: {}
 rbacEnable: true
 
 ## Decide if habitat-operator runs at cluster or namespaced scope
-operatorNamespaced: true
+operatorNamespaced: false
 namespace: habitat-operator
 
 ## Habitat-operator resource limits & requests
