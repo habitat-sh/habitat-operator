@@ -1,5 +1,13 @@
 # Habitat operator CHANGELOG
 
+## [v0.8.1](https://github.com/habitat-sh/habitat-operator/tree/v0.8.1) (14-9-2018)
+[Full changelog](https://github.com/habitat-sh/habitat-operator/compare/v0.8.0...v0.8.1)
+
+### Bug fixes
+
+- Revert Helm Chart value to deploy operator clusterwide [#360](https://github.com/habitat-sh/habitat-operator/pull/360)
+
+
 ## [v0.8.0](https://github.com/habitat-sh/habitat-operator/tree/v0.8.0) (11-9-2018)
 [Full changelog](https://github.com/habitat-sh/habitat-operator/compare/v0.7.2...v0.8.0)
 
