@@ -2,7 +2,26 @@ apiVersion: v1
 entries:
   habitat-operator:
   - apiVersion: v1
-    created: 2018-09-12T16:56:08.092720503+05:30
+    created: 2018-09-14T18:41:47.856041065+05:30
+    description: A Kubernetes controller that manages Habitat services in a Kubernetes
+      cluster.
+    digest: d62aeaba0aa5bfa62e0113914a53c172869e25e2d64fed4b0d0c2bd424c15400
+    engine: gotpl
+    maintainers:
+    - email: krzesimir@kinvolk.io
+      name: Krzesimir Nowak
+    - email: iago@kinvolk.io
+      name: Iago López Galeiras
+    - email: indra@kinvolk.io
+      name: Indradhanush Gupta
+    name: habitat-operator
+    sources:
+    - https://github.com/habitat-sh/habitat-operator
+    urls:
+    - https://habitat-sh.github.io/habitat-operator/helm/charts/stable/habitat-operator-0.8.1.tgz
+    version: 0.8.1
+  - apiVersion: v1
+    created: 2018-09-14T18:41:47.855718238+05:30
     description: A Kubernetes controller that manages Habitat services in a Kubernetes
       cluster.
     digest: c69094dac6cb7b6b7d2a48bae7029d1061914cf6dd8546ac1cb7bcf52e07ca2e
@@ -21,7 +40,7 @@ entries:
     - https://habitat-sh.github.io/habitat-operator/helm/charts/stable/habitat-operator-0.8.0.tgz
     version: 0.8.0
   - apiVersion: v1
-    created: 2018-09-12T16:56:08.092320437+05:30
+    created: 2018-09-14T18:41:47.855406892+05:30
     description: A Kubernetes controller that manages Habitat services in a Kubernetes
       cluster.
     digest: 4d93940fcd48718496fbd47d395cf249ff6c560abb6397c0ab3ce0292984afc0
@@ -40,7 +59,7 @@ entries:
     - https://habitat-sh.github.io/habitat-operator/helm/charts/stable/habitat-operator-0.7.2.tgz
     version: 0.7.2
   - apiVersion: v1
-    created: 2018-09-12T16:56:08.091988199+05:30
+    created: 2018-09-14T18:41:47.855145047+05:30
     description: A Kubernetes controller that manages Habitat services in a Kubernetes
       cluster.
     digest: ec79dcb534a289ea75f0f77cca9efe788f5450f63f07653cbab1604fd6c38e29
@@ -59,7 +78,7 @@ entries:
     - https://habitat-sh.github.io/habitat-operator/helm/charts/stable/habitat-operator-0.7.1.tgz
     version: 0.7.1
   - apiVersion: v1
-    created: 2018-09-12T16:56:08.091680287+05:30
+    created: 2018-09-14T18:41:47.85488007+05:30
     description: A Kubernetes controller that manages Habitat services in a Kubernetes
       cluster.
     digest: c3e794a110d36ebd8e342ed1812e81d83d19dc16330391869dca48bf36d925c0
@@ -78,7 +97,7 @@ entries:
     - https://habitat-sh.github.io/habitat-operator/helm/charts/stable/habitat-operator-0.7.0.tgz
     version: 0.7.0
   - apiVersion: v1
-    created: 2018-09-12T16:56:08.091405094+05:30
+    created: 2018-09-14T18:41:47.85459902+05:30
     description: A Kubernetes controller that manages Habitat services in a Kubernetes
       cluster.
     digest: 00f0c27d9d9fa8b8d05ff78e91b31d1ba679b042634936450939ac638efdd92f
@@ -97,7 +116,7 @@ entries:
     - https://habitat-sh.github.io/habitat-operator/helm/charts/stable/habitat-operator-0.6.1.tgz
     version: 0.6.1
   - apiVersion: v1
-    created: 2018-09-12T16:56:08.091102779+05:30
+    created: 2018-09-14T18:41:47.854328221+05:30
     description: A Kubernetes controller that manages Habitat services in a Kubernetes
       cluster.
     digest: 27b6d5714bb0a56b22f271464c2ceec55cd065ab5af88d7bfcfb242416ab278d
@@ -112,7 +131,7 @@ entries:
     - https://habitat-sh.github.io/habitat-operator/helm/charts/stable/habitat-operator-0.6.0.tgz
     version: 0.6.0
   - apiVersion: v1
-    created: 2018-09-12T16:56:08.090820088+05:30
+    created: 2018-09-14T18:41:47.854066957+05:30
     description: A Kubernetes controller that manages Habitat services in a Kubernetes
       cluster.
     digest: 9f3c68d8a07f003fe354d6e9e18cf9d04c02e8ae6ea7cd6451cf9ab21137574b
@@ -127,7 +146,7 @@ entries:
     - https://habitat-sh.github.io/habitat-operator/helm/charts/stable/habitat-operator-0.5.1.tgz
     version: 0.5.1
   - apiVersion: v1
-    created: 2018-09-12T16:56:08.090555352+05:30
+    created: 2018-09-14T18:41:47.85380844+05:30
     description: A Kubernetes controller that manages Habitat services in a Kubernetes
       cluster.
     digest: 112098887ef37395b3ec32a2e293431731eb237867923d5054cceab120ca58f7
@@ -142,7 +161,7 @@ entries:
     - https://habitat-sh.github.io/habitat-operator/helm/charts/stable/habitat-operator-0.5.0.tgz
     version: 0.5.0
   - apiVersion: v1
-    created: 2018-09-12T16:56:08.09028729+05:30
+    created: 2018-09-14T18:41:47.853520217+05:30
     description: A Kubernetes controller that manages Habitat services in a Kubernetes
       cluster.
     digest: ea687f08cdb6f0326ba658cbc9801264fb7250a1aedbf6d2beb727b5e4b60094
@@ -156,4 +175,4 @@ entries:
     urls:
     - https://habitat-sh.github.io/habitat-operator/helm/charts/stable/habitat-operator-0.4.0.tgz
     version: 0.4.0
-generated: 2018-09-12T16:56:08.089805762+05:30
+generated: 2018-09-14T18:41:47.853111854+05:30

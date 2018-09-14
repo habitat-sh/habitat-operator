@@ -2,7 +2,7 @@
 ##
 image:
   repository: docker.io/habitat/habitat-operator
-  tag: v0.8.0
+  tag: v0.8.1
   pullPolicy: IfNotPresent
 
 ## Node labels for habitat-operator pod assignment
@@ -14,7 +14,7 @@ nodeSelector: {}
 rbacEnable: true
 
 ## Decide if habitat-operator runs at cluster or namespaced scope
-operatorNamespaced: true
+operatorNamespaced: false
 namespace: habitat-operator
 
 ## Habitat-operator resource limits & requests

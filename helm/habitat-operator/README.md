@@ -60,12 +60,12 @@ The following table lists the configurable parameters of the habitat-operator ch
 Parameter | Description | Default
 --- | --- | ---
 `image.repository` | Image | `docker.io/habitat/habitat-operator`
-`image.tag` | Image tag | The latest release tag (e.g `v0.8.0`)
+`image.tag` | Image tag | The latest release tag (e.g `v0.8.1`)
 `image.pullPolicy` | Image pull policy | `IfNotPresent`
 `nodeSelector` | Node labels for pod assignment | `{}`
 `rbacEnable` | If true, create & use RBAC resources | `true`
 `resources` | Pod resource requests & limits | `{}`
-`operatorNamespaced` | If this operator should run scoped to Single namespace | `true`
+`operatorNamespaced` | If this operator should run scoped to Single namespace | `false`
 `namespace` | Namespace this operator should run inside | `habitat-operator`
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
