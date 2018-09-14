@@ -11,7 +11,7 @@ spec:
     spec:
       containers:
       - name: habitat-operator
-        image: habitat/habitat-operator:v0.8.0
+        image: habitat/habitat-operator:v0.8.1
         env:
         - name: OPERATOR_NAMESPACE
           valueFrom:
