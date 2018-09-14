@@ -168,9 +168,9 @@ func extractRulesFromHelm(path string, isItClusterRole bool) ([]rbacv1.PolicyRul
 		return nil, errors.Wrapf(err, "loading chart %s failed", path)
 	}
 
-	// make sure that the ClusterRole is generated
-	if isItClusterRole {
-		chart.Values.Raw = strings.Replace(chart.Values.Raw, "operatorNamespaced: true", "operatorNamespaced: false", 1)
+	// If it is Role then we need to replace the value of `operatorNamespaced` to true
+	if !isItClusterRole {
+		chart.Values.Raw = strings.Replace(chart.Values.Raw, "operatorNamespaced: false", "operatorNamespaced: true", 1)
 	}
 
 	renderedFiles, err := renderutil.Render(chart, chart.Values, renderutil.Options{})
