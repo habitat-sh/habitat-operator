@@ -66,6 +66,8 @@ const (
 
 	userConfigFilename = "user-config"
 
+	filesDirectoryName = "files"
+
 	controllerAgentName = "habitat-controller"
 
 	// Events.

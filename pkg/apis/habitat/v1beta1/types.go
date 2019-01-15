@@ -103,6 +103,10 @@ type ServiceV1beta2 struct {
 	// The name of the secret that contains the ring key.
 	// +optional
 	RingSecretName *string `json:"ringSecretName,omitempty"`
+	// The name of a secret containing the files directory.  It will be mounted inside the pod
+	// as a directory.
+	// +optional
+	FilesSecretName *string `json:"filesSecretName,omitempty"`
 	// Bind is when one service connects to another forming a producer/consumer relationship.
 	// +optional
 	Bind []Bind `json:"bind,omitempty"`

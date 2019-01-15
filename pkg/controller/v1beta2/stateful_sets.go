@@ -112,6 +112,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 					},
 				},
 				Spec: apiv1.PodSpec{
+					InitContainers: []apiv1.Container{},
 					Containers: []apiv1.Container{
 						{
 							Name:  "habitat-service",
@@ -194,6 +195,70 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 
 		tSpec.Containers[0].VolumeMounts = append(tSpec.Containers[0].VolumeMounts, *secretVolumeMount)
 		tSpec.Volumes = append(tSpec.Volumes, *secretVolume)
+	}
+
+	// If we have a file volume name present we should mount that secret.
+	if hs.Service.FilesSecretName != nil {
+		// Let's make sure our secret is there before mounting it.
+		files, err := hc.config.KubernetesClientset.CoreV1().Secrets(h.Namespace).Get(*hs.Service.FilesSecretName, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		// In order to mount the volume such that hab can change the permissions, we need to
+		//   #1. Create A Secret Volume based on the supplied secret
+		//   #2. Create an EmptyDir Volume to hold /hab/svc/NAME/files
+		//   #3. Add an initContainer to copy the files from the Secret Volume to the EmptyDir Volume
+		//   #4. Mount only the EmptyDir Volume into the habitat service container
+
+		// #1
+		filesSecretVolume := &apiv1.Volume{
+			Name: "files-secrets",
+			VolumeSource: apiv1.VolumeSource{
+				Secret: &apiv1.SecretVolumeSource{
+					SecretName: files.Name,
+				},
+			},
+		}
+		tSpec.Volumes = append(tSpec.Volumes, *filesSecretVolume)
+
+		filesSecretVolumeMount := &apiv1.VolumeMount{
+			Name:      "files-secrets",
+			MountPath: "/mnt/files",
+		}
+
+		// #2
+		filesVolume := &apiv1.Volume{
+			Name: filesDirectoryName,
+			VolumeSource: apiv1.VolumeSource{
+				EmptyDir: &apiv1.EmptyDirVolumeSource{},
+			},
+		}
+		tSpec.Volumes = append(tSpec.Volumes, *filesVolume)
+
+		filesVolumeMount := &apiv1.VolumeMount{
+			Name: filesDirectoryName,
+			// The Habitat supervisor creates a directory for each service under /hab/svc/<servicename>.
+			// We need to place the files directory there.
+			MountPath: fmt.Sprintf("/hab/svc/%s/files", hs.Service.Name),
+			ReadOnly:  false,
+		}
+
+		// #3
+		command := fmt.Sprintf("cp /mnt/files/* /hab/svc/%s/files", hs.Service.Name)
+		initContainer := &apiv1.Container{
+			Name:         "copy-files",
+			Image:        "busybox",
+			Command:      []string{"sh", "-c", command},
+			VolumeMounts: []apiv1.VolumeMount{},
+		}
+		initContainer.VolumeMounts = append(initContainer.VolumeMounts, *filesSecretVolumeMount)
+		initContainer.VolumeMounts = append(initContainer.VolumeMounts, *filesVolumeMount)
+
+		// #4
+		tSpec.InitContainers = append(tSpec.InitContainers, *initContainer)
+		tSpec.Containers[0].VolumeMounts = append(tSpec.Containers[0].VolumeMounts, *filesVolumeMount)
+
 	}
 
 	// Mount Persistent Volume, if requested.

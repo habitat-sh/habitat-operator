@@ -176,6 +176,11 @@ func (in *ServiceV1beta2) DeepCopyInto(out *ServiceV1beta2) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.FilesSecretName != nil {
+		in, out := &in.FilesSecretName, &out.FilesSecretName
+		*out = new(string)
+		**out = **in
+	}
 	if in.Bind != nil {
 		in, out := &in.Bind, &out.Bind
 		*out = make([]Bind, len(*in))

@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: files-secret
+type: Opaque
+data:
+  # base64 encoded string 'SecretPassword'
+  pwfile: U2VjcmV0UGFzc3dvcmQK
+---
+apiVersion: habitat.sh/v1beta1
+kind: Habitat
+metadata:
+  name: files-volume-habitat
+  labels:
+    source: operator-example
+    app: files-volume-habitat
+customVersion: v1beta2
+spec:
+  v1beta2:
+    image: habitat/redis-hab
+    count: 1
+    service:
+      name: redis
+      topology: standalone
+      group: redisdb
+      filesSecretName: files-secret
