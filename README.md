@@ -7,7 +7,7 @@ This project is currently unstable - breaking changes may still land in the futu
 
 ## Overview
 
-The Habitat operator is a Kubernetes controller designed to solve running and auto-managing Habitat Services on Kubernetes. It does this by making use of [`Custom Resource Definition`][crd]s.
+The Habitat operator is a Kubernetes controller designed to solve running and auto-managing Habitat Services on Kubernetes. It does this by making use of [`Custom Resource Definitions`][crd].
 
 To learn more about Habitat, please visit the [Habitat website](https://www.habitat.sh/).
 
@@ -21,20 +21,25 @@ For a more detailed description of the Habitat type have a look [here](https://g
 
 ## Installing
 
+Make sure you have [golang compiler](https://golang.org/dl/) installed. Follow the installation instructions on download page to learn about `GOPATH`. Then run following command:
+
     go get -u github.com/habitat-sh/habitat-operator/cmd/habitat-operator
+
+This will put the built binary in `$GOPATH/bin`, make sure this is in your `PATH`, so you can access the binary from anywhere.
 
 ## Building manually from source directory
 
-First clone the operator:
+Clone the code locally:
 
-    git clone https://github.com/habitat-sh/habitat-operator.git
-    cd habitat-operator
+    go get -u github.com/habitat-sh/habitat-operator/cmd/habitat-operator
+    cd ${GOPATH:-$HOME/go}/src/github.com/habitat-sh/habitat-operator
+
 
 Then build it:
 
     make build
 
-Note: Make sure the source directory is in your `$GOPATH` before you execute the above command.
+This command will create a `habitat-operator` binary in the source directory. Copy this file somewhere to your `PATH`.
 
 ## Usage
 
@@ -43,10 +48,6 @@ Note: Make sure the source directory is in your `$GOPATH` before you execute the
 Start the Habitat operator by running:
 
     habitat-operator --kubeconfig ~/.kube/config
-
-If you built the operator manually, you'll have to specify the path to the binary. So from the root of the source directory, run:
-
-    ./habitat-operator --kubeconfig ~/.kube/config
 
 ### Running inside a Kubernetes cluster
 
@@ -72,7 +73,7 @@ Make sure to give Habitat operator the correct permissions, so it's able to crea
 
     kubectl create -f examples/rbac
 
-For more information see [the README file in RBAC example](examples/rbac/README.md)
+For more information see [the README file in RBAC example](examples/rbac/)
 
 ##### Cluster with RBAC disabled
 
@@ -87,7 +88,8 @@ To create an example service run:
     kubectl create -f examples/standalone/habitat.yml
 
 This will create a single-pod deployment of an `nginx` Habitat service.
-More examples are located in the [example directory](https://github.com/habitat-sh/habitat-operator/tree/master/examples/).
+
+More examples are located in the [example directory](examples/).
 
 ## Contributing
 
