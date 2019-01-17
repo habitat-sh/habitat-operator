@@ -110,17 +110,12 @@ jobs:
   k8s-v1.11:
     environment:
       K8S_VERSION: v1.11.2
-      GKE_CLUSTER_VERSION: "1.11.2-gke.3"
+      GKE_CLUSTER_VERSION: "1.11.5-gke.5"
     <<: *defaults
   k8s-v1.10:
     environment:
       K8S_VERSION: v1.10.0
-      GKE_CLUSTER_VERSION: "1.10"
-    <<: *defaults
-  k8s-v1.9:
-    environment:
-      K8S_VERSION: v1.9.0
-      GKE_CLUSTER_VERSION: "1.9"
+      GKE_CLUSTER_VERSION: "1.10.11-gke.1"
     <<: *defaults
 
 workflows:
@@ -129,4 +124,3 @@ workflows:
     jobs:
       - k8s-v1.11
       - k8s-v1.10
-      - k8s-v1.9
