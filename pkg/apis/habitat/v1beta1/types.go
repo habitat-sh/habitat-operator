@@ -59,6 +59,9 @@ type HabitatSpec struct {
 type V1beta2 struct {
 	// Count is the amount of Services to start in this Habitat.
 	Count int `json:"count"`
+	// ServiceAccountName is the service account that your service can run as when
+	// Kubernetes is running in RBAC mode
+	ServiceAccountName *string `json:"serviceAccountName,omitempty"`
 	// Image is the Docker image of the Habitat Service.
 	Image   string         `json:"image"`
 	Service ServiceV1beta2 `json:"service"`
