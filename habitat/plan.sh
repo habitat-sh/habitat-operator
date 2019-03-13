@@ -1,6 +1,6 @@
-pkg_name="habitat-operator"
-pkg_origin="habitat"
-pkg_version=$(cat "$PLAN_CONTEXT/../VERSION")
+pkg_name=habitat-operator
+pkg_origin=habitat
+pkg_version="v$(cat "$PLAN_CONTEXT/../VERSION")"
 pkg_description="A Kubernetes operator for Habitat services"
 pkg_upstream_url="https://github.com/habitat-sh/habitat-operator"
 pkg_license=('Apache-2.0')
